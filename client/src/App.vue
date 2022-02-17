@@ -17,8 +17,8 @@ store.dispatch('fetchTexts')
 
     <div v-for="text in store.getters['textsByAuthor'](author.id)" :key="text.id">
       {{ text.title }}
-      <div  v-for="(syntaxTree, idx) in text.syntax_trees" :key="idx">
-        <SyntaxTree  :tree="syntaxTree"/>
+      <div  v-for="(sentence, idx) in text.sentences" :key="idx">
+        <SyntaxTree :sentence="sentence"/>
       </div>
     </div>
   </div>

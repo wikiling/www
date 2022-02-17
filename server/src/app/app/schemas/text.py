@@ -1,5 +1,5 @@
 from typing import Any, Optional, List
-
+from app.models import SentenceParseType
 from pydantic import BaseModel
 
 class Sentence(BaseModel):
@@ -7,6 +7,8 @@ class Sentence(BaseModel):
     content: str
     description: Optional[str] = None
     syntax_tree: Any
+    has_punctuation: bool
+    parse_type: SentenceParseType
 
     class Config:
         orm_mode = True

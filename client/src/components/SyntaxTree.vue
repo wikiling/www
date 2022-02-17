@@ -1,5 +1,5 @@
 <template>
-  <svg id="demo1" width=1000 height=1000>
+  <svg :id="treeId" width=1000 height=1000>
     <g transform="translate(500,10)">
       <g class="links"></g>
       <g class="nodes"></g>
@@ -12,12 +12,13 @@
 import { reactive, onMounted } from 'vue'
 import { hierarchy, HierarchyPointNode, tree } from 'd3-hierarchy'
 import * as selection from 'd3-selection'
-import { SyntaxTree } from '../types'
+import { Sentence, SyntaxTree } from '../types'
 
-const props = defineProps<{ tree: SyntaxTree }>()
-const { root } = reactive({ root: hierarchy(props.tree) })
+const props = defineProps<{ sentence: Sentence }>()
+const { root } = reactive({ root: hierarchy(props.sentence.syntax_tree) })
 const canvas = document.createElement("canvas")
 const context = canvas.getContext("2d")
+const treeId = `tree-${props.sentence.id.toString()}`
 
 function getTextWidth(text: string, font: string = '') {
   if (!context) return 2
@@ -32,7 +33,7 @@ onMounted(() => {
   var nodeHeight = 75;
   var horizontalSeparationBetweenNodes = 16;
   var verticalSeparationBetweenNodes = 12;
-
+  console.log(0)
   var treeLayout = tree<SyntaxTree>()
     .nodeSize([nodeWidth + horizontalSeparationBetweenNodes, nodeHeight + verticalSeparationBetweenNodes])
     .separation(function(a, b) {
@@ -46,11 +47,12 @@ onMounted(() => {
       return a.parent == b.parent ? 1 : 1.25;
     });
 
+  console.log(1)
   treeLayout(root);
-
+  console.log(2, props.sentence.id)
   // Select the SVG element
-  var svg = selection.select("#demo1");
-
+  var svg = selection.select(`#${treeId}`);
+  console.log(svg)
   // Add links
   svg.select('g.links')
     .selectAll('line.link')

@@ -16,9 +16,12 @@ const SyntaxTreeFactory = ({ children = [], token, pos }: IncomingSyntaxTree): S
 }
 
 
-const TextFactory = (text: IncomingText): Text => ({
+const TextFactory = ({sentences, ...text}: IncomingText): Text => ({
   ...text,
-  syntax_trees: text.syntax_trees.map(SyntaxTreeFactory)
+  sentences: sentences.map(sent => ({
+    ...sent,
+    syntax_tree: SyntaxTreeFactory(sent.syntax_tree)
+  }))
 })
 
 const getTexts = (): Promise<Text[]> => client
