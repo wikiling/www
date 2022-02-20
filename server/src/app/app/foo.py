@@ -5,9 +5,14 @@ from app.factories import SentencesFactory
 if __name__ == '__main__':
 
     db = SessionLocal()
-    texts = db.query(Text)
+    sentences = db.query(Sentence).filter(Sentence.has_punctuation.is_(False)).all()
 
-    for text in texts:
-        sents = SentencesFactory(text)
-        db.add_all(sents)
-        db.commit()
+    print(sentences)
+
+    texts = db.query(Text).join(
+            Sentence
+        ).filter(
+            Sentence.has_punctuation.is_(False)
+        ).all()
+    
+    print(texts[0].sentences)

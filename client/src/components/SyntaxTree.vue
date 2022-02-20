@@ -1,17 +1,24 @@
 <template>
-  <svg :id="treeId" width=1000 height=1000>
-    <g transform="translate(500,10)">
-      <g class="links"></g>
-      <g class="nodes"></g>
-      <g class="labels"></g>
-    </g>
-  </svg>
+  <div :onclick="onContainerClick" class="syntax-tree-container">
+    <svg :id="treeId" width=1500 height=1000>
+      <g transform="translate(500,10)">
+        <g class="links"></g>
+        <g class="nodes"></g>
+        <g class="labels"></g>
+      </g>
+    </svg>
+    <NodeActionMenu
+      :onNodeRemove="onNodeActionMenuRemove"
+      :onNodeAdd="onNodeActionMenuAdd"
+      :class="{ menuIsActive: 'active' }"/>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, onMounted } from 'vue'
 import { hierarchy, HierarchyPointNode, tree } from 'd3-hierarchy'
 import * as selection from 'd3-selection'
+import NodeActionMenu from './NodeActionMenu.vue'
 import { Sentence, SyntaxTree } from '../types'
 
 const props = defineProps<{ sentence: Sentence }>()
@@ -19,16 +26,28 @@ const { root } = reactive({ root: hierarchy(props.sentence.syntax_tree) })
 const canvas = document.createElement("canvas")
 const context = canvas.getContext("2d")
 const treeId = `tree-${props.sentence.id.toString()}`
+const activity = reactive({ menuIsActive: false })
 
-function getTextWidth(text: string, font: string = '') {
+const getTextWidth = (text: string, font: string = '') => {
   if (!context) return 2
   context.font = "12pt Avenir, sans serif"
   const metrics = context.measureText(text)
   return metrics.width
 }
 
+const onContainerClick = (e) => {
+  console.log(e)
+}
+
+const onNodeActionMenuRemove = () => {
+
+}
+
+const onNodeActionMenuAdd = () => {
+  
+}
+
 onMounted(() => {
-  console.log(root)
   var nodeWidth = 30;
   var nodeHeight = 75;
   var horizontalSeparationBetweenNodes = 16;
@@ -47,12 +66,11 @@ onMounted(() => {
       return a.parent == b.parent ? 1 : 1.25;
     });
 
-  console.log(1)
   treeLayout(root);
-  console.log(2, props.sentence.id)
+
   // Select the SVG element
   var svg = selection.select(`#${treeId}`);
-  console.log(svg)
+
   // Add links
   svg.select('g.links')
     .selectAll('line.link')
@@ -100,3 +118,13 @@ onMounted(() => {
 })
 
 </script>
+
+<style scoped lang="scss">
+  .node-action-menu {
+    visibility: hidden;
+
+    &.active {
+      visibility: visible;
+    }
+  }
+</style>

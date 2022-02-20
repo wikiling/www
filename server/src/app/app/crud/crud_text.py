@@ -1,13 +1,12 @@
 from typing import List
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, selectinload
 
 from app.crud.base import CRUDBase
-from app.models import Text
+from app.models import Text, Sentence
 from app.schemas.text import TextCreate, TextUpdate
 from app.factories import SentencesFactory
-
 
 
 class CRUDText(CRUDBase[Text, TextCreate, TextUpdate]):
@@ -23,11 +22,12 @@ class CRUDText(CRUDBase[Text, TextCreate, TextUpdate]):
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
     ) -> List[Text]:
-        foo = db.query(self.model).options(
-            joinedload(self.model.sentences)
+        return db.query(Text).join(
+            Sentence
+        ).filter(
+            Sentence.has_punctuation.is_(False)
         ).offset(skip).limit(limit).all()
-        print(foo)
-        return foo
+
 
     def get_multi_by_author(
         self, db: Session, *, author_id: int, skip: int = 0, limit: int = 100
