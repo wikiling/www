@@ -9,6 +9,7 @@ defineProps<{
   <div class="node-action-menu">
     <div class="menu-item" @click="onNodeAdd">Add Node</div>
     <div class="menu-item" @click="onNodeRemove">Remove Node</div>
+    <div class="menu-item" @click="onNodeRemove">Edit Node</div>
   </div>
 </template>
 
@@ -22,7 +23,7 @@ defineProps<{
   }
 
   .menu-item {
-    margin: 0 0.5em;
+    margin: 2.5px;
     font-weight: bold;
     cursor: pointer;
   }
