@@ -1,5 +1,5 @@
 <template>
-  <div :onclick="onContainerClick" class="syntax-tree-container">
+  <div @click="onContainerClick" class="syntax-tree-container">
     <svg :id="treeId" width=1500 height=1000>
       <g transform="translate(500,10)">
         <g class="links"></g>
@@ -10,7 +10,8 @@
     <NodeActionMenu
       :onNodeRemove="onNodeActionMenuRemove"
       :onNodeAdd="onNodeActionMenuAdd"
-      :class="{ menuIsActive: 'active' }"/>
+      :class="{ active: activity.menuIsActive }"
+      :style="{ left: `${activity.actionMenuX}px`, top: `${activity.actionMenuY}px` }"/>
   </div>
 </template>
 
@@ -22,11 +23,15 @@ import NodeActionMenu from './NodeActionMenu.vue'
 import { Sentence, SyntaxTree } from '../types'
 
 const props = defineProps<{ sentence: Sentence }>()
-const { root } = reactive({ root: hierarchy(props.sentence.syntax_tree) })
 const canvas = document.createElement("canvas")
 const context = canvas.getContext("2d")
 const treeId = `tree-${props.sentence.id.toString()}`
-const activity = reactive({ menuIsActive: false })
+const activity = reactive({
+  menuIsActive: false,
+  actionMenuX: 0,
+  actionMenuY: 0,
+  tree: hierarchy(props.sentence.syntax_tree)
+})
 
 const getTextWidth = (text: string, font: string = '') => {
   if (!context) return 2
@@ -36,7 +41,15 @@ const getTextWidth = (text: string, font: string = '') => {
 }
 
 const onContainerClick = (e) => {
+  
+}
+
+const onNodeClick = (e) => {
   console.log(e)
+  console.log(e.target.__data__.data.id)
+  activity.menuIsActive = !activity.menuIsActive
+  activity.actionMenuX = e.x
+  activity.actionMenuY = e.y
 }
 
 const onNodeActionMenuRemove = () => {
@@ -52,7 +65,6 @@ onMounted(() => {
   var nodeHeight = 75;
   var horizontalSeparationBetweenNodes = 16;
   var verticalSeparationBetweenNodes = 12;
-  console.log(0)
   var treeLayout = tree<SyntaxTree>()
     .nodeSize([nodeWidth + horizontalSeparationBetweenNodes, nodeHeight + verticalSeparationBetweenNodes])
     .separation(function(a, b) {
@@ -66,7 +78,7 @@ onMounted(() => {
       return a.parent == b.parent ? 1 : 1.25;
     });
 
-  treeLayout(root);
+  treeLayout(activity.tree);
 
   // Select the SVG element
   var svg = selection.select(`#${treeId}`);
@@ -74,7 +86,7 @@ onMounted(() => {
   // Add links
   svg.select('g.links')
     .selectAll('line.link')
-    .data(root.links())
+    .data(activity.tree.links())
     .enter()
     .append('line')
     .classed('link', true)
@@ -91,7 +103,7 @@ onMounted(() => {
   // Add nodes
   svg.select('g.nodes')
     .selectAll('rect.node')
-    .data(root.descendants())
+    .data(activity.tree.descendants())
     .enter()
     .append('rect')
     .classed('node', true)
@@ -104,24 +116,32 @@ onMounted(() => {
   // draw labels
   svg.select('g.labels')
     .selectAll('text.label')
-    .data(root.descendants())
+    .data(activity.tree.descendants())
     .enter()
     .append('text')
     .classed('label', true)
     .style('fill', 'gray')
+    .style('cursor', 'pointer')
     .attr('x', function(d) {
       const nodeWidth = getTextWidth(d.data.text)
       return d.x - nodeWidth / 2
     })
     .attr('y', function(d) {return d.y + 5;})
-    .html((d) => d.data.text);
+    .html((d) => d.data.text)
+    .on('click', onNodeClick);
 })
 
 </script>
 
 <style scoped lang="scss">
+
+  .syntax-tree-container {
+    position: relative;
+  }
+
   .node-action-menu {
     visibility: hidden;
+    position: absolute;
 
     &.active {
       visibility: visible;

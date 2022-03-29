@@ -14,14 +14,18 @@ export type Author = {
 }
 
 export type IncomingSyntaxTree = {
+  id: ID
   pos?: string
   token?: string
   children?: SyntaxTree[]
+  
 }
 
 export type SyntaxTree = {
+  id: ID
   text: string
   children?: SyntaxTree[]
+  
 }
 
 export type IncomingSentence = {

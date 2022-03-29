@@ -8,10 +8,11 @@ const client = axios.create({
   },
 })
 
-const SyntaxTreeFactory = ({ children = [], token, pos }: IncomingSyntaxTree): SyntaxTree => {
+const SyntaxTreeFactory = ({ children = [], token, pos, id }: IncomingSyntaxTree): SyntaxTree => {
   return {
     children: children.map(SyntaxTreeFactory),
-    text: pos ? pos : token ? token : ''
+    text: pos ? pos : token ? token : '',
+    id
   }
 }
 

@@ -14,7 +14,7 @@ from app.services import JSONSerializableNLTKTree
 class Author(Base):
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, index=True)
-    texts = relationship('Text')
+    texts = relationship("Text")
 
 
 class SentenceParseType(Enum):
@@ -35,7 +35,7 @@ class Sentence(Base):
 
     @property
     def syntax_tree(self):
-        return JSONSerializableNLTKTree.fromstring(self.parse_string).json
+        return JSONSerializableNLTKTree.fromstring(self.parse_string).json()
 
 
 class Text(Base):
@@ -44,7 +44,7 @@ class Text(Base):
     author_id = Column(Integer, ForeignKey("author.id"))
     author = relationship("Author", back_populates="texts")
     content = Column(String)
-    sentences = relationship('Sentence')
+    sentences = relationship("Sentence")
 
 
 class User(Base):
