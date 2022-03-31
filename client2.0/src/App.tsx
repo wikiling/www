@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import './App.css';
+import './App.scss';
 import { useStores } from './hooks';
 import Tree from 'tree/Tree';
 import { observer } from 'mobx-react-lite';
@@ -17,6 +17,10 @@ const App: React.FC = () => {
     centralStore.dispatchFetchTexts();
   }, []);
 
+  const onTreeNodeAdd = () => {};
+  const onTreeNodeEdit = () => {};
+  const onTreeNodeRemove = () => {};
+
   return (
     <div className="app">
       {authors.map(author =>
@@ -29,9 +33,14 @@ const App: React.FC = () => {
             {text.sentences.map(
               sentence => <>
                 <div>
-                  {sentence.id}
+                  ({sentence.id})
                 </div>
-                <Tree data={toJS(sentence.syntax_tree)}/>
+                <Tree
+                  data={toJS(sentence.syntax_tree)}
+                  onNodeAdd={onTreeNodeAdd}
+                  onNodeEdit={onTreeNodeEdit}
+                  onNodeRemove={onTreeNodeRemove}
+                />
               </>
             )}
           </>

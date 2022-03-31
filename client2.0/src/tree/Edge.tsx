@@ -1,15 +1,22 @@
 import React from 'react';
+import { TreeLink } from './types';
 
 type EdgeProps = {
-  x1: string
-  y1: string
-  x2: string
-  y2: string
+  link: TreeLink
 }
 
-const Edge: React.FC<EdgeProps> = (edgeProps) => {
+const Edge: React.FC<EdgeProps> = ({ link }) => {
+  const { source, target } = link;
+
   return (
-    <line stroke="black" {...edgeProps} />
+    <line
+      className="edge"
+      x1={source.x}
+      y1={source.y}
+      x2={target.x}
+      y2={target.y}
+      stroke="black"
+    />
   )
 };
 

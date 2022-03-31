@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import Menu from './Menu';
+import { TreeNode } from './types';
 
 type NodeProps = {
-  label: string
-  x: string
-  y: string
+  node: TreeNode
+  onClick: React.MouseEventHandler
 }
 
-const Node: React.FC<NodeProps> = ({ x, y, label }) => {
+const Node: React.FC<NodeProps> = ({ node, onClick }) => {
   return (
-    <text x={x} y={y}>{label}</text>
-  )
+    <text onClick={onClick} x={node.x} y={node.y} className="node">
+      {node.data.text}
+    </text>
+  );
 };
 
 export default Node
