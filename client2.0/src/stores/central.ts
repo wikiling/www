@@ -22,10 +22,8 @@ export class CentralStore {
 
   textsByAuthor = (authorId: ID): Text[] => this.texts.filter(({ author_id }) => author_id === authorId)
 
-  dispatchFetchTexts = () => {
-    fetchTexts().then(texts => {
-      this.texts = texts;
-    });
+  dispatchFetchTexts = async () => {
+    this.texts = await fetchTexts();
 
     this.sentenceStore.setSentences(
       this.texts.map(({ sentences }) => sentences).flat()

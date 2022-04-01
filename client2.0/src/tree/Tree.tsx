@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
 import { hierarchy, HierarchyPointNode, tree as d3Tree } from 'd3-hierarchy';
-import { SyntaxTree } from 'types';
+import { SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
 import { EditableNodeValues, TreeData, TreeNode } from './types';
@@ -14,7 +14,7 @@ type TreeProps = {
   data: TreeData
   onNodeAdd: (node: TreeNode) => void
   onNodeEdit: (values: EditableNodeValues) => void
-  onNodeRemove: (node: TreeNode) => void
+  onNodeRemove: (nodeId: SyntaxTreeID) => void
 };
 
 const NODE_WIDTH = 30;
@@ -55,10 +55,22 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
   const links = tree.links();
 
   const onMenuEdit = () => {
-    if (!activeNode) return;
+    if (!activeNode) throw "No active node to edit!";
 
     setNodeInEdit(activeNode);
     setMenuCoordinates(null);
+  }
+
+  const onMenuRemove = () => {
+    if (!activeNode) throw "No active node to remove!";
+
+    onNodeRemove(activeNode.data.id);
+    setMenuCoordinates(null);
+  }
+
+  const onEditableNodeSubmit = (values: EditableNodeValues) => {
+    onNodeEdit(values);
+    setNodeInEdit(null);
   }
 
   const onNodeClick = (e: React.MouseEvent, node: TreeNode) => {
@@ -76,7 +88,7 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
         <g transform="translate(500,10)">
           {nodes.map(node => (
             node.data.id === nodeInEdit?.data.id
-              ? <EditableNode onSubmit={onNodeEdit} node={node} key={`${node.data.id}-editable`} ref={editableNodeRef}/>
+              ? <EditableNode onSubmit={onEditableNodeSubmit} node={node} key={`${node.data.id}-editable`} ref={editableNodeRef}/>
               : <Node onClick={(e) => onNodeClick(e, node)} node={node} key={node.data.id}/>
           ))}
           {links.map(link => (
@@ -89,7 +101,7 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
         style={menuCoordinates}
         onAdd={() => onNodeAdd(activeNode)}
         onEdit={onMenuEdit}
-        onRemove={() => onNodeRemove(activeNode)}/>}
+        onRemove={onMenuRemove}/>}
     </div>
   )
 };

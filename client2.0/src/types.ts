@@ -13,15 +13,17 @@ export type Author = {
   full_name: string
 }
 
+export type SyntaxTreeID = string
+
 export type IncomingSyntaxTree = {
-  id: string
+  id: SyntaxTreeID
   pos?: string
   token?: string
   children?: SyntaxTree[]
 }
 
 export type SyntaxTree = {
-  id: string
+  id: SyntaxTreeID
   text: string
   children?: SyntaxTree[]
 }

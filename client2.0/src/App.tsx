@@ -5,7 +5,7 @@ import Tree from 'tree/Tree';
 import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import { EditableNodeValues } from 'tree/types';
-import { ID } from 'types';
+import { ID, SyntaxTreeID } from 'types';
 
 const App: React.FC = () => {
   const {
@@ -40,11 +40,15 @@ const App: React.FC = () => {
                   data={toJS(sentence.syntax_tree)}
                   onNodeAdd={onTreeNodeAdd}
                   onNodeEdit={(values: EditableNodeValues) => {
-                    sentenceStore.updateSentenceSyntaxTreeNode(
+                    sentenceStore.updateSentenceSyntaxTreeNodeText(
                       sentence.id, values.id, values.text
                     );
                   }}
-                  onNodeRemove={onTreeNodeRemove}
+                  onNodeRemove={(nodeId: SyntaxTreeID) => {
+                    sentenceStore.removeSentenceSyntaxTreeNode(
+                      sentence.id, nodeId
+                    );
+                  }}
                 />
               </div>
             )}

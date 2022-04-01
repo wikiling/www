@@ -1,13 +1,14 @@
 import { HierarchyPointLink, HierarchyPointNode } from 'd3-hierarchy';
+import { SyntaxTreeID } from 'types';
 
 export type TreeData = {
-  id: string
+  id: SyntaxTreeID
   text: string
   children?: TreeData[]
 }
 
 export type EditableNodeValues = {
-  id: string
+  id: SyntaxTreeID
   text: string
 }
 
