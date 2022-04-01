@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import './Tree.scss';
 import { hierarchy, HierarchyPointNode, tree as d3Tree } from 'd3-hierarchy';
 import { SyntaxTree } from 'types';
 import Node from './Node';
 import Edge from './Edge';
-import { TreeData, TreeNode } from './types';
+import { EditableNodeValues, TreeData, TreeNode } from './types';
 import { getTextWidth } from 'utils';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
+import { useClickAway } from 'react-use';
 
 type TreeProps = {
   data: TreeData
   onNodeAdd: (node: TreeNode) => void
-  onNodeEdit: (node: TreeNode) => void
+  onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (node: TreeNode) => void
 };
 
@@ -29,7 +30,8 @@ type MenuCoordinates = {
 const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
   const [activeNode, setActiveNode] = useState<TreeNode | null>(null);
-  const [nodesInEdit, setNodesInEdit] = useState<Record<string, TreeNode>>({});
+  const [nodeInEdit, setNodeInEdit] = useState<TreeNode | null>(null);
+  const editableNodeRef = useRef<HTMLFormElement>(null);
   const hierarchicalData = hierarchy(data);
 
   const createTree = d3Tree<TreeData>()
@@ -52,7 +54,12 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
   const nodes = tree.descendants();
   const links = tree.links();
 
-  const onMenuEdit = () => activeNode && setNodesInEdit({ [activeNode.data.id]: activeNode })
+  const onMenuEdit = () => {
+    if (!activeNode) return;
+
+    setNodeInEdit(activeNode);
+    setMenuCoordinates(null);
+  }
 
   const onNodeClick = (e: React.MouseEvent, node: TreeNode) => {
     setActiveNode(node);
@@ -61,22 +68,24 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
     });
   };
 
+  useClickAway(editableNodeRef, () => setNodeInEdit(null));
+
   return (
     <div className="tree">
       <svg width={1500} height={1000}>
         <g transform="translate(500,10)">
           {nodes.map(node => (
-            node.data.id in nodesInEdit
-              ? <EditableNode node={node}/>
-              : <Node onClick={(e) => onNodeClick(e, node)} node={node}/>
+            node.data.id === nodeInEdit?.data.id
+              ? <EditableNode onSubmit={onNodeEdit} node={node} key={`${node.data.id}-editable`} ref={editableNodeRef}/>
+              : <Node onClick={(e) => onNodeClick(e, node)} node={node} key={node.data.id}/>
           ))}
           {links.map(link => (
-            <Edge link={link}/>
+            <Edge link={link} key={`${link.source.data.id}-${link.target.data.id}`}/>
           ))}
         </g>
       </svg>
 
-      {menuCoordinates && activeNode && <Menu
+      {activeNode && !!menuCoordinates && <Menu
         style={menuCoordinates}
         onAdd={() => onNodeAdd(activeNode)}
         onEdit={onMenuEdit}

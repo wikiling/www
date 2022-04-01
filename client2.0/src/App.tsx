@@ -4,11 +4,13 @@ import { useStores } from './hooks';
 import Tree from 'tree/Tree';
 import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
+import { EditableNodeValues } from 'tree/types';
+import { ID } from 'types';
 
 const App: React.FC = () => {
   const {
     centralStore, centralStore: {
-      authors, textsByAuthor
+      authors, textsByAuthor, sentenceStore
     }
   } = useStores();
 
@@ -18,32 +20,35 @@ const App: React.FC = () => {
   }, []);
 
   const onTreeNodeAdd = () => {};
-  const onTreeNodeEdit = () => {};
   const onTreeNodeRemove = () => {};
 
   return (
     <div className="app">
       {authors.map(author =>
         textsByAuthor(author.id).map(text =>
-          <>
+          <div key={author.id}>
             <div className="header">
               {author.full_name}, {text.title}
               <hr/>
             </div>
             {text.sentences.map(
-              sentence => <>
+              sentence => <div key={sentence.id}>
                 <div>
                   ({sentence.id})
                 </div>
                 <Tree
                   data={toJS(sentence.syntax_tree)}
                   onNodeAdd={onTreeNodeAdd}
-                  onNodeEdit={onTreeNodeEdit}
+                  onNodeEdit={(values: EditableNodeValues) => {
+                    sentenceStore.updateSentenceSyntaxTreeNode(
+                      sentence.id, values.id, values.text
+                    );
+                  }}
                   onNodeRemove={onTreeNodeRemove}
                 />
-              </>
+              </div>
             )}
-          </>
+          </div>
         )
       )}
     </div>

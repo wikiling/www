@@ -6,5 +6,10 @@ export type TreeData = {
   children?: TreeData[]
 }
 
+export type EditableNodeValues = {
+  id: string
+  text: string
+}
+
 export type TreeNode = HierarchyPointNode<TreeData>
 export type TreeLink = HierarchyPointLink<TreeData>
