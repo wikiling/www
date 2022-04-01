@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import './App.scss';
 import { useStores } from './hooks';
-import Tree from 'tree/Tree';
+import Tree from 'components/tree/Tree';
 import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
-import { EditableNodeValues } from 'tree/types';
+import { EditableNodeValues } from 'components/tree/types';
 import { ID, SyntaxTreeID } from 'types';
 
 const App: React.FC = () => {
@@ -27,9 +27,8 @@ const App: React.FC = () => {
       {authors.map(author =>
         textsByAuthor(author.id).map(text =>
           <div key={author.id}>
-            <div className="header">
+            <div className="app-header">
               {author.full_name}, {text.title}
-              <hr/>
             </div>
             {text.sentences.map(
               sentence => <div key={sentence.id}>
@@ -37,7 +36,7 @@ const App: React.FC = () => {
                   ({sentence.id})
                 </div>
                 <Tree
-                  data={toJS(sentence.syntax_tree)}
+                  syntaxTree={toJS(sentenceStore.sentenceMap[sentence.id].syntaxTree)}
                   onNodeAdd={onTreeNodeAdd}
                   onNodeEdit={(values: EditableNodeValues) => {
                     sentenceStore.updateSentenceSyntaxTreeNodeText(

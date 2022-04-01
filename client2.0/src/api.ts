@@ -1,38 +1,39 @@
 import axios from 'axios'
-import { IncomingSyntaxTree, SyntaxTree, IncomingText, Text, Author } from './types'
+import { IncomingSyntaxTree, SyntaxTree, IncomingText, Text, Author, NormalizedSyntaxTree } from './types'
+import { hierarchy } from 'utils/tree';
 
 const client = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',
   headers: {
     Accept: 'application/json',
   },
-})
+});
 
-const SyntaxTreeFactory = ({ children = [], token, pos, id }: IncomingSyntaxTree): SyntaxTree => {
+const NormalizedSyntaxTreeFactory = ({ children = [], token, pos, id }: IncomingSyntaxTree): NormalizedSyntaxTree => {
   return {
-    children: children.map(SyntaxTreeFactory),
+    children: children.map(NormalizedSyntaxTreeFactory),
     text: pos ? pos : token ? token : '',
     id
   }
-}
-
+};
 
 const TextFactory = ({sentences, ...text}: IncomingText): Text => ({
   ...text,
-  sentences: sentences.map(sent => ({
+  sentences: sentences.map(({ syntax_tree, ...sent }) => ({
     ...sent,
-    syntax_tree: SyntaxTreeFactory(sent.syntax_tree)
+    syntaxTree: hierarchy(
+      NormalizedSyntaxTreeFactory(syntax_tree)
+    )
   }))
-})
+});
 
 const fetchTexts = (): Promise<Text[]> => client
   .get('texts/')
-  .then(({ data }: { data: IncomingText[] }) => data.map(TextFactory))
+  .then(({ data }: { data: IncomingText[] }) => data.map(TextFactory));
 
 const fetchAuthors = (): Promise<Author[]> => client
   .get('authors/')
-  .then(({ data }) => data)
-
+  .then(({ data }) => data);
 
 export {
   fetchAuthors,

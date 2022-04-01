@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { getTextWidth } from 'utils';
+import { getTextWidth } from 'utils/document';
 import Menu from './Menu';
 import { TreeNode } from './types';
 

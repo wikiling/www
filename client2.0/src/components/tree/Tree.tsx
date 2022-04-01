@@ -5,13 +5,13 @@ import { SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
 import { EditableNodeValues, TreeData, TreeNode } from './types';
-import { getTextWidth } from 'utils';
+import { getTextWidth } from 'utils/document';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
 
 type TreeProps = {
-  data: TreeData
+  syntaxTree: SyntaxTree
   onNodeAdd: (node: TreeNode) => void
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
@@ -27,12 +27,13 @@ type MenuCoordinates = {
   top: string
 }
 
-const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }) => {
+const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
   const [activeNode, setActiveNode] = useState<TreeNode | null>(null);
   const [nodeInEdit, setNodeInEdit] = useState<TreeNode | null>(null);
   const editableNodeRef = useRef<HTMLFormElement>(null);
-  const hierarchicalData = hierarchy(data);
+
+  console.log('rendering...', syntaxTree);
 
   const createTree = d3Tree<TreeData>()
     .nodeSize([
@@ -50,7 +51,7 @@ const Tree: React.FC<TreeProps> = ({ data, onNodeAdd, onNodeEdit, onNodeRemove }
       return a.parent === b.parent ? 1 : 1.25;
     });
 
-  const tree = createTree(hierarchicalData);
+  const tree = createTree(syntaxTree);
   const nodes = tree.descendants();
   const links = tree.links();
 

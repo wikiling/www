@@ -1,85 +1,75 @@
 
-import { makeAutoObservable, set, has, remove } from 'mobx';
-import { ID, Sentence, SyntaxTree } from 'types';
+import { hierarchy } from 'd3-hierarchy';
+import { remove } from 'lodash';
+import { makeAutoObservable, set, has } from 'mobx';
+import { ID, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 
-/**
- * See https://github.com/d3/d3-hierarchy/blob/v3.1.1/src/hierarchy/iterator.js
- * @param root SyntaxTree
- */
-function* treeIterator (root: SyntaxTree) {
-  let node: SyntaxTree | undefined = root, current, next = [node], children, i, n;
-  do {
-    current = next.reverse();
-    next = [];
-    while (node = current.pop()) {
-      yield node;
-      if (children = node.children) {
-        for (i = 0, n = children.length; i < n; ++i) {
-          next.push(children[i]);
-        }
-      }
-    }
-  } while (next.length);
-}
+const { values, assign } = Object;
 
-const flattenTree = (root: SyntaxTree) => {
-  return Array.from(treeIterator(root));
-}
-
-type SyntaxTreeNodeMap = {[key: ID]: {[key: string]: SyntaxTree}}
+type SentenceMap = {[key: ID]: Sentence}
 
 export class SentenceStore {
-  sentences: Sentence[] = []
-
-  // map from sentence ids to map from node ids to nodes
-  syntaxTreeNodeMap: SyntaxTreeNodeMap = {}
+  sentenceMap: SentenceMap = {}
 
   constructor() {
     makeAutoObservable(this);
   }
 
+  get sentences () {
+    return values(this.sentenceMap);
+  }
+
+  findSentenceNode = (sentenceId: ID, nodeId: SyntaxTreeID) => {
+    const sentence = this.sentenceMap[sentenceId];
+
+    if (!sentence) throw `No sentence with id:${sentenceId}!`;
+
+    const node = sentence.syntaxTree.find(
+      (node) => {
+        return node.data.id === nodeId
+      }
+    )
+
+    if (!node) throw `No node for sentence (${sentenceId}) with id:${nodeId}`;
+
+    return node
+  }
+
   setSentences = (sentences: Sentence[]) => {
-    this.sentences = sentences;
-
-    this.setSyntaxTreeNodeMap();
+    this.sentenceMap = sentences.reduce((memo, sentence) => assign(
+      memo, { [sentence.id]: sentence }
+    ), {})
   }
 
-  setSyntaxTreeNodeMap = () => {
-    this.syntaxTreeNodeMap = this.sentences.reduce(
-      (accum, { syntax_tree, id }) =>
-        Object.assign(accum, {
-          [id]: flattenTree(syntax_tree).reduce(
-            (accum, node) => Object.assign(
-              accum, {
-                [node.id]: node
-              }
-            ), {}
-          )
-        }), {}
-    );
+  updateSentenceSyntaxTreeNodeText = (sentenceId: ID, nodeId: SyntaxTreeID, text: string) => {
+    const node = this.findSentenceNode(sentenceId, nodeId);
+
+    node.data.text = text;
   }
 
-  updateSentenceSyntaxTreeNodeText = (sentenceId: ID, nodeId: string, text: string) => {
-    const nodeMap = this.syntaxTreeNodeMap[sentenceId];
-
-    if (!nodeMap) throw `No node map for sentence ${sentenceId}!`;
-
-    nodeMap[nodeId].text = text;
-  }
-
+  // fixme: (a) move removal logic to hierarchy/node.prototype
+  //        (b) recalculate e.g. tree height after removal
   removeSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: string) => {
-    const nodeMap = this.syntaxTreeNodeMap[sentenceId];
+    const node = this.findSentenceNode(sentenceId, nodeId);
 
-    if (!nodeMap) throw `No node map for sentence ${sentenceId}!`;
-  
-    remove(nodeMap, nodeId);
-  }
+    if (!node.parent) throw "Can't remove the root of the tree!";
 
-  moveSentenceSyntaxTreeNode = (sentenceId: ID, sourceNodeId: string, targetNodeId: string) => {
+    if (node.parent.children!.length === 1) {
+      node.parent.data.children = undefined
+      node.parent.children = undefined
+    } else {
+      const nodeIdx = node.parent.children!.indexOf(node);
 
+      node.parent.data.children!.splice(nodeIdx, 1)
+      node.parent.children!.splice(nodeIdx, 1)
+    }
   }
 
   addSentenceSyntaxTreeNode = (sentenceId: ID, targetNodeId: string) => {
+
+  }
+
+  moveSentenceSyntaxTreeNode = (sentenceId: ID, sourceNodeId: string, targetNodeId: string) => {
 
   }
 }

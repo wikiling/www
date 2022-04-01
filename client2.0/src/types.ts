@@ -1,3 +1,5 @@
+import { HierarchyNode } from "d3-hierarchy"
+
 export type toEnumType<EnumType> = EnumType[keyof EnumType]
 
 export const ParseTypes = {
@@ -19,14 +21,16 @@ export type IncomingSyntaxTree = {
   id: SyntaxTreeID
   pos?: string
   token?: string
-  children?: SyntaxTree[]
+  children?: IncomingSyntaxTree[]
 }
 
-export type SyntaxTree = {
+export type NormalizedSyntaxTree = {
   id: SyntaxTreeID
   text: string
-  children?: SyntaxTree[]
+  children?: NormalizedSyntaxTree[]
 }
+
+export type SyntaxTree = HierarchyNode<NormalizedSyntaxTree>
 
 export type IncomingSentence = {
   id: ID
@@ -38,7 +42,7 @@ export type IncomingSentence = {
 }
 
 export type Sentence = Omit<IncomingSentence, 'syntax_tree'> & {
-  syntax_tree: SyntaxTree
+  syntaxTree: SyntaxTree
 }
 
 export type IncomingText = {
