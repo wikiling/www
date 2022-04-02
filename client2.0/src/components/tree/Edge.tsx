@@ -1,8 +1,8 @@
 import React from 'react';
-import { TreeLink } from './types';
+import { CoordinatedTreeLink } from './types';
 
 type EdgeProps = {
-  link: TreeLink
+  link: CoordinatedTreeLink
 }
 
 const Edge: React.FC<EdgeProps> = ({ link }) => {

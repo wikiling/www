@@ -1,6 +1,6 @@
 import axios from 'axios'
+import { hierarchy } from 'd3-hierarchy';
 import { IncomingSyntaxTree, SyntaxTree, IncomingText, Text, Author, NormalizedSyntaxTree } from './types'
-import { hierarchy } from 'utils/tree';
 
 const client = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',

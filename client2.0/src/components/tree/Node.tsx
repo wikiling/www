@@ -1,41 +1,46 @@
+import { drag } from 'd3-drag';
+import { select } from 'd3-selection';
 import React, { forwardRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { getTextWidth } from 'utils/document';
 import Menu from './Menu';
-import { TreeNode } from './types';
+import { NodeDragHandler, CoordinatedTreeNode } from './types';
 
 type NodeProps = {
-  node: TreeNode
+  node: CoordinatedTreeNode
   onClick: React.MouseEventHandler
   width: number
-  height?: number
+  height: number
+  onDragStart: NodeDragHandler
+  onDragProceed: NodeDragHandler
+  onDragEnd: NodeDragHandler
 }
-
-/*
-    .append('rect')
-    .classed('node', true)
-    .attr('width', width)
-    .attr('height', 25)
-    .attr('x', function(d) {return d.x - width / 2})
-    .attr('y', function(d) {return d.y - height / 2})
-    .attr("fill", "white")
-*/
-
-const DEFUALT_HEIGHT = 25;
 
 const Node = forwardRef<
   SVGGElement, NodeProps
->(({ node, onClick, height = DEFUALT_HEIGHT, width }, ref) => {
-  const { text } = node.data;
+>(({ node, onClick, height, width, onDragStart, onDragProceed, onDragEnd }, forwardRef) => {
+  const { id, text } = node.data;
   const textWidth = getTextWidth(text);
   const textX = node.x - textWidth / 2, textY = node.y;
   const rectX = node.x - width / 2, rectY = node.y - height / 2;
+  const dragHandler = drag();
+
+  useEffect(() => {
+    const selection = select<Element, any>(`g[data-id="${id}"]`);
+
+    dragHandler(selection);
+
+    dragHandler.on("start", onDragStart)
+               .on("drag", onDragProceed)
+               .on("end", onDragEnd);
+  }, []);
 
   return (
-    <g ref={ref} onClick={onClick} className="node" data-id={node.data.id}>
+    <g ref={forwardRef} onClick={onClick} className="node" data-id={id}>
       <rect x={rectX} y={rectY} height={height} width={width} fill="white"/>
       <text x={textX} y={textY}>
-        {node.data.text}
+        {text}
       </text>
     </g>
   );

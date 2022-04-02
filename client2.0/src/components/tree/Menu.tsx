@@ -1,7 +1,6 @@
 import React from 'react';
 import './Menu.scss';
 import CSS from 'csstype';
-import { TreeLink } from './types';
 
 type MenuProps = {
   style: CSS.Properties

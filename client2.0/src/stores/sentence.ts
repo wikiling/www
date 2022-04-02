@@ -91,7 +91,18 @@ export class SentenceStore {
     sentence.syntaxTree = hierarchy(tree.data);
   }
 
-  moveSentenceSyntaxTreeNode = (sentenceId: ID, sourceNodeId: SyntaxTreeID, targetNodeId: SyntaxTreeID) => {
+  translateSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: SyntaxTreeID, dx: number, dy: number) => {
+    const { sentence, tree, node } = this.findSentenceNode(sentenceId, nodeId);
+
+    console.log(node);
+    node.descendants().forEach((node) => {
+      console.log(node);
+    })
+
+    sentence.syntaxTree = hierarchy(tree.data);
+  }
+
+  moveSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
 
   }
 }

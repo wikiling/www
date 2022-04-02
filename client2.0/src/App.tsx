@@ -6,9 +6,6 @@ import { observer } from 'mobx-react-lite';
 import { toJS } from 'mobx';
 import { EditableNodeValues } from 'components/tree/types';
 import { ID, SyntaxTreeID } from 'types';
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-
 
 const App: React.FC = () => {
   const {
@@ -21,6 +18,9 @@ const App: React.FC = () => {
     centralStore.dispatchFetchAuthors();
     centralStore.dispatchFetchTexts();
   }, []);
+
+  // onNodeDrag: (nodeId: SyntaxTreeID, dx: number, dy: number) => void
+  // onNodeDrop: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
 
   return (
     <div className="app">
@@ -35,7 +35,6 @@ const App: React.FC = () => {
                 <div>
                   ({sentence.id})
                 </div>
-                <DndProvider backend={HTML5Backend}>
                   <Tree
                     syntaxTree={toJS(sentenceStore.sentenceMap[sentence.id].syntaxTree)}
                     onNodeAdd={(nodeId: SyntaxTreeID) => {
@@ -53,8 +52,17 @@ const App: React.FC = () => {
                         sentence.id, nodeId
                       );
                     }}
+                    onNodeDrag={(nodeId: SyntaxTreeID, dx: number, dy: number) => {
+                      sentenceStore.translateSentenceSyntaxTreeNode(
+                        sentence.id, nodeId, dx, dy
+                      )
+                    }}
+                    onNodeDrop={(nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
+                      sentenceStore.moveSentenceSyntaxTreeNode(
+                        sentence.id, nodeId, targetParentId
+                      )
+                    }}
                   />
-                </DndProvider>
               </div>
             )}
           </div>

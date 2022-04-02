@@ -1,9 +1,9 @@
 import React, { forwardRef, RefObject } from 'react'
 import { useForm } from "react-hook-form";
-import { EditableNodeValues, TreeNode } from "./types";
+import { EditableNodeValues, CoordinatedTreeNode } from "./types";
 
 type EditableNodeProps = {
-  node: TreeNode
+  node: CoordinatedTreeNode
   onSubmit: (values: EditableNodeValues) => void
 }
 
