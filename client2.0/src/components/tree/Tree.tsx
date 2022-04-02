@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { hierarchy, HierarchyPointNode, tree as d3Tree } from 'd3-hierarchy';
+import { hierarchy, HierarchyPointNode, tree as tidyTreeLayout } from 'd3-hierarchy';
 import { SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
@@ -12,7 +12,7 @@ import { useClickAway } from 'react-use';
 
 type TreeProps = {
   syntaxTree: SyntaxTree
-  onNodeAdd: (node: TreeNode) => void
+  onNodeAdd: (node: SyntaxTreeID) => void
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
 };
@@ -35,7 +35,7 @@ const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRe
 
   console.log('rendering...', syntaxTree);
 
-  const createTree = d3Tree<TreeData>()
+  const createTreeLayout = tidyTreeLayout<TreeData>()
     .nodeSize([
       NODE_WIDTH + NODE_SEP_X,
       NODE_HEIGHT + NODE_SEP_Y
@@ -51,22 +51,31 @@ const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRe
       return a.parent === b.parent ? 1 : 1.25;
     });
 
-  const tree = createTree(syntaxTree);
-  const nodes = tree.descendants();
-  const links = tree.links();
+  const treeLayout = createTreeLayout(syntaxTree);
+  const nodes = treeLayout.descendants();
+  const links = treeLayout.links();
+
+  const onMenuAdd = () => {
+    if (!activeNode) throw "No active node to append to!";
+
+    onNodeAdd(activeNode.data.id)
+  }
 
   const onMenuEdit = () => {
     if (!activeNode) throw "No active node to edit!";
 
     setNodeInEdit(activeNode);
-    setMenuCoordinates(null);
   }
 
   const onMenuRemove = () => {
     if (!activeNode) throw "No active node to remove!";
 
     onNodeRemove(activeNode.data.id);
+  }
+
+  const onMenuActionSuccess = () => {
     setMenuCoordinates(null);
+    setActiveNode(null);
   }
 
   const onEditableNodeSubmit = (values: EditableNodeValues) => {
@@ -90,7 +99,7 @@ const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRe
           {nodes.map(node => (
             node.data.id === nodeInEdit?.data.id
               ? <EditableNode onSubmit={onEditableNodeSubmit} node={node} key={`${node.data.id}-editable`} ref={editableNodeRef}/>
-              : <Node onClick={(e) => onNodeClick(e, node)} node={node} key={node.data.id}/>
+              : <Node width={NODE_WIDTH} onClick={(e) => onNodeClick(e, node)} node={node} key={node.data.id}/>
           ))}
           {links.map(link => (
             <Edge link={link} key={`${link.source.data.id}-${link.target.data.id}`}/>
@@ -100,9 +109,10 @@ const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRe
 
       {activeNode && !!menuCoordinates && <Menu
         style={menuCoordinates}
-        onAdd={() => onNodeAdd(activeNode)}
+        onAdd={onMenuAdd}
         onEdit={onMenuEdit}
-        onRemove={onMenuRemove}/>}
+        onRemove={onMenuRemove}
+        onActionSuccess={onMenuActionSuccess}/>}
     </div>
   )
 };

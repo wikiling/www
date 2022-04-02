@@ -8,14 +8,21 @@ type MenuProps = {
   onAdd: () => void
   onEdit: () => void
   onRemove: () => void
+  onActionSuccess: () => void
 }
 
-const Menu: React.FC<MenuProps> = ({ onAdd, onEdit, onRemove, style }) => {
+const Menu: React.FC<MenuProps> = ({ onAdd, onEdit, onRemove, onActionSuccess, style }) => {
+  const [onAddClick, onEditClick, onRemoveClick] = [
+    onAdd, onEdit, onRemove
+  ].map(
+    fn => () => { fn(); onActionSuccess(); }
+  )
+
   return (
     <div style={style} className="menu">
-      <div className="menu-option" onClick={onAdd}>Add Node</div>
-      <div className="menu-option" onClick={onEdit}>Edit Node</div>
-      <div className="menu-option" onClick={onRemove}>Remove Node</div>
+      <div className="menu-option" onClick={onAddClick}>Add Node</div>
+      <div className="menu-option" onClick={onEditClick}>Edit Node</div>
+      <div className="menu-option" onClick={onRemoveClick}>Remove Node</div>
     </div>
   )
 };
