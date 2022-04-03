@@ -22,6 +22,8 @@ const App: React.FC = () => {
   // onNodeDrag: (nodeId: SyntaxTreeID, dx: number, dy: number) => void
   // onNodeDrop: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
 
+  console.log('APP RENDER');
+
   return (
     <div className="app">
       {authors.map(author =>
@@ -36,7 +38,7 @@ const App: React.FC = () => {
                   ({sentence.id})
                 </div>
                   <Tree
-                    syntaxTree={toJS(sentenceStore.sentenceMap[sentence.id].syntaxTree)}
+                    sentence={toJS(sentenceStore.sentenceMap[sentence.id])}
                     onNodeAdd={(nodeId: SyntaxTreeID) => {
                       sentenceStore.addSentenceSyntaxTreeNode(
                         sentence.id, nodeId

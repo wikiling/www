@@ -1,5 +1,6 @@
 import { SubjectPosition } from 'd3-drag';
 import { HierarchyPointLink, HierarchyPointNode, tree as tidyTreeLayout } from 'd3-hierarchy';
+import { cloneDeep } from 'lodash';
 import { useEffect, useState } from 'react';
 import { SyntaxTree } from 'types';
 import { getTextWidth } from 'utils/document';
@@ -28,33 +29,11 @@ export const computeLayout: ComputeLayout = (syntaxTree: SyntaxTree) => {
   return createTreeLayout(syntaxTree);
 }
 
-export const translateSubtree = (root: CoordinatedTreeNode, dx: number, dy: number) => {
-  const translateSubjectPosition = (subject: SubjectPosition) => {
+export const translateTree = (root: CoordinatedTreeNode, dx: number, dy: number) => {
+  const translateCoordinates = (subject: SubjectPosition) => {
     subject.x += dx;
     subject.y += dy;
-
-    console.log('--->', subject.x, subject.y)
   };
 
-  root.descendants().forEach(translateSubjectPosition);
-  root.links().forEach((link) => {
-    translateSubjectPosition(link.source);
-    translateSubjectPosition(link.target);
-  })
-
-  return root
-}
-
-export const replaceSubtree = (tree: CoordinatedTreeNode, newSubtree: CoordinatedTreeNode) => {
-  const copy = tree.copy();
-
-  const currentSubtree = copy.find((node) => node.data.id === newSubtree.data.id);
-
-  if (!currentSubtree) throw `Can't find subtree (${newSubtree.data.id}) to replace!`;
-  if (!currentSubtree.parent) throw `Can't replace the root!`;
-
-  const nodeIdx = currentSubtree.parent.children!.indexOf(currentSubtree);
-  currentSubtree.parent.children!.splice(nodeIdx, 1, newSubtree);
-
-  return tree;
+  root.descendants().forEach(translateCoordinates);
 }

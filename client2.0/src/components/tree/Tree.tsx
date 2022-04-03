@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { SyntaxTree, SyntaxTreeID } from 'types';
+import { Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
 import { NodeDragHandler, EditableNodeValues, NodeDragEvent, TreeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
@@ -8,13 +8,14 @@ import { getTextWidth } from 'utils/document';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
-import { D3DragEvent } from 'd3-drag';
+import { D3DragEvent, drag } from 'd3-drag';
 import { NODE_HEIGHT, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
-import { computeLayout, replaceSubtree, translateSubtree } from './utils';
+import { computeLayout, translateTree } from './utils';
+import { cloneDeep, isEqual } from 'lodash';
 
 type TreeProps = {
-  syntaxTree: SyntaxTree
+  sentence: Sentence
   onNodeAdd: (node: SyntaxTreeID) => void
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
@@ -27,45 +28,45 @@ type MenuCoordinates = {
   top: string
 }
 
-const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeDrag, onNodeDrop }) => {
+const Tree: React.FC<TreeProps> = ({ sentence, onNodeAdd, onNodeEdit, onNodeRemove, onNodeDrag, onNodeDrop }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
-  const [activeNode, setActiveNode] = useState<CoordinatedTreeNode | null>(null);
-  const [nodeInEdit, setNodeInEdit] = useState<CoordinatedTreeNode | null>(null);
+  const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
+  const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(null);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const editableNodeRef = useRef<HTMLFormElement>(null);
 
-  console.log('rendering...', coordinatedRootNode);
+  // console.log('rendering...', sentence.content, coordinatedRootNode);
 
   const onMenuAdd = () => {
-    if (!activeNode) throw "No active node to append to!";
+    if (!menuNode) throw "No active node to append to!";
 
-    onNodeAdd(activeNode.data.id)
+    onNodeAdd(menuNode.data.id)
   }
 
   const onMenuEdit = () => {
-    if (!activeNode) throw "No active node to edit!";
+    if (!menuNode) throw "No active node to edit!";
 
-    setNodeInEdit(activeNode);
+    setEditNode(menuNode);
   }
 
   const onMenuRemove = () => {
-    if (!activeNode) throw "No active node to remove!";
+    if (!menuNode) throw "No active node to remove!";
 
-    onNodeRemove(activeNode.data.id);
+    onNodeRemove(menuNode.data.id);
   }
 
   const onMenuActionSuccess = () => {
     setMenuCoordinates(null);
-    setActiveNode(null);
+    setMenuNode(null);
   }
 
   const onEditableNodeSubmit = (values: EditableNodeValues) => {
     onNodeEdit(values);
-    setNodeInEdit(null);
+    setEditNode(null);
   }
 
   const onNodeClick = (node: CoordinatedTreeNode, e: React.MouseEvent) => {
-    setActiveNode(node);
+    setMenuNode(node);
     setMenuCoordinates({
       left: `${e.clientX + 5}px`, top: `${e.clientY + 5}px`
     });
@@ -75,61 +76,66 @@ const Tree: React.FC<TreeProps> = ({ syntaxTree, onNodeAdd, onNodeEdit, onNodeRe
     console.log(nodeId, event);
   }
 
-  const onNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
+  const onNodeDragProceed = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw "Can't drag a tree without a root!";
   
-    const translatedSubtree = translateSubtree(node, event.dx, event.dy);
-    const newRoot = replaceSubtree(coordinatedRootNode, translatedSubtree);
+    setCoordinatedRootNode((prev) => {
+      if (!prev) return null;
+  
+      const newRoot = cloneDeep(prev);
+      const node = newRoot.find((node) => node.data.id === nodeId);
 
-    setCoordinatedRootNode(newRoot);
+      if (!node) return null;
 
-    const foo = newRoot.find((d) => d.data.id === node.data.id);
-    console.log('new coords -->', foo?.x, foo?.y);
-    console.log('diff?', newRoot === coordinatedRootNode)
+      translateTree(node, event.dx, event.dy);
+  
+      return newRoot;
+    });
   }
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
     console.log(nodeId, event);
   }
 
-  useClickAway(editableNodeRef, () => setNodeInEdit(null));
+  useClickAway(editableNodeRef, () => setEditNode(null));
 
   useEffect(() => {
     setCoordinatedRootNode(
-      computeLayout(syntaxTree)
+      computeLayout(sentence.syntaxTree)
     );
   }, [])
 
   return (
     <div className="tree">
-      <svg width={1500} height={1000}>
+      <svg width={1500} height={1000} data-id={sentence.id}>
         <g transform="translate(500,10)">
           {coordinatedRootNode?.links().map(link => (
-            <Edge link={link} key={`${link.source.data.id}-${link.target.data.id}`}/>
+            <Edge link={link} key={`${sentence.id}-${link.source.data.id}-${link.target.data.id}`}/>
           ))}
           {coordinatedRootNode?.descendants().map(node => {
             const { id } = node.data;
 
-            return id === nodeInEdit?.data.id
+            return id === editNode?.data.id
               ? <EditableNode
                   node={node}
                   onSubmit={onEditableNodeSubmit}
-                  key={`${id}-editable`}
+                  key={`${sentence.id}-${id}-editable`}
                   ref={editableNodeRef}/>
               : <Node
+                  sentenceId={sentence.id}
                   node={node}
                   width={NODE_WIDTH}
                   height={NODE_HEIGHT}
                   onClick={(e) => onNodeClick(node, e)}
                   onDragStart={(e) => onNodeDragStart(id, e)}
-                  onDragProceed={(e) => onNodeDragProceed(node, e)}
+                  onDragProceed={(e) => onNodeDragProceed(id, e)}
                   onDragEnd={(e) => onNodeDragEnd(id, e)}
-                  key={id}/>
+                  key={`${sentence.id}-${id}`}/>
             })}
         </g>
       </svg>
 
-      {activeNode && !!menuCoordinates && <Menu
+      {menuNode && !!menuCoordinates && <Menu
         style={menuCoordinates}
         onAdd={onMenuAdd}
         onEdit={onMenuEdit}
