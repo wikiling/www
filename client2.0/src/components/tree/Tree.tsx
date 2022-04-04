@@ -28,6 +28,8 @@ type MenuCoordinates = {
   top: string
 }
 
+const DRAG_DROP_POTENTIAL_TARGET_MIN_DISTANCE = 15;
+
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
@@ -87,6 +89,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const onNodeDragProceed = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw "Can't drag a tree without a root!";
   
+    // calculate new tree coordinates
     setCoordinatedRootNode((prev) => {
       if (!prev) return null;
   
@@ -99,6 +102,13 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   
       return newRoot;
     });
+
+    // is it near enough to a new parent? then de- and re-attach it
+    if (coordinatedRootNode.find(
+      (node) => 
+    )) {
+
+    }
   }
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
@@ -107,6 +117,8 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     );
     setDragNode(null);
   }
+
+  const linkIsGrounded = (link: CoordinatedTreeLink) => link.target.data.id !== dragNode?.data.id;
 
   useClickAway(editNodeRef, () => setEditNode(null));
 
@@ -121,7 +133,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
       <svg width={1500} height={1000} data-id={id}>
         <g transform="translate(500,10)">
           {coordinatedRootNode?.links()
-            .filter((link) => link.target.data.id !== dragNode?.data.id)
+            .filter(linkIsGrounded)
             .map(link => <Edge
               link={link}
               key={`${id}-${link.source.data.id}-${link.target.data.id}`}/>
