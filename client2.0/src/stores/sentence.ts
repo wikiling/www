@@ -1,6 +1,6 @@
 
 import { hierarchy } from 'utils/hierarchy';
-import { remove } from 'lodash';
+import { cloneDeep, remove } from 'lodash';
 import { makeAutoObservable, set, has } from 'mobx';
 import { ID, NormalizedSyntaxTree, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 import { getNewChildId } from 'utils/hierarchy';
@@ -78,6 +78,8 @@ export class SentenceStore {
 
     tree.detach(child);
     tree.attach(parent, child.data);
+
+    console.log(cloneDeep(tree));
 
     sentence.syntaxTree = hierarchy(tree.data);
   }

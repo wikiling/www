@@ -1,12 +1,9 @@
-import { drag, DragContainerElement } from 'd3-drag';
+import React, { forwardRef, useState, useEffect } from 'react';
+import { drag } from 'd3-drag';
 import { select } from 'd3-selection';
-import React, { forwardRef, useState } from 'react';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { ID } from 'types';
 import { getTextDimensions } from 'utils/document';
-import Menu from './Menu';
-import { NodeDragHandler, CoordinatedTreeNode } from './types';
+import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
 
 type NodeProps = {
   treeId: ID
@@ -29,6 +26,7 @@ const Node = forwardRef<
   const id = `${treeId}-${nodeId}`;
   const { width: textWidth, height: textHeight } = getTextDimensions(text);
   const textX = node.x - textWidth / 2, textY = node.y + textHeight /2;
+  const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
   const dragHandler = drag();
 
@@ -38,9 +36,17 @@ const Node = forwardRef<
     dragHandler(selection);
   
     dragHandler.on("start", onDragStart)
-               .on("drag", onDragProceed)
-               .on("end", onDragEnd);
+               .on("drag", (e) => {
+                 onDragProceed(e);
+                 setLatestDragEvent(e);
+               });
   }, []);
+
+  // see https://github.com/d3/d3-drag#drag_on for why this contortion is necessary
+  // briefly: the callback needs to be re-registered on each event in order to be fresh
+  useEffect(() => {
+    latestDragEvent?.on("end", onDragEnd);
+  }, [latestDragEvent])
 
   return (
     <g ref={forwardRef} onClick={onClick} className={`node ${className}`} data-id={id}>

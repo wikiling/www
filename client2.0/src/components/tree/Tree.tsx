@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { computeLayout, translateTree } from './utils';
 import { cloneDeep, isEqual } from 'lodash';
 import classNames from 'classnames';
+import { useCallback } from 'react';
 
 type TreeProps = {
   id: ID
@@ -29,9 +30,9 @@ type MenuCoordinates = {
   top: string
 }
 
-const DRAG_DROP_ADOPTION_MIN_DISTANCE = 25;
+const DRAG_DROP_ADOPTION_MIN_DISTANCE = 50;
 
-const withinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
+const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
   Math.abs(a.x - b.x) < DRAG_DROP_ADOPTION_MIN_DISTANCE &&
   Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
 );
@@ -45,35 +46,33 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
   const editNodeRef = useRef<HTMLFormElement>(null);
 
-  // console.log('rendering...', coordinatedRootNode);
-
   const onMenuAdd = () => {
     if (!menuNode) throw "No active node to append to!";
 
-    onNodeAdd(menuNode.data.id)
-  }
+    onNodeAdd(menuNode.data.id);
+  };
 
   const onMenuEdit = () => {
     if (!menuNode) throw "No active node to edit!";
 
     setEditNode(menuNode);
-  }
+  };
 
   const onMenuRemove = () => {
     if (!menuNode) throw "No active node to remove!";
 
     onNodeRemove(menuNode.data.id);
-  }
+  };
 
   const onMenuActionSuccess = () => {
     setMenuCoordinates(null);
     setMenuNode(null);
-  }
+  };
 
   const onEditableNodeSubmit = (values: EditableNodeValues) => {
     onNodeEdit(values);
     setEditNode(null);
-  }
+  };
 
   const onNodeClick = (node: CoordinatedTreeNode, e: React.MouseEvent) => {
     setMenuNode(node);
@@ -83,7 +82,6 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   };
 
   const onNodeDragStart = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
-    console.log(event)
     if (!coordinatedRootNode) throw `Unexpected: event ${event} without root;`;
 
     const node = coordinatedRootNode.findById(nodeId);
@@ -91,7 +89,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     if (!node) throw `Unexpected: event ${event} from unattached node (${nodeId});`;
 
     setDragNode(node);
-  }
+  };
 
   const onNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw "Can't drag a tree without a root!";
@@ -110,20 +108,26 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
       return newRoot;
     });
 
-    // is it near enough to a new parent? then consider it adopted
-    const potentialParent = coordinatedRootNode.find(
-      (n) => !node.isDescendant(n.data.id) && withinAdoptionDistance(n, event)
+    // nominate a new parent if within distance
+    const ppn = coordinatedRootNode.find(
+      (n) => !node.isDescendant(n.data.id) && isWithinAdoptionDistance(n, event)
     );
-  
-    setPotentialParentNode(potentialParent ?? null); // onNodeMove(nodeId, potentialParent.data.id);
-  }
+    setPotentialParentNode(ppn ?? null);
+  };
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
     setDragNode(null);
-    setCoordinatedRootNode(
-      computeLayout(syntaxTree)
-    );
-  }
+
+    if (potentialParentNode) {
+      onNodeMove(nodeId, potentialParentNode.data.id);
+    } else {
+      setCoordinatedRootNode(
+        computeLayout(syntaxTree)
+      );
+    }
+    
+    setPotentialParentNode(null);
+  };
 
   const linkIsGrounded = (link: CoordinatedTreeLink) => link.target.data.id !== dragNode?.data.id;
 

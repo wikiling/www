@@ -1,13 +1,13 @@
-import { hierarchy, IdentifiableHierarchyNode, IdentifiableNodeDatum, HierarchyNode } from "d3-hierarchy";
-// @ts-ignore, FIXME: this sacrifices the typing
+import { hierarchy, IdentifiableHierarchyNode, IdentifiableNodeDatum, NodeSignatureFn } from "d3-hierarchy";
+// @ts-ignore, FIXME: this gets around the global Node shadowing but sacrifices the typing
 import { Node as d3Node } from "d3-hierarchy";
 
-const ROOT_ID = "-1"
+const ROOT_ID = "-1";
 
 const getNewChildId = (parent: IdentifiableHierarchyNode) => {
   const { id: parentId, children } = parent.data;
 
-  if (children) {
+  if (children?.length) {
     const { id } = children[children.length - 1];
     return `${parentId === ROOT_ID ? "" : parentId}${parseInt(id[id.length - 1]) + 1}`;
   } else {
@@ -35,17 +35,16 @@ d3Node.prototype.attach = function(parent: IdentifiableHierarchyNode, nodeData: 
   else parent.data.children = [nodeData];
 }
 
-d3Node.prototype.isDescendant = function(id: string) {
-  return !!this.findById(id);
-}
-
 d3Node.prototype.findById = function(id: string) {
   return this.find(
-    // fixme: ts, annotation shouldn't be necessary
     (node: IdentifiableHierarchyNode) => {
       return node.data.id === id
     }
   )
+}
+
+d3Node.prototype.isDescendant = function(id: string) {
+  return !!this.findById(id);
 }
 
 export { hierarchy, getNewChildId };

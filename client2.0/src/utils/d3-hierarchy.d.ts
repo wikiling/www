@@ -3,10 +3,12 @@ import { HierarchyNode } from "d3-hierarchy";
 declare module "d3-hierarchy" {
   export type IdentifiableNodeDatum = {
     id: string
-    children?: IdentifiableNodeData[]
+    children?: IdentifiableNodeDatum[]
   }
 
   export type IdentifiableHierarchyNode = HierarchyNode<IdentifiableNodeDatum>
+
+  export type NodeSignatureFn = (node: HierarchyNode<Datum>) => string
 
   export interface HierarchyNode<Datum extends IdentifiableNodeDatum> {
     detach(node: HierarchyNode<Datum>): void
