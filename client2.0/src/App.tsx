@@ -14,15 +14,13 @@ const App: React.FC = () => {
     }
   } = useStores();
 
-  console.log('APP RENDER', toJS(textsByAuthor(1)));
-
-  // hack to force a re-render on tree node addition/subtraction/edit
+  // hack to force Tree destruction on node addition/subtraction/edit:
+  // calculate sum of the lengths of the text of the nodes, adding 1
+  // to each to account for new (empty) nodes
   const nodeValue = (node: NormalizedSyntaxTree) => node.text.length + 1;
   const treeKey = (sentence: Sentence) => {
-    const bar = sentence.syntaxTree.sum(nodeValue);
-    const foo = `${sentence.id}${bar.value}`;
-    console.log(foo, bar)
-    return foo
+    const treeSum = sentence.syntaxTree.sum(nodeValue);
+    return `${sentence.id}${treeSum.value}`;
   }
 
   useEffect(() => {

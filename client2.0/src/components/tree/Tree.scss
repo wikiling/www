@@ -3,5 +3,11 @@
 
   .node {
     cursor: pointer;
+
+    &.node--highlit {
+      .node-circle {
+        stroke: aquamarine;
+      }
+    }
   }
 }

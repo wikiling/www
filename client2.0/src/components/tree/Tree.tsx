@@ -8,11 +8,12 @@ import { getTextDimensions } from 'utils/document';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
-import { D3DragEvent, drag } from 'd3-drag';
+import { D3DragEvent, drag, SubjectPosition } from 'd3-drag';
 import { NODE_HEIGHT, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
 import { computeLayout, translateTree } from './utils';
 import { cloneDeep, isEqual } from 'lodash';
+import classNames from 'classnames';
 
 type TreeProps = {
   id: ID
@@ -28,7 +29,12 @@ type MenuCoordinates = {
   top: string
 }
 
-const DRAG_DROP_POTENTIAL_TARGET_MIN_DISTANCE = 15;
+const DRAG_DROP_ADOPTION_MIN_DISTANCE = 25;
+
+const withinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
+  Math.abs(a.x - b.x) < DRAG_DROP_ADOPTION_MIN_DISTANCE &&
+  Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
+);
 
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
@@ -36,9 +42,10 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
   const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(null);
   const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
+  const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
   const editNodeRef = useRef<HTMLFormElement>(null);
 
-  console.log('rendering...', coordinatedRootNode);
+  // console.log('rendering...', coordinatedRootNode);
 
   const onMenuAdd = () => {
     if (!menuNode) throw "No active node to append to!";
@@ -79,14 +86,14 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     console.log(event)
     if (!coordinatedRootNode) throw `Unexpected: event ${event} without root;`;
 
-    const node = coordinatedRootNode.find((node) => node.data.id === nodeId);
+    const node = coordinatedRootNode.findById(nodeId);
 
     if (!node) throw `Unexpected: event ${event} from unattached node (${nodeId});`;
 
     setDragNode(node);
   }
 
-  const onNodeDragProceed = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
+  const onNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw "Can't drag a tree without a root!";
   
     // calculate new tree coordinates
@@ -94,28 +101,28 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
       if (!prev) return null;
   
       const newRoot = cloneDeep(prev);
-      const node = newRoot.find((node) => node.data.id === nodeId);
+      const newNode = newRoot.findById(node.data.id);
 
-      if (!node) return null;
+      if (!newNode) return null;
 
-      translateTree(node, event.dx, event.dy);
+      translateTree(newNode, event.dx, event.dy);
   
       return newRoot;
     });
 
-    // is it near enough to a new parent? then de- and re-attach it
-    if (coordinatedRootNode.find(
-      (node) => 
-    )) {
-
-    }
+    // is it near enough to a new parent? then consider it adopted
+    const potentialParent = coordinatedRootNode.find(
+      (n) => !node.isDescendant(n.data.id) && withinAdoptionDistance(n, event)
+    );
+  
+    setPotentialParentNode(potentialParent ?? null); // onNodeMove(nodeId, potentialParent.data.id);
   }
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
+    setDragNode(null);
     setCoordinatedRootNode(
       computeLayout(syntaxTree)
     );
-    setDragNode(null);
   }
 
   const linkIsGrounded = (link: CoordinatedTreeLink) => link.target.data.id !== dragNode?.data.id;
@@ -152,9 +159,10 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
                   node={node}
                   width={NODE_WIDTH}
                   height={NODE_HEIGHT}
+                  className={classNames({ "node--highlit": nodeId === potentialParentNode?.data.id })}
                   onClick={(e) => onNodeClick(node, e)}
                   onDragStart={(e) => onNodeDragStart(nodeId, e)}
-                  onDragProceed={(e) => onNodeDragProceed(nodeId, e)}
+                  onDragProceed={(e) => onNodeDragProceed(node, e)}
                   onDragEnd={(e) => onNodeDragEnd(nodeId, e)}
                   key={`${id}-${nodeId}`}/>
             })}

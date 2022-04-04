@@ -17,13 +17,14 @@ type NodeProps = {
   onDragStart: NodeDragHandler
   onDragProceed: NodeDragHandler
   onDragEnd: NodeDragHandler
+  className?: string
 }
 
 const NODE_RADIUS = 15;
 
 const Node = forwardRef<
   SVGGElement, NodeProps
->(({ treeId, node, onClick, height, width, onDragStart, onDragProceed, onDragEnd }, forwardRef) => {
+>(({ treeId, node, onClick, height, width, onDragStart, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
   const { id: nodeId, text } = node.data;
   const id = `${treeId}-${nodeId}`;
   const { width: textWidth, height: textHeight } = getTextDimensions(text);
@@ -42,8 +43,8 @@ const Node = forwardRef<
   }, []);
 
   return (
-    <g ref={forwardRef} onClick={onClick} className="node" data-id={id}>
-      <circle cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white"/>
+    <g ref={forwardRef} onClick={onClick} className={`node ${className}`} data-id={id}>
+      <circle className="node-circle" cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white" strokeWidth="1"/>
       <text x={textX} y={textY} data-id={textWidth}>
         {text}
       </text>
