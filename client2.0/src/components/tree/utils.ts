@@ -3,21 +3,21 @@ import { HierarchyPointLink, HierarchyPointNode, tree as tidyTreeLayout } from '
 import { cloneDeep } from 'lodash';
 import { useEffect, useState } from 'react';
 import { SyntaxTree } from 'types';
-import { getTextWidth } from 'utils/document';
+import { getTextDimensions } from 'utils/document';
 import { NODE_HEIGHT, NODE_SEP_X, NODE_SEP_Y, NODE_WIDTH } from './config';
-import { TreeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
+import { TreeNodeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
 
 type ComputeLayout = (syntaxTree: SyntaxTree) => CoordinatedTreeNode
 
 export const computeLayout: ComputeLayout = (syntaxTree: SyntaxTree) => {
-  const createTreeLayout = tidyTreeLayout<TreeData>()
+  const createTreeLayout = tidyTreeLayout<TreeNodeData>()
     .nodeSize([
       NODE_WIDTH + NODE_SEP_X,
       NODE_HEIGHT + NODE_SEP_Y
     ])
     .separation((a, b) => {
-      const halfWidthA = getTextWidth(a.data.text) / 2;
-      const halfWidthB = getTextWidth(b.data.text) / 2;
+      const halfWidthA = getTextDimensions(a.data.text).width / 2;
+      const halfWidthB = getTextDimensions(b.data.text).width / 2;
       
       if (halfWidthA + halfWidthB > NODE_WIDTH + NODE_SEP_X) {
         return 1.5;

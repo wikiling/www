@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { Sentence, SyntaxTree, SyntaxTreeID } from 'types';
+import { ID, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
-import { NodeDragHandler, EditableNodeValues, NodeDragEvent, TreeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
-import { getTextWidth } from 'utils/document';
+import { NodeDragHandler, EditableNodeValues, NodeDragEvent, TreeNodeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
+import { getTextDimensions } from 'utils/document';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
@@ -15,12 +15,12 @@ import { computeLayout, translateTree } from './utils';
 import { cloneDeep, isEqual } from 'lodash';
 
 type TreeProps = {
-  sentence: Sentence
+  id: ID
+  syntaxTree: SyntaxTree
   onNodeAdd: (node: SyntaxTreeID) => void
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
-  onNodeDrag: (nodeId: SyntaxTreeID, dx: number, dy: number) => void
-  onNodeDrop: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
+  onNodeMove: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
 };
 
 type MenuCoordinates = {
@@ -28,14 +28,15 @@ type MenuCoordinates = {
   top: string
 }
 
-const Tree: React.FC<TreeProps> = ({ sentence, onNodeAdd, onNodeEdit, onNodeRemove, onNodeDrag, onNodeDrop }) => {
+const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
+  const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
   const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(null);
-  const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
-  const editableNodeRef = useRef<HTMLFormElement>(null);
+  const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
+  const editNodeRef = useRef<HTMLFormElement>(null);
 
-  // console.log('rendering...', sentence.content, coordinatedRootNode);
+  console.log('rendering...', coordinatedRootNode);
 
   const onMenuAdd = () => {
     if (!menuNode) throw "No active node to append to!";
@@ -73,7 +74,14 @@ const Tree: React.FC<TreeProps> = ({ sentence, onNodeAdd, onNodeEdit, onNodeRemo
   };
 
   const onNodeDragStart = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
-    console.log(nodeId, event);
+    console.log(event)
+    if (!coordinatedRootNode) throw `Unexpected: event ${event} without root;`;
+
+    const node = coordinatedRootNode.find((node) => node.data.id === nodeId);
+
+    if (!node) throw `Unexpected: event ${event} from unattached node (${nodeId});`;
+
+    setDragNode(node);
   }
 
   const onNodeDragProceed = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
@@ -94,43 +102,49 @@ const Tree: React.FC<TreeProps> = ({ sentence, onNodeAdd, onNodeEdit, onNodeRemo
   }
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
-    console.log(nodeId, event);
+    setCoordinatedRootNode(
+      computeLayout(syntaxTree)
+    );
+    setDragNode(null);
   }
 
-  useClickAway(editableNodeRef, () => setEditNode(null));
+  useClickAway(editNodeRef, () => setEditNode(null));
 
   useEffect(() => {
     setCoordinatedRootNode(
-      computeLayout(sentence.syntaxTree)
+      computeLayout(syntaxTree)
     );
   }, [])
 
   return (
     <div className="tree">
-      <svg width={1500} height={1000} data-id={sentence.id}>
+      <svg width={1500} height={1000} data-id={id}>
         <g transform="translate(500,10)">
-          {coordinatedRootNode?.links().map(link => (
-            <Edge link={link} key={`${sentence.id}-${link.source.data.id}-${link.target.data.id}`}/>
-          ))}
+          {coordinatedRootNode?.links()
+            .filter((link) => link.target.data.id !== dragNode?.data.id)
+            .map(link => <Edge
+              link={link}
+              key={`${id}-${link.source.data.id}-${link.target.data.id}`}/>
+          )}
           {coordinatedRootNode?.descendants().map(node => {
-            const { id } = node.data;
+            const nodeId = node.data.id;
 
-            return id === editNode?.data.id
+            return nodeId === editNode?.data.id
               ? <EditableNode
                   node={node}
                   onSubmit={onEditableNodeSubmit}
-                  key={`${sentence.id}-${id}-editable`}
-                  ref={editableNodeRef}/>
+                  key={`${id}-${nodeId}-editable`}
+                  ref={editNodeRef}/>
               : <Node
-                  sentenceId={sentence.id}
+                  treeId={id}
                   node={node}
                   width={NODE_WIDTH}
                   height={NODE_HEIGHT}
                   onClick={(e) => onNodeClick(node, e)}
-                  onDragStart={(e) => onNodeDragStart(id, e)}
-                  onDragProceed={(e) => onNodeDragProceed(id, e)}
-                  onDragEnd={(e) => onNodeDragEnd(id, e)}
-                  key={`${sentence.id}-${id}`}/>
+                  onDragStart={(e) => onNodeDragStart(nodeId, e)}
+                  onDragProceed={(e) => onNodeDragProceed(nodeId, e)}
+                  onDragEnd={(e) => onNodeDragEnd(nodeId, e)}
+                  key={`${id}-${nodeId}`}/>
             })}
         </g>
       </svg>

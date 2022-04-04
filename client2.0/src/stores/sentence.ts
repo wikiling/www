@@ -5,6 +5,7 @@ import { makeAutoObservable, set, has } from 'mobx';
 import { ID, NormalizedSyntaxTree, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 
 const { values, assign } = Object;
+const ROOT_ID = "-1"
 
 type SentenceMap = {[key: ID]: Sentence}
 
@@ -13,7 +14,7 @@ const SyntaxTreeNodeFactory = (parent: SyntaxTree) => {
 
   const incrChildId = (children: NormalizedSyntaxTree[]) => {
     const { id } = children[children.length - 1];
-    return `${parentId}${parseInt(id[id.length - 1]) + 1}`;
+    return `${parentId === ROOT_ID ? "" : parentId}${parseInt(id[id.length - 1]) + 1}`;
   };
   
   return {
@@ -57,9 +58,11 @@ export class SentenceStore {
   }
 
   updateSentenceSyntaxTreeNodeText = (sentenceId: ID, nodeId: SyntaxTreeID, text: string) => {
-    const { node } = this.findSentenceNode(sentenceId, nodeId);
+    const { sentence, tree, node } = this.findSentenceNode(sentenceId, nodeId);
 
     node.data.text = text;
+
+    sentence.syntaxTree = hierarchy(tree.data);
   }
 
   // fixme: (a) move removal logic to hierarchy/node.prototype
@@ -87,17 +90,6 @@ export class SentenceStore {
 
     if (!!parent.data.children) parent.data.children.push(newNode);
     else parent.data.children = [newNode];
-
-    sentence.syntaxTree = hierarchy(tree.data);
-  }
-
-  translateSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: SyntaxTreeID, dx: number, dy: number) => {
-    const { sentence, tree, node } = this.findSentenceNode(sentenceId, nodeId);
-
-    console.log(node);
-    node.descendants().forEach((node) => {
-      console.log(node);
-    })
 
     sentence.syntaxTree = hierarchy(tree.data);
   }

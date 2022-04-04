@@ -1,5 +1,16 @@
 import { HierarchyNode } from "d3-hierarchy"
 
+declare module "d3-hierarchy" {
+  interface HierarchyLink<Datum> {
+    id: string
+  }
+
+  interface HierarchyNode<Datum> {
+    links(): Array<HierarchyLink<Datum>>;
+  }
+
+}
+
 export type toEnumType<EnumType> = EnumType[keyof EnumType]
 
 export const ParseTypes = {

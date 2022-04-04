@@ -17,13 +17,21 @@ const NormalizedSyntaxTreeFactory = ({ children = [], token, pos, id }: Incoming
   }
 };
 
+const SyntaxTreeFactory = (incomingSyntaxTree: IncomingSyntaxTree): SyntaxTree => {
+  const normalizedSyntaxTree = NormalizedSyntaxTreeFactory(incomingSyntaxTree);
+  const tree = hierarchy(normalizedSyntaxTree);
+  tree.links().forEach((link) => {
+
+  });
+
+  return tree;
+}
+
 const TextFactory = ({sentences, ...text}: IncomingText): Text => ({
   ...text,
   sentences: sentences.map(({ syntax_tree, ...sent }) => ({
     ...sent,
-    syntaxTree: hierarchy(
-      NormalizedSyntaxTreeFactory(syntax_tree)
-    )
+    syntaxTree: SyntaxTreeFactory(syntax_tree)
   }))
 });
 

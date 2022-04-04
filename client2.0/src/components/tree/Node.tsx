@@ -4,12 +4,12 @@ import React, { forwardRef, useState } from 'react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { ID } from 'types';
-import { getTextWidth } from 'utils/document';
+import { getTextDimensions } from 'utils/document';
 import Menu from './Menu';
 import { NodeDragHandler, CoordinatedTreeNode } from './types';
 
 type NodeProps = {
-  sentenceId: ID
+  treeId: ID
   node: CoordinatedTreeNode
   onClick: React.MouseEventHandler
   width: number
@@ -19,14 +19,16 @@ type NodeProps = {
   onDragEnd: NodeDragHandler
 }
 
+const NODE_RADIUS = 15;
+
 const Node = forwardRef<
   SVGGElement, NodeProps
->(({ sentenceId, node, onClick, height, width, onDragStart, onDragProceed, onDragEnd }, forwardRef) => {
+>(({ treeId, node, onClick, height, width, onDragStart, onDragProceed, onDragEnd }, forwardRef) => {
   const { id: nodeId, text } = node.data;
-  const id = `${sentenceId}-${nodeId}`;
-  const textWidth = getTextWidth(text);
-  const textX = node.x - textWidth / 2, textY = node.y;
-  const rectX = node.x - width / 2, rectY = node.y - height / 2;
+  const id = `${treeId}-${nodeId}`;
+  const { width: textWidth, height: textHeight } = getTextDimensions(text);
+  const textX = node.x - textWidth / 2, textY = node.y + textHeight /2;
+
   const dragHandler = drag();
 
   useEffect(() => {
@@ -41,8 +43,8 @@ const Node = forwardRef<
 
   return (
     <g ref={forwardRef} onClick={onClick} className="node" data-id={id}>
-      <rect x={rectX} y={rectY} height={height} width={width} fill="white"/>
-      <text x={textX} y={textY}>
+      <circle cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white"/>
+      <text x={textX} y={textY} data-id={textWidth}>
         {text}
       </text>
     </g>
