@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  hls:
+    build:
+      context: .
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    ports:
+      - '3003:3003'
+    command: ['npm', 'run', 'start:ext']

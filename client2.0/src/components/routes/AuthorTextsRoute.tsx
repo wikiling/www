@@ -40,7 +40,7 @@ const AuthorTextsRoute: React.FC = () => {
       <div className="author-texts-route-editor">
         <Editor
           height="90vh"
-          defaultLanguage="javascript"
+          defaultLanguage="typescript"
           defaultValue="// some comment"
         />
       </div>
@@ -48,7 +48,7 @@ const AuthorTextsRoute: React.FC = () => {
         {author && textsByAuthor(author.id).map(text =>
           text.sentences.map(sentence =>
             <div key={`${sentence.id}-${treeEditCountMap[sentence.id]}`}>
-              <div>
+              <div className="sentence-id">
                 ({sentence.id})
               </div>
               <Tree

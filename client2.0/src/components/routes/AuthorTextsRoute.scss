@@ -22,5 +22,10 @@ $tree-column-initial-width: 58;
 }
 .author-texts-route-trees {
   width: #{$tree-column-initial-width}vw;
+
+  .sentence-id {
+    padding-top: 20px;
+    padding-left: 10px;
+  }
 }
 
