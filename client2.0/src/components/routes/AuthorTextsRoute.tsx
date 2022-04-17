@@ -1,21 +1,21 @@
-import React, { useState } from "react";
-// @ts-ignore
-import vars from "./AuthorTextsRoute.scss";
+import React, { useEffect, useState } from "react";
+import "./AuthorTextsRoute.scss";
 import { useParams } from "react-router-dom";
-import Editor from "@monaco-editor/react";
+import Editor, { useMonaco } from "@monaco-editor/react";
+// import * as monaco from "monaco-editor";
 import { useStores } from "hooks";
 import Tree from "components/tree/Tree";
 import { observer } from "mobx-react-lite";
 import { toJS } from "mobx";
 import { EditableNodeValues } from "components/tree/types";
 import { AuthorTextRouteParams, ID, SyntaxTreeID } from "types";
-import { useWindowSize } from 'react-use';
+import { registerMonaco } from "utils/monaco";
 
-console.log(vars)
+// console.log(monaco.languages)
+// loader.config({ monaco });
 
 const AuthorTextsRoute: React.FC = () => {
   const { authorId } = useParams<AuthorTextRouteParams>();
-  console.log(authorId);
   const {
     centralStore: {
       authors, textsByAuthor, sentenceStore
@@ -24,13 +24,19 @@ const AuthorTextsRoute: React.FC = () => {
   const [treeEditCountMap, setTreeEditCountMap] = useState<{[key: ID]: number}>({});
 
   const author = authors.find(({ id }) => id.toString() === authorId);
-  console.log(author)
 
   const incrTreeEditCount = (sentenceId: ID) => setTreeEditCountMap(
     prev => Object.assign(prev, { [sentenceId]: (prev[sentenceId] ?? 0) + 1 })
   );
 
-  console.log(author ? textsByAuthor(author.id) : null);
+  const monaco = useMonaco();
+
+  useEffect(() => {
+    if (monaco) {
+      console.log(monaco);
+      registerMonaco(monaco);
+    }
+  })
 
   return (
     <div className="author-texts-route">
