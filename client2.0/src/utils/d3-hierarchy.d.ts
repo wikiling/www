@@ -15,6 +15,7 @@ declare module "d3-hierarchy" {
     attach(parent: IdentifiableHierarchyNode, datum: IdentifiableNodeDatum)
     isDescendant(id: string): boolean
     findById(id: string): this | undefined
+    width(): number
   }
 
   export function hierarchy<Datum extends IdentifiableNodeDatum>(

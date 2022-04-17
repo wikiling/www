@@ -47,5 +47,15 @@ d3Node.prototype.isDescendant = function(id: string) {
   return !!this.findById(id);
 }
 
+d3Node.prototype.width = function() {
+  const leaves = this.leaves();
+
+  if (!leaves.length) return 0;
+
+  const first = leaves[0], last = leaves[leaves.length - 1];
+  
+  return last.x - first.x;
+}
+
 export { hierarchy, getNewChildId };
 

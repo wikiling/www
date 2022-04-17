@@ -37,7 +37,10 @@ const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
   Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
 );
 
+const gTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
+
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
@@ -45,6 +48,19 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
   const editNodeRef = useRef<HTMLFormElement>(null);
+  const [gTransform, setGTransform] = useState<string>(gTransformTmpl());
+
+  const resize = () => {
+    const newCoordinatedRootNode = computeLayout(syntaxTree);
+    const gTranslateX = rootRef.current ? (
+      rootRef.current.getBoundingClientRect().width / 2
+    ) : 0;
+
+    setCoordinatedRootNode(newCoordinatedRootNode);
+    setGTransform(
+      gTransformTmpl(gTranslateX)
+    );
+  }
 
   const onMenuAdd = () => {
     if (!menuNode) throw "No active node to append to!";
@@ -121,9 +137,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     if (potentialParentNode) {
       onNodeMove(nodeId, potentialParentNode.data.id);
     } else {
-      setCoordinatedRootNode(
-        computeLayout(syntaxTree)
-      );
+      resize();
     }
     
     setPotentialParentNode(null);
@@ -133,16 +147,12 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
 
   useClickAway(editNodeRef, () => setEditNode(null));
 
-  useEffect(() => {
-    setCoordinatedRootNode(
-      computeLayout(syntaxTree)
-    );
-  }, [])
+  useEffect(resize, []);
 
   return (
-    <div className="tree">
-      <svg width={1500} height={1000} data-id={id}>
-        <g transform="translate(500,10)">
+    <div className="tree" ref={rootRef}>
+      <svg width="100%" height={1000} data-id={id}>
+        <g transform={gTransform}>
           {coordinatedRootNode?.links()
             .filter(linkIsGrounded)
             .map(link => <Edge

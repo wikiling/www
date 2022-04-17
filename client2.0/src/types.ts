@@ -67,3 +67,8 @@ export type IncomingText = {
 export type Text = Omit<IncomingText, 'sentences'> & {
   sentences: Sentence[]
 }
+
+export type AuthorTextRouteParams = {
+  authorId: string
+  textId: string
+}
