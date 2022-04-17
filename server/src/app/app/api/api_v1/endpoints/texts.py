@@ -42,7 +42,7 @@ def update_text(
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Update an text.
+    Update a text.
     """
     text = crud.text.get(db=db, id=id)
     if not text:

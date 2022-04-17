@@ -14,7 +14,9 @@ class CRUDText(CRUDBase[Text, TextCreate, TextUpdate]):
         obj_in_data = jsonable_encoder(obj_in)
         text = self.model(**obj_in_data)  # type: ignore
         db.add(text)
-        db.add(SentencesFactory(text))
+        db.commit()
+        sentences = SentencesFactory(text)
+        db.add_all(sentences)
         db.commit()
         db.refresh(text)
         return text
@@ -24,8 +26,6 @@ class CRUDText(CRUDBase[Text, TextCreate, TextUpdate]):
     ) -> List[Text]:
         return db.query(Text).join(
             Sentence
-        ).filter(
-            Sentence.has_punctuation.is_(False)
         ).offset(skip).limit(limit).all()
 
 
