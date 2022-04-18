@@ -1,6 +1,7 @@
 import { MonacoLanguageClient, MessageConnection, CloseAction, ErrorAction, MonacoServices, createConnection } from 'monaco-languageclient';
 import { listen } from '@codingame/monaco-jsonrpc';
 import normalizeUrl from 'normalize-url';
+import { buildWorkerDefinition } from "monaco-editor-workers";
 
 type Monaco = typeof import("monaco-editor/esm/vs/editor/editor.api");
 
@@ -11,7 +12,7 @@ function createUrl(hostname: string, port: number, path: string): string {
 
 function createLanguageClient(connection: MessageConnection): MonacoLanguageClient {
   return new MonacoLanguageClient({
-      name: "Sample Language Client",
+      name: "Haskell Language Client",
       clientOptions: {
           // use a language id as a document selector
           documentSelector: ['json'],
@@ -31,6 +32,7 @@ function createLanguageClient(connection: MessageConnection): MonacoLanguageClie
 }
 
 export const registerMonaco = (monaco: Monaco) => {
+  buildWorkerDefinition('../../node_modules/monaco-editor-workers/dist/workers', import.meta.url, false);
 
   // register Monaco languages
   monaco.languages.register({
@@ -38,19 +40,6 @@ export const registerMonaco = (monaco: Monaco) => {
     extensions: ['.json', '.bowerrc', '.jshintrc', '.jscsrc', '.eslintrc', '.babelrc'],
     aliases: ['JSON', 'json'],
     mimetypes: ['application/json'],
-  });
-
-  // create Monaco editor
-  const value = `{
-    "$schema": "http://json.schemastore.org/coffeelint",
-    "line_endings": "unix"
-  }`;
-  monaco.editor.create(document.getElementById("container")!, {
-    model: monaco.editor.createModel(value, 'json', monaco.Uri.parse('inmemory://model.json')),
-    glyphMargin: true,
-    lightbulb: {
-        enabled: true
-    }
   });
 
   // install Monaco language client services
@@ -68,6 +57,8 @@ export const registerMonaco = (monaco: Monaco) => {
       const languageClient = createLanguageClient(connection);
       const disposable = languageClient.start();
       connection.onClose(() => disposable.dispose());
+
+      console.log(connection);
 
       console.log(`Connected to "${url}" and started the language client.`);
     }

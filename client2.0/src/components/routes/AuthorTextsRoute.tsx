@@ -46,7 +46,7 @@ const AuthorTextsRoute: React.FC = () => {
       <div className="author-texts-route-editor">
         <Editor
           height="90vh"
-          defaultLanguage="typescript"
+          language="json"
           defaultValue="// some comment"
         />
       </div>
