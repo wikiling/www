@@ -1,36 +1,20 @@
 {
-  "target": "ES2020",
-  "module": "commonjs",
-  "lib": [
-    "ES2020",
-    "dom"
-  ],
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib",
-    "declarationDir": "lib",
-    "moduleResolution": "Node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "strict": true,
-    "strictPropertyInitialization": false,
-    "importHelpers": true,
-    "downlevelIteration": false,
-    "noImplicitReturns": true,
-    "noUnusedParameters": true,
-    "noUnusedLocals": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
-}
+    "compilerOptions": {
+      "esModuleInterop": true,
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "target": "es6",
+      "outDir": "out",
+      "lib": ["es6"],
+      "sourceMap": true,
+      "rootDir": ".",
+      "noUnusedLocals": true,
+      "strict": true,
+      "noImplicitAny": true,
+      "noImplicitReturns": true,
+      "noFallthroughCasesInSwitch": true,
+      "strictNullChecks": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", ".vscode-test"]
+  }

@@ -3,6 +3,8 @@ import { listen } from '@codingame/monaco-jsonrpc';
 import normalizeUrl from 'normalize-url';
 import { buildWorkerDefinition } from "monaco-editor-workers";
 
+const HASKELL_LANGUAGE_ID = "haskell"
+
 type Monaco = typeof import("monaco-editor/esm/vs/editor/editor.api");
 
 function createUrl(hostname: string, port: number, path: string): string {
@@ -15,7 +17,7 @@ function createLanguageClient(connection: MessageConnection): MonacoLanguageClie
       name: "Haskell Language Client",
       clientOptions: {
           // use a language id as a document selector
-          documentSelector: ['json'],
+          documentSelector: [HASKELL_LANGUAGE_ID],
           // disable the default error handler
           errorHandler: {
               error: () => ErrorAction.Continue,
@@ -36,9 +38,9 @@ export const registerMonaco = (monaco: Monaco) => {
 
   // register Monaco languages
   monaco.languages.register({
-    id: 'json',
-    extensions: ['.json', '.bowerrc', '.jshintrc', '.jscsrc', '.eslintrc', '.babelrc'],
-    aliases: ['JSON', 'json'],
+    id: HASKELL_LANGUAGE_ID,
+    extensions: ['.hs'],
+    aliases: ['haskell'],
     mimetypes: ['application/json'],
   });
 

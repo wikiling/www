@@ -15,6 +15,37 @@ import { TextDocumentPositionParams, DocumentRangeFormattingParams, ExecuteComma
 import { getLanguageService, LanguageService, JSONDocument } from "vscode-json-languageservice";
 import * as TextDocumentImpl from "vscode-languageserver-textdocument";
 
+import * as rpc from "@codingame/monaco-jsonrpc";
+import * as server from "@codingame/monaco-jsonrpc/lib/server";
+import * as lsp from "vscode-languageserver";
+
+
+export function launch(socket: rpc.IWebSocket) {
+  console.log(0.5);
+  const reader = new rpc.WebSocketMessageReader(socket);
+  const writer = new rpc.WebSocketMessageWriter(socket);
+  const asExternalProccess = process.argv.findIndex(value => value === '--external') !== -1;
+  if (asExternalProccess)  {
+      // start the language server as an external process
+      // const extJsonServerPath = path.resolve(__dirname, '/root/.ghcup/bin/haskell-language-server-wrapper-1.6.1.0');
+      const socketConnection = server.createConnection(reader, writer, () => socket.dispose());
+      const serverConnection = server.createServerProcess('haskell', 'haskell-language-server-8.10.7', ['--lsp']);
+      server.forward(socketConnection, serverConnection, message => {
+          if (rpc.isRequestMessage(message)) {
+              if (message.method === lsp.InitializeRequest.type.method) {
+                  const initializeParams = message.params as lsp.InitializeParams;
+                  initializeParams.processId = process.pid;
+              }
+          }
+          return message;
+      });
+  } else {
+      console.log(1, reader, writer);
+      // start the language server inside the current process
+      start(reader, writer);
+  }
+}
+
 export function start(reader: MessageReader, writer: MessageWriter): JsonServer {
     const connection = createConnection(reader, writer);
     const server = new JsonServer(connection);
@@ -37,6 +68,7 @@ export class JsonServer {
     constructor(
         protected readonly connection: _Connection
     ) {
+        console.log(this.documents);
         this.documents.listen(this.connection);
         this.documents.onDidChangeContent(change =>
             this.validate(change.document)
@@ -72,9 +104,10 @@ export class JsonServer {
                 }
             }
         });
-        this.connection.onCodeAction(params =>
-            this.codeAction(params)
-        );
+        this.connection.onCodeAction(params => {
+            console.log('code action', params);
+            return this.codeAction(params)
+        });
         this.connection.onCompletion(params =>
             this.completion(params)
         );

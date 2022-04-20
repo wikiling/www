@@ -1,4 +1,4 @@
-FROM node:buster as node
+FROM node:14-buster as node
 FROM haskell:8.10.7
 
 WORKDIR /app
@@ -11,7 +11,4 @@ COPY tsconfig.json tsconfig.json
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh \
     && export PATH="/root/.ghcup/bin:$PATH" \
-    && ghcup install hls \
-    && npm install
-
-
+    && ghcup install hls
