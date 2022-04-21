@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./AuthorTextsRoute.scss";
 import { useParams } from "react-router-dom";
-import Editor, { useMonaco } from "@monaco-editor/react";
-// import * as monaco from "monaco-editor";
+import MonacoEditor, { monaco } from "react-monaco-editor";
 import { useStores } from "hooks";
 import Tree from "components/tree/Tree";
 import { observer } from "mobx-react-lite";
@@ -29,14 +28,13 @@ const AuthorTextsRoute: React.FC = () => {
     prev => Object.assign(prev, { [sentenceId]: (prev[sentenceId] ?? 0) + 1 })
   );
 
-  const monaco = useMonaco();
+  const uri = `file:///app/files/authors/${authorId}`;
 
-  useEffect(() => {
-    if (monaco) {
-      console.log(monaco);
-      registerMonaco(monaco);
-    }
-  })
+  const options = {
+    model: monaco.editor.getModel(monaco.Uri.parse(uri))
+    ||
+    monaco.editor.createModel("// bar", 'haskell', monaco.Uri.parse(uri))
+  };
 
   return (
     <div className="author-texts-route">
@@ -44,10 +42,14 @@ const AuthorTextsRoute: React.FC = () => {
         {author?.full_name}
       </div>
       <div className="author-texts-route-editor">
-        <Editor
+        <MonacoEditor
+          width="100%"
           height="90vh"
           language="haskell"
-          defaultValue="// some comment"
+          editorWillMount={registerMonaco}
+          options={options}
+          // onChange={::this.onChange}
+          // editorDidMount={::this.editorDidMount}
         />
       </div>
       <div className="author-texts-route-trees">
