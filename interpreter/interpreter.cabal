@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a68ecce69016d561bd6cfafa0a84ff125ddce6d80f5a3ad1f53a779679f47691
+-- hash: 7b2fe7d3e3439e16db2a251f9244c8e03d73b15600d966724d15d20f85b8b492
 
 name:           interpreter
 version:        0.1.0.0
@@ -26,16 +26,45 @@ source-repository head
 
 library
   exposed-modules:
+      App
       Lib
+      Logger
+      Models
+      Settings
   other-modules:
       Paths_interpreter
   hs-source-dirs:
       src
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
+    , base-compat
+    , blaze-html >=0.9.0.1 && <0.10
+    , blaze-markup >=0.8.0.0 && <0.9
+    , bytestring
+    , containers
+    , cookie >=0.4.3 && <0.5
+    , directory
+    , fast-logger
+    , http-api-data
+    , http-client
+    , http-media
+    , http-types
+    , js-jquery >=3.3.1 && <3.4
+    , lucid >=2.9.11 && <2.12
+    , mtl
+    , random >=1.1 && <1.3
+    , servant
+    , servant-js ==0.9.*
     , servant-server
+    , string-conversions
+    , text
+    , time >=1.6.0.1 && <1.13
+    , transformers
     , wai
+    , wai-extra
+    , wai-logger
     , warp
   default-language: Haskell2010
 
@@ -48,10 +77,35 @@ executable interpreter-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
+    , attoparsec
     , base
+    , base-compat
+    , blaze-html >=0.9.0.1 && <0.10
+    , blaze-markup >=0.8.0.0 && <0.9
+    , bytestring
+    , containers
+    , cookie >=0.4.3 && <0.5
+    , directory
+    , fast-logger
+    , http-api-data
+    , http-client
+    , http-media
+    , http-types
     , interpreter
+    , js-jquery >=3.3.1 && <3.4
+    , lucid >=2.9.11 && <2.12
+    , mtl
+    , random >=1.1 && <1.3
+    , servant
+    , servant-js ==0.9.*
     , servant-server
+    , string-conversions
+    , text
+    , time >=1.6.0.1 && <1.13
+    , transformers
     , wai
+    , wai-extra
+    , wai-logger
     , warp
   default-language: Haskell2010
 
@@ -65,12 +119,37 @@ test-suite interpreter-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
+    , attoparsec
     , base
+    , base-compat
+    , blaze-html >=0.9.0.1 && <0.10
+    , blaze-markup >=0.8.0.0 && <0.9
+    , bytestring
+    , containers
+    , cookie >=0.4.3 && <0.5
+    , directory
+    , fast-logger
     , hspec
     , hspec-wai
     , hspec-wai-json
+    , http-api-data
+    , http-client
+    , http-media
+    , http-types
     , interpreter
+    , js-jquery >=3.3.1 && <3.4
+    , lucid >=2.9.11 && <2.12
+    , mtl
+    , random >=1.1 && <1.3
+    , servant
+    , servant-js ==0.9.*
     , servant-server
+    , string-conversions
+    , text
+    , time >=1.6.0.1 && <1.13
+    , transformers
     , wai
+    , wai-extra
+    , wai-logger
     , warp
   default-language: Haskell2010

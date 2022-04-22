@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Lib
   ( startApp,
@@ -13,40 +11,21 @@ import Data.Aeson.TH
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
+import System.Log.FastLogger ( ToLogStr(..)
+                             , LoggerSet
+                             , defaultBufSize
+                             , newStdoutLoggerSet
+                             , flushLogStr
+                             , pushLogStrLn )
 
-data User = User
-  { userId :: Int,
-    userFirstName :: String,
-    userLastName :: String
-  }
-  deriving (Eq, Show)
-
-data SyntaxLeaf = SyntaxLeaf {lexeme :: String}
-
-data SyntaxNode = SyntaxNode
-  { id :: String,
-    pos :: String,
-    children :: [SyntaxNode] || [SyntaxLeaf]
-  }
-
-$(deriveJSON defaultOptions ''User)
-
-type API = "users" :> Get '[JSON] [User]
+import Api (FragmentAPI)
+import App (fragmentServer)
 
 startApp :: IO ()
 startApp = run 8080 app
 
 app :: Application
-app = serve api server
+app = serve api fragmentServer
 
-api :: Proxy API
+api :: Proxy FragmentAPI
 api = Proxy
-
-server :: Server API
-server = return users
-
-users :: [User]
-users =
-  [ User 1 "Isaac" "Newton",
-    User 2 "Albert" "Einstein"
-  ]
