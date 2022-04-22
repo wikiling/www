@@ -8,20 +8,20 @@ import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
 type NodeProps = {
   treeId: ID
   node: CoordinatedTreeNode
-  onClick: React.MouseEventHandler
+  className?: string
   width: number
   height: number
+  onClick: React.MouseEventHandler
   onDragStart: NodeDragHandler
   onDragProceed: NodeDragHandler
   onDragEnd: NodeDragHandler
-  className?: string
 }
 
 const NODE_RADIUS = 15;
 
 const Node = forwardRef<
   SVGGElement, NodeProps
->(({ treeId, node, onClick, height, width, onDragStart, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
+>(({ treeId, node, onClick, onDragStart, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
   const { id: nodeId, text } = node.data;
   const id = `${treeId}-${nodeId}`;
   const { width: textWidth, height: textHeight } = getTextDimensions(text);
@@ -46,7 +46,7 @@ const Node = forwardRef<
   // briefly: the callback needs to be re-registered on each event in order to be fresh
   useEffect(() => {
     latestDragEvent?.on("end", onDragEnd);
-  }, [latestDragEvent])
+  }, [onDragEnd, latestDragEvent])
 
   return (
     <g ref={forwardRef} onClick={onClick} className={`node ${className}`} data-id={id}>

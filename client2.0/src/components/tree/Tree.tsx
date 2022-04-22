@@ -3,7 +3,7 @@ import './Tree.scss';
 import { ID, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
-import { NodeDragHandler, EditableNodeValues, NodeDragEvent, TreeNodeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
+import { NodeDragHandler, EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
 import { getTextDimensions } from 'utils/document';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
@@ -49,6 +49,8 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
   const editNodeRef = useRef<HTMLFormElement>(null);
   const [gTransform, setGTransform] = useState<string>(gTransformTmpl());
+
+  console.log(syntaxTree)
 
   const resize = () => {
     const newCoordinatedRootNode = computeLayout(syntaxTree);

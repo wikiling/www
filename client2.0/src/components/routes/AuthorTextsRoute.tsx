@@ -48,6 +48,7 @@ const AuthorTextsRoute: React.FC = () => {
           language="haskell"
           editorWillMount={registerMonaco}
           options={options}
+          // theme="vs-dark"
           // onChange={::this.onChange}
           // editorDidMount={::this.editorDidMount}
         />

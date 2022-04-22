@@ -60,8 +60,8 @@ export const registerMonaco = (monaco: Monaco) => {
     mimetypes: ["application/json"],
   });
 
-  monaco.languages.setMonarchTokensProvider(HASKELL_LANGUAGE_ID, haskellMonarchTokensProvider);
-  monaco.languages.setLanguageConfiguration(HASKELL_LANGUAGE_ID, haskellLanguageConfiguration);
+  // monaco.languages.setMonarchTokensProvider(HASKELL_LANGUAGE_ID, haskellMonarchTokensProvider);
+  // monaco.languages.setLanguageConfiguration(HASKELL_LANGUAGE_ID, haskellLanguageConfiguration);
 
   // install Monaco language client services
   MonacoServices.install(monaco);
@@ -78,8 +78,6 @@ export const registerMonaco = (monaco: Monaco) => {
       const languageClient = createLanguageClient(connection);
       const disposable = languageClient.start();
       connection.onClose(() => disposable.dispose());
-
-      console.log(connection);
 
       console.log(`Connected to "${url}" and started the language client.`);
     },
@@ -279,7 +277,7 @@ const haskellMonarchTokensProvider: languages.IMonarchLanguage = {
       [/[a-z]\w*/, "arguments13"],
       [/\(/, "open_bracket"],
       [/\=/, "Equalss", "@datacons"],
-      [/\,/, "commaa"],
+      [/\,/, "comma"],
       [/\:\:/, "colondouble", "@datacons"],
       [/\)/, "closebrak", "@initialise"],
       [/\}/, "close"],
