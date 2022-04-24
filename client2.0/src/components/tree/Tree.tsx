@@ -1,24 +1,22 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { ID, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
+import { CoordinatedSyntaxTree, ID, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
-import { NodeDragHandler, EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
-import { getTextDimensions } from 'utils/document';
+import { EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
 import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
-import { D3DragEvent, drag, SubjectPosition } from 'd3-drag';
+import { SubjectPosition } from 'd3-drag';
 import { NODE_HEIGHT, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
 import { computeLayout, translateTree } from './utils';
-import { cloneDeep, isEqual } from 'lodash';
+import { cloneDeep } from 'lodash';
 import classNames from 'classnames';
-import { useCallback } from 'react';
 
 type TreeProps = {
   id: ID
-  syntaxTree: SyntaxTree
+  syntaxTree: CoordinatedSyntaxTree
   onNodeAdd: (node: SyntaxTreeID) => void
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
@@ -37,7 +35,7 @@ const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
   Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
 );
 
-const gTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
+const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
 
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -48,19 +46,19 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
   const editNodeRef = useRef<HTMLFormElement>(null);
-  const [gTransform, setGTransform] = useState<string>(gTransformTmpl());
+  const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   console.log(syntaxTree)
 
   const resize = () => {
     const newCoordinatedRootNode = computeLayout(syntaxTree);
-    const gTranslateX = rootRef.current ? (
+    const groupTranslateX = rootRef.current ? (
       rootRef.current.getBoundingClientRect().width / 2
     ) : 0;
 
     setCoordinatedRootNode(newCoordinatedRootNode);
-    setGTransform(
-      gTransformTmpl(gTranslateX)
+    setGroupTransform(
+      groupTransformTmpl(groupTranslateX)
     );
   }
 
@@ -154,7 +152,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   return (
     <div className="tree" ref={rootRef}>
       <svg width="100%" height={1000} data-id={id}>
-        <g transform={gTransform}>
+        <g transform={groupTransform}>
           {coordinatedRootNode?.links()
             .filter(linkIsGrounded)
             .map(link => <Edge

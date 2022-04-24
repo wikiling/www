@@ -1,9 +1,8 @@
 
 import { hierarchy } from 'utils/hierarchy';
-import { cloneDeep, remove } from 'lodash';
-import { makeAutoObservable, set, has } from 'mobx';
-import { ID, NormalizedSyntaxTree, Sentence, SyntaxTree, SyntaxTreeID } from 'types';
-import { getNewChildId } from 'utils/hierarchy';
+import { makeAutoObservable } from 'mobx';
+import { ID, Sentence, SyntaxTreeID } from 'types';
+import { interpret } from 'api';
 
 const { values, assign } = Object;
 
@@ -27,7 +26,7 @@ export class SentenceStore {
 
   findSentenceNode = (sentenceId: ID, nodeId: SyntaxTreeID) => {
     const sentence = this.sentenceMap[sentenceId];
-    const tree = sentence.syntaxTree.copy();
+    const tree = sentence.syntax_tree.copy();
     const node = tree.findById(nodeId);
 
     if (!sentence) throw `No sentence with id:${sentenceId}!`;
@@ -45,9 +44,10 @@ export class SentenceStore {
   updateSentenceSyntaxTreeNodeText = (sentenceId: ID, nodeId: SyntaxTreeID, text: string) => {
     const { sentence, tree, node } = this.findSentenceNode(sentenceId, nodeId);
 
-    node.data.text = text;
+    if (!!node.data.pos) node.data.pos = text
+    else node.data.token = text;
 
-    sentence.syntaxTree = hierarchy(tree.data);
+    sentence.syntax_tree = hierarchy(tree.data);
   }
 
   removeSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: SyntaxTreeID) => {
@@ -55,7 +55,7 @@ export class SentenceStore {
 
     tree.detach(node);
 
-    sentence.syntaxTree = hierarchy(tree.data);
+    sentence.syntax_tree = hierarchy(tree.data);
   }
 
   addSentenceSyntaxTreeNode = (sentenceId: ID, parentNodeId: SyntaxTreeID) => {
@@ -64,23 +64,20 @@ export class SentenceStore {
 
     tree.attach(parent, newNode);
 
-    sentence.syntaxTree = hierarchy(tree.data);
+    sentence.syntax_tree = hierarchy(tree.data);
   }
 
   moveSentenceSyntaxTreeNode = (sentenceId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
     console.log('moving...', nodeId, targetParentId);
 
     const { sentence, tree, node: parent } = this.findSentenceNode(sentenceId, targetParentId);
-
     const child = tree.findById(nodeId);
 
-    if (!child) throw `No node for sentence (${sentenceId}) with id:${nodeId}`;
+    if (!child) throw new Error(`No node for sentence (${sentenceId}) with id:${nodeId}`);
 
     tree.detach(child);
     tree.attach(parent, child.data);
 
-    console.log(cloneDeep(tree));
-
-    sentence.syntaxTree = hierarchy(tree.data);
+    sentence.syntax_tree = hierarchy(tree.data);
   }
 }

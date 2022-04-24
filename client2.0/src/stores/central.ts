@@ -1,7 +1,7 @@
 
 import { makeAutoObservable } from 'mobx';
-import { ID, Author, Text } from 'types';
-import { fetchTexts, fetchAuthors } from 'api';
+import { ID, Author, Text, SyntaxTree } from 'types';
+import { fetchTexts, fetchAuthors, interpret } from 'api';
 import { SentenceStore } from './sentence';
 
 type CentralStoreProps = {
@@ -34,6 +34,10 @@ export class CentralStore {
     fetchAuthors().then(authors => {
       this.authors = authors;
     });
+  }
+
+  dispatchInterpretSentence = (text: Text, syntaxTree: SyntaxTree) => {
+    return interpret(text, syntaxTree);
   }
 }
 

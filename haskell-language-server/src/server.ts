@@ -24,7 +24,8 @@ export function launch(socket: rpc.IWebSocket) {
   const writer = new rpc.WebSocketMessageWriter(socket);
 
   const socketConnection = server.createConnection(reader, writer, () => socket.dispose());
-  const serverConnection = server.createServerProcess('haskell', 'haskell-language-server-8.10.7', ['--lsp', '--debug', '--cwd=/app/files']);
+  console.log(process.env)
+  const serverConnection = server.createServerProcess('haskell', 'haskell-language-server-8.10.7', ['--lsp', '--debug', '--cwd=/app/fragments'], { env: process.env });
 
   server.forward(socketConnection, serverConnection, message => {
     console.log(message);

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7b2fe7d3e3439e16db2a251f9244c8e03d73b15600d966724d15d20f85b8b492
+-- hash: 67c2deed2da6f6a137fd31337128233d8fa18e92a88dbf4d734a16d377ab661a
 
 name:           interpreter
 version:        0.1.0.0
@@ -45,8 +45,10 @@ library
     , bytestring
     , containers
     , cookie >=0.4.3 && <0.5
+    , data-default
     , directory
     , fast-logger
+    , halive
     , http-api-data
     , http-client
     , http-media
@@ -63,6 +65,7 @@ library
     , time >=1.6.0.1 && <1.13
     , transformers
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp
@@ -85,8 +88,10 @@ executable interpreter-exe
     , bytestring
     , containers
     , cookie >=0.4.3 && <0.5
+    , data-default
     , directory
     , fast-logger
+    , halive
     , http-api-data
     , http-client
     , http-media
@@ -104,6 +109,7 @@ executable interpreter-exe
     , time >=1.6.0.1 && <1.13
     , transformers
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp
@@ -127,8 +133,10 @@ test-suite interpreter-test
     , bytestring
     , containers
     , cookie >=0.4.3 && <0.5
+    , data-default
     , directory
     , fast-logger
+    , halive
     , hspec
     , hspec-wai
     , hspec-wai-json
@@ -149,6 +157,7 @@ test-suite interpreter-test
     , time >=1.6.0.1 && <1.13
     , transformers
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp

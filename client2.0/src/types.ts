@@ -1,16 +1,5 @@
 import { HierarchyNode } from "d3-hierarchy"
 
-declare module "d3-hierarchy" {
-  interface HierarchyLink<Datum> {
-    id: string
-  }
-
-  interface HierarchyNode<Datum> {
-    links(): Array<HierarchyLink<Datum>>;
-  }
-
-}
-
 export type toEnumType<EnumType> = EnumType[keyof EnumType]
 
 export const ParseTypes = {
@@ -26,22 +15,23 @@ export type Author = {
   full_name: string
 }
 
-export type SyntaxTreeID = string
+export type SyntaxTreeID = string;
+export type SemanticTreeID = string;
 
-export type IncomingSyntaxTree = {
+export type SyntaxTree = {
   id: SyntaxTreeID
   pos?: string
   token?: string
-  children?: IncomingSyntaxTree[]
+  children?: [SyntaxTree]
 }
 
-export type NormalizedSyntaxTree = {
-  id: SyntaxTreeID
-  text: string
-  children?: NormalizedSyntaxTree[]
+export type SemanticTree = {
+  id: SemanticTreeID
+  formula: string
+  children?: [SemanticTree]
 }
 
-export type SyntaxTree = HierarchyNode<NormalizedSyntaxTree>
+export type CoordinatedSyntaxTree = HierarchyNode<SyntaxTree>
 
 export type IncomingSentence = {
   id: ID
@@ -49,11 +39,11 @@ export type IncomingSentence = {
   content: string
   // parse_type: ParseTypes.CONSTITUENCY
   has_punctuation: boolean
-  syntax_tree: IncomingSyntaxTree
+  syntax_tree: SyntaxTree
 }
 
 export type Sentence = Omit<IncomingSentence, 'syntax_tree'> & {
-  syntaxTree: SyntaxTree
+  syntax_tree: CoordinatedSyntaxTree
 }
 
 export type IncomingText = {

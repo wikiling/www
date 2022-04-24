@@ -40,6 +40,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
+  - halive-0.1.8@sha256:0c9967c8a4d82162ffa852c1ea81404625a20f9b1684445c221534b9f69de85e,4674
   - servant-js-0.9.4.2@sha256:b2d973b43bfa69f35900bf46e989348b7300c398b599ddf74b90a06173c023f2,3522
 # Override default flag values for local packages and extra-deps
 # flags: {}

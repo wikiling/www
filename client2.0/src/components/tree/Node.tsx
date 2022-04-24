@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import { ID } from 'types';
 import { getTextDimensions } from 'utils/document';
 import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
+import { nodeText } from './utils';
 
 type NodeProps = {
   treeId: ID
@@ -22,7 +23,8 @@ const NODE_RADIUS = 15;
 const Node = forwardRef<
   SVGGElement, NodeProps
 >(({ treeId, node, onClick, onDragStart, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
-  const { id: nodeId, text } = node.data;
+  const { id: nodeId } = node.data;
+  const text = nodeText(node);
   const id = `${treeId}-${nodeId}`;
   const { width: textWidth, height: textHeight } = getTextDimensions(text);
   const textX = node.x - textWidth / 2, textY = node.y + textHeight /2;

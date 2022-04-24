@@ -1,31 +1,26 @@
 {-# LANGUAGE DataKinds #-}
 
-module Lib
-  ( startApp,
-    app,
-  )
-where
+module Lib where
 
 import Data.Aeson
 import Data.Aeson.TH
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
-import System.Log.FastLogger ( ToLogStr(..)
-                             , LoggerSet
-                             , defaultBufSize
-                             , newStdoutLoggerSet
-                             , flushLogStr
-                             , pushLogStrLn )
+import System.Log.FastLogger
+  ( LoggerSet,
+    ToLogStr (..),
+    defaultBufSize,
+    flushLogStr,
+    newStdoutLoggerSet,
+    pushLogStrLn,
+  )
 
-import Api (FragmentAPI)
-import App (fragmentServer)
+-- startApp :: IO ()
+-- startApp = run 8080 app
 
-startApp :: IO ()
-startApp = run 8080 app
+-- app :: Application
+-- app = serve api fragmentServer
 
-app :: Application
-app = serve api fragmentServer
-
-api :: Proxy FragmentAPI
-api = Proxy
+-- api :: Proxy FragmentAPI
+-- api = Proxy

@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { useForm } from "react-hook-form";
 import { EditableNodeValues, CoordinatedTreeNode } from "./types";
+import { nodeText } from './utils';
 
 type EditableNodeProps = {
   node: CoordinatedTreeNode
@@ -16,7 +17,7 @@ const EditableNode = forwardRef<
     handleSubmit,
   } = useForm({
     defaultValues: {
-      [fieldName]: node.data.text,
+      [fieldName]: nodeText(node),
       id: node.data.id
     }
   })

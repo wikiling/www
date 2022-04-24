@@ -5,30 +5,33 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Logger
-  ( LogMessage(..)
+  ( LogMessage (..),
   )
 where
 
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Data.Time.Clock (UTCTime)
 import Data.Aeson
-import System.Log.FastLogger ( ToLogStr(..)
-                             , LoggerSet
-                             , defaultBufSize
-                             , newStdoutLoggerSet
-                             , flushLogStr
-                             , pushLogStrLn )
+import Data.Text (Text)
+import Data.Time.Clock (UTCTime)
+import GHC.Generics (Generic)
+import System.Log.FastLogger
+  ( LoggerSet,
+    ToLogStr (..),
+    flushLogStr,
+    newStdoutLoggerSet,
+    pushLogStrLn,
+  )
 
-data LogMessage = LogMessage {
-  message        :: !Text
-  , timestamp    :: !UTCTime
-  , level        :: !Text
-  , lversion     :: !Text
-  , lenvironment :: !Text
-} deriving (Eq, Show, Generic)
+data LogMessage = LogMessage
+  { message :: !Text,
+    timestamp :: !UTCTime,
+    level :: !Text,
+    lversion :: !Text,
+    lenvironment :: !Text
+  }
+  deriving (Eq, Show, Generic)
 
 instance FromJSON LogMessage
+
 instance ToJSON LogMessage where
   toEncoding = genericToEncoding defaultOptions
 

@@ -1,23 +1,29 @@
 import { SubjectPosition } from 'd3-drag';
-import { HierarchyPointLink, HierarchyPointNode, tree as tidyTreeLayout } from 'd3-hierarchy';
-import { cloneDeep } from 'lodash';
-import { useEffect, useState } from 'react';
-import { SyntaxTree } from 'types';
+import { tree as tidyTreeLayout } from 'd3-hierarchy';
+import { CoordinatedSyntaxTree, SyntaxTree } from 'types';
 import { getTextDimensions } from 'utils/document';
 import { NODE_HEIGHT, NODE_SEP_X, NODE_SEP_Y, NODE_WIDTH } from './config';
-import { TreeNodeData, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
+import { CoordinatedTreeNode } from './types';
 
-type ComputeLayout = (syntaxTree: SyntaxTree) => CoordinatedTreeNode
+type ComputeLayout = (syntaxTree: CoordinatedSyntaxTree) => CoordinatedTreeNode
 
-export const computeLayout: ComputeLayout = (syntaxTree: SyntaxTree) => {
-  const createTreeLayout = tidyTreeLayout<TreeNodeData>()
+export const discriminateNodeTextField = (node: CoordinatedTreeNode) => node.data.pos ? 'pos' : 'token';
+
+export const nodeText = (node: CoordinatedTreeNode) => node.data.pos
+  ? node.data.pos
+  : node.data.token
+    ? node.data.token
+    : "";
+
+export const computeLayout: ComputeLayout = (syntaxTree) => {
+  const createTreeLayout = tidyTreeLayout<SyntaxTree>()
     .nodeSize([
       NODE_WIDTH + NODE_SEP_X,
       NODE_HEIGHT + NODE_SEP_Y
     ])
     .separation((a, b) => {
-      const halfWidthA = getTextDimensions(a.data.text).width / 2;
-      const halfWidthB = getTextDimensions(b.data.text).width / 2;
+      const halfWidthA = getTextDimensions(nodeText(a)).width / 2;
+      const halfWidthB = getTextDimensions(nodeText(b)).width / 2;
       
       if (halfWidthA + halfWidthB > NODE_WIDTH + NODE_SEP_X) {
         return 1.5;

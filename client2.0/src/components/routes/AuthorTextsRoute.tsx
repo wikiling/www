@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import "./AuthorTextsRoute.scss";
 import { useParams } from "react-router-dom";
 import MonacoEditor, { monaco } from "react-monaco-editor";
@@ -7,17 +7,16 @@ import Tree from "components/tree/Tree";
 import { observer } from "mobx-react-lite";
 import { toJS } from "mobx";
 import { EditableNodeValues } from "components/tree/types";
-import { AuthorTextRouteParams, ID, SyntaxTreeID } from "types";
+import { AuthorTextRouteParams, ID, SyntaxTree, SyntaxTreeID } from "types";
 import { registerMonaco } from "utils/monaco";
-
-// console.log(monaco.languages)
-// loader.config({ monaco });
+import TreeHeader from "components/tree/TreeHeader";
+import { TreeContext } from "components/tree/TreeContext";
 
 const AuthorTextsRoute: React.FC = () => {
   const { authorId } = useParams<AuthorTextRouteParams>();
   const {
     centralStore: {
-      authors, textsByAuthor, sentenceStore
+      authors, textsByAuthor, sentenceStore, dispatchInterpretSentence
     }
   } = useStores();
   const [treeEditCountMap, setTreeEditCountMap] = useState<{[key: ID]: number}>({});
@@ -28,7 +27,7 @@ const AuthorTextsRoute: React.FC = () => {
     prev => Object.assign(prev, { [sentenceId]: (prev[sentenceId] ?? 0) + 1 })
   );
 
-  const uri = `file:///app/files/authors/${authorId}`;
+  const uri = `file:///app/fragments/`;
 
   const options = {
     model: monaco.editor.getModel(monaco.Uri.parse(uri))
@@ -57,12 +56,13 @@ const AuthorTextsRoute: React.FC = () => {
         {author && textsByAuthor(author.id).map(text =>
           text.sentences.map(sentence =>
             <div key={`${sentence.id}-${treeEditCountMap[sentence.id]}`}>
-              <div className="sentence-id">
-                ({sentence.id})
-              </div>
+              <TreeHeader
+                sentence={sentence}
+                onInterpretButtonClick={() => dispatchInterpretSentence(text, sentence.syntax_tree.data)}
+              />
               <Tree
                 id={sentence.id}
-                syntaxTree={toJS(sentenceStore.sentenceMap[sentence.id].syntaxTree)}
+                syntaxTree={toJS(sentenceStore.sentenceMap[sentence.id].syntax_tree)}
                 onNodeAdd={(nodeId: SyntaxTreeID) => {
                   sentenceStore.addSentenceSyntaxTreeNode(
                     sentence.id, nodeId
