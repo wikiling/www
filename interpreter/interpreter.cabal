@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 67c2deed2da6f6a137fd31337128233d8fa18e92a88dbf4d734a16d377ab661a
+-- hash: 140c21ea2d25da900e0aa54a85ff63cffc3a91ceafa6b0bfb9841d30b67253a3
 
 name:           interpreter
 version:        0.1.0.0
@@ -48,7 +48,6 @@ library
     , data-default
     , directory
     , fast-logger
-    , halive
     , http-api-data
     , http-client
     , http-media
@@ -91,7 +90,6 @@ executable interpreter-exe
     , data-default
     , directory
     , fast-logger
-    , halive
     , http-api-data
     , http-client
     , http-media
@@ -136,7 +134,6 @@ test-suite interpreter-test
     , data-default
     , directory
     , fast-logger
-    , halive
     , hspec
     , hspec-wai
     , hspec-wai-json

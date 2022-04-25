@@ -38,17 +38,48 @@ import System.Directory
 import Text.Blaze
 import qualified Text.Blaze.Html
 import Text.Blaze.Html.Renderer.Utf8
-import Prelude ()
 
-newtype SyntaxLeaf = SyntaxLeaf {lexeme :: String} deriving (Generic)
+type Id = String
 
-data SyntaxTree = SyntaxTree
-  { position :: Text,
-    partOfSpeech :: Text,
-    children :: [SyntaxTree]
-  }
-  deriving (Generic)
+type Pos = String
 
-instance FromJSON SyntaxTree
+type Lexeme = String
+
+data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme deriving (Show)
+
+-- data SyntaxTree = Node {meta :: Text, children :: [SyntaxTree]} deriving (Generic)
+
+instance FromJSON SyntaxTree where
+  parseJSON = withObject "SyntaxTree" $ \obj -> do
+    id <- obj .: "id"
+    pos <- obj .: "pos"
+    lexeme <- obj .: "lexeme"
+    children <- obj .: "children"
+
+    if children
+      then return Node id pos (decode children)
+      else return Leaf id lexeme
+
+{-
+  parseJSON = withObject "SyntaxTree" $ \o ->
+    Node <$> o .: "object"
+      <*> o .: "id"
+      <*> o .:? "pos"
+      <*> o .:? "folderId"
+      <*> o .: "type"
+      <*> o .: "name"
+      <*> o .: "notes"
+      <*> o .: "favorite"
+      <*> parseItemType o
+      <*> o .: "collectionIds"
+      <*> o .:? "revisionDate"
+    where
+      parseItemType o =
+        MkLogin <$> o .: "login"
+          <|> MkCard <$> o .: "card"
+          <|> MkIdentity <$> o .: "identity"
+          <|> MkSecureNote <$> o .: "securenote"
+
+-}
 
 instance ToJSON SyntaxTree

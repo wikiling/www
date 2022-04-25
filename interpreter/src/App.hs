@@ -17,7 +17,7 @@ import Data.Proxy
 import Data.Text
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics
-import Logger (LogMessage (..))
+import Logger (DebugMessage (..), LogMessage (..))
 import Models (SyntaxTree (..))
 import Prelude.Compat
 import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, ServerT, err401, hoistServerWithContext, serveWithContext, throwError, (:>))
@@ -39,13 +39,13 @@ data AppCtx = AppCtx
 
 fragmentHandler :: String -> SyntaxTree -> AppM LogMessage
 fragmentHandler fragmentId syntaxTree = do
-  config <- asks _getConfig
   logset <- asks _getLogger
   tstamp <- liftIO getCurrentTime
+  config <- asks _getConfig
 
   let logMsg =
         LogMessage
-          { message = "Syntax tree: " <> position syntaxTree,
+          { message = "Syntax tree: " <> meta syntaxTree,
             timestamp = tstamp,
             level = "info",
             lversion = version config,

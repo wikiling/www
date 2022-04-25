@@ -19,7 +19,6 @@ extra-source-files:
 description: Please see the README on GitHub at <https://github.com/githubuser/interpreter#readme>
 
 dependencies:
-  - halive
   - base >= 4.7 && < 5
   - servant
   - servant-server

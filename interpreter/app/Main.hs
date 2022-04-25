@@ -18,7 +18,7 @@ import GHC.Generics
 import Logger (LogMessage (..))
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp as Warp
-import Network.Wai.Middleware.Cors (simpleCors)
+import Network.Wai.Middleware.Cors (cors, corsMethods, corsOrigins, corsRequestHeaders, simpleCors, simpleCorsResourcePolicy, simpleHeaders)
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.RequestLogger.JSON
 import Prelude.Compat
@@ -47,8 +47,14 @@ main = do
   -- but we're going to just make one here
   let config = SiteConfig "dev" "1.0.0" "admin" "secretPassword"
 
-  warpLogger <- jsonRequestLoggerMiddleware
+  warpLoggerMiddleware <- jsonRequestLoggerMiddleware
   appLogger <- newStdoutLoggerSet defaultBufSize
+
+  let corsPolicy =
+        simpleCorsResourcePolicy
+          { corsMethods = ["OPTIONS", "GET", "POST"],
+            corsRequestHeaders = simpleHeaders
+          }
 
   tstamp <- getCurrentTime
 
@@ -70,4 +76,7 @@ main = do
       settings = Warp.setTimeout 55 portSettings
       cfg = EmptyContext
 
-  Warp.runSettings settings $ warpLogger $ mkApp cfg ctx
+  Warp.runSettings settings $
+    warpLoggerMiddleware $
+      cors (const $ Just corsPolicy) $
+        mkApp cfg ctx
