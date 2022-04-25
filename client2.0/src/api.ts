@@ -32,9 +32,23 @@ const fetchAuthors = (): Promise<Author[]> => catalogueClient
   .get('authors/')
   .then(({ data }) => data);
 
-const interpret = (text: Text, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpreterClient
-  .post(`authors/${text.author_id}/${text.id}`, syntaxTree)
+
+type InterpretationTree = {
+  meta: string
+  children: InterpretationTree[]
+}
+
+const toInterpretationTree = (syntaxTree: SyntaxTree): InterpretationTree => ({
+  meta: syntaxTree.pos || syntaxTree.token || '',
+  children: syntaxTree.children?.map(toInterpretationTree) ?? []
+});
+
+const interpret = (text: Text, syntaxTree: SyntaxTree): Promise<SemanticTree> => {
+  console.log(toInterpretationTree(syntaxTree));
+  return interpreterClient
+  .post(`fragments/${text.id}/`, syntaxTree)
   .then(({ data }) => data);
+}
 
 export {
   fetchAuthors,
