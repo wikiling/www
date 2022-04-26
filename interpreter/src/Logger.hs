@@ -7,7 +7,6 @@
 
 module Logger
   ( LogMessage (..),
-    DebugMessage (..),
   )
 where
 
@@ -32,20 +31,10 @@ data LogMessage = LogMessage
   }
   deriving (Eq, Show, Generic)
 
-data DebugMessage = DebugMessage
-  {m :: !Text}
-  deriving (Eq, Show, Generic)
-
 instance FromJSON LogMessage
 
 instance ToJSON LogMessage where
   toEncoding = genericToEncoding defaultOptions
 
 instance ToLogStr LogMessage where
-  toLogStr = toLogStr . encode
-
-instance ToJSON DebugMessage where
-  toEncoding = genericToEncoding defaultOptions
-
-instance ToLogStr DebugMessage where
   toLogStr = toLogStr . encode

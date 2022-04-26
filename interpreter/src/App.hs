@@ -14,10 +14,10 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import Data.Aeson
 import Data.Proxy
-import Data.Text
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics
-import Logger (DebugMessage (..), LogMessage (..))
+import Logger (LogMessage (..))
 import Models (SyntaxTree (..))
 import Prelude.Compat
 import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, ServerT, err401, hoistServerWithContext, serveWithContext, throwError, (:>))
@@ -45,7 +45,7 @@ fragmentHandler fragmentId syntaxTree = do
 
   let logMsg =
         LogMessage
-          { message = "Syntax tree: " <> meta syntaxTree,
+          { message = "Syntax tree: ", -- <> syntaxTree,
             timestamp = tstamp,
             level = "info",
             lversion = version config,

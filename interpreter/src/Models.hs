@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Models
@@ -13,13 +15,15 @@ module Models
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Aeson
+import Data.Aeson ((.:))
+import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Parser
 import Data.Aeson.TH
 import Data.Aeson.Types
-import Data.Attoparsec.ByteString
+import qualified Data.Attoparsec.ByteString as BS
 import Data.ByteString (ByteString)
 import Data.List
 import Data.Maybe
@@ -39,17 +43,29 @@ import Text.Blaze
 import qualified Text.Blaze.Html
 import Text.Blaze.Html.Renderer.Utf8
 
-type Id = String
+type Id = Text
 
-type Pos = String
+type Pos = Text
 
-type Lexeme = String
+type Lexeme = Text
 
-data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme deriving (Show)
+data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme
+  deriving (Show, Generic, JSON.ToJSON)
 
+{-
 -- data SyntaxTree = Node {meta :: Text, children :: [SyntaxTree]} deriving (Generic)
+$(deriveJSON defaultOptions 'Node)
+-}
+
+syntaxNodeParser :: JSON.Value -> Parser SyntaxTree
+syntaxNodeParser (JSON.Object o) =
+  Leaf <$> o .: "id" <*> o .: "lexeme"
+    <|> Node <$> o .: "id" <*> o .: "pos" <*> mapM syntaxNodeParser (o .: "children")
 
 instance FromJSON SyntaxTree where
+  parseJSON = syntaxNodeParser
+
+{-
   parseJSON = withObject "SyntaxTree" $ \obj -> do
     id <- obj .: "id"
     pos <- obj .: "pos"
@@ -57,10 +73,9 @@ instance FromJSON SyntaxTree where
     children <- obj .: "children"
 
     if children
-      then return Node id pos (decode children)
-      else return Leaf id lexeme
+      then Node id pos (fmap JSON.encode children)
+      else Leaf id lexeme
 
-{-
   parseJSON = withObject "SyntaxTree" $ \o ->
     Node <$> o .: "object"
       <*> o .: "id"
@@ -80,6 +95,5 @@ instance FromJSON SyntaxTree where
           <|> MkIdentity <$> o .: "identity"
           <|> MkSecureNote <$> o .: "securenote"
 
--}
-
 instance ToJSON SyntaxTree
+-}
