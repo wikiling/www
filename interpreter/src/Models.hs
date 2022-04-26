@@ -20,9 +20,11 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson ((.:))
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.KeyMap as AKM
 import qualified Data.Aeson.Parser
 import Data.Aeson.TH
 import Data.Aeson.Types
+import qualified Data.Aeson.Types as JSONT
 import qualified Data.Attoparsec.ByteString as BS
 import Data.ByteString (ByteString)
 import Data.List
@@ -30,6 +32,7 @@ import Data.Maybe
 import Data.String.Conversions
 import Data.Text (Text)
 import Data.Time.Calendar
+import qualified Data.Vector as V
 import GHC.Generics
 import Lucid
 import Network.HTTP.Media ((//), (/:))
@@ -52,48 +55,19 @@ type Lexeme = Text
 data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme
   deriving (Show, Generic, JSON.ToJSON)
 
-{-
--- data SyntaxTree = Node {meta :: Text, children :: [SyntaxTree]} deriving (Generic)
-$(deriveJSON defaultOptions 'Node)
--}
+syntaxNodeArrayParser' :: [JSON.Value] -> Parser [SyntaxTree]
+syntaxNodeArrayParser' a = case a of
+  [] -> return ([] :: [SyntaxTree])
+  (Object o : os) -> syntaxNodeParser o >> syntaxNodeArrayParser' os
 
-syntaxNodeParser :: JSON.Value -> Parser SyntaxTree
-syntaxNodeParser (JSON.Object o) =
-  Leaf <$> o .: "id" <*> o .: "lexeme"
-    <|> Node <$> o .: "id" <*> o .: "pos" <*> mapM syntaxNodeParser (o .: "children")
+syntaxNodeArrayParser :: JSON.Value -> Parser [SyntaxTree]
+syntaxNodeArrayParser v = case v of
+  (Array a) -> syntaxNodeArrayParser' (V.toList a)
+
+syntaxNodeParser :: JSON.Object -> Parser SyntaxTree
+syntaxNodeParser obj =
+  Leaf <$> obj .: "id" <*> obj .: "token"
+    <|> Node <$> obj .: "id" <*> obj .: "pos" <*> JSONT.explicitParseField syntaxNodeArrayParser obj "children"
 
 instance FromJSON SyntaxTree where
-  parseJSON = syntaxNodeParser
-
-{-
-  parseJSON = withObject "SyntaxTree" $ \obj -> do
-    id <- obj .: "id"
-    pos <- obj .: "pos"
-    lexeme <- obj .: "lexeme"
-    children <- obj .: "children"
-
-    if children
-      then Node id pos (fmap JSON.encode children)
-      else Leaf id lexeme
-
-  parseJSON = withObject "SyntaxTree" $ \o ->
-    Node <$> o .: "object"
-      <*> o .: "id"
-      <*> o .:? "pos"
-      <*> o .:? "folderId"
-      <*> o .: "type"
-      <*> o .: "name"
-      <*> o .: "notes"
-      <*> o .: "favorite"
-      <*> parseItemType o
-      <*> o .: "collectionIds"
-      <*> o .:? "revisionDate"
-    where
-      parseItemType o =
-        MkLogin <$> o .: "login"
-          <|> MkCard <$> o .: "card"
-          <|> MkIdentity <$> o .: "identity"
-          <|> MkSecureNote <$> o .: "securenote"
-
-instance ToJSON SyntaxTree
--}
+  parseJSON = JSON.withObject "SyntaxTree" syntaxNodeParser

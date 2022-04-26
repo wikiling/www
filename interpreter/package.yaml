@@ -51,6 +51,7 @@ dependencies:
   - servant-js   >= 0.9     && < 0.10
   - time         >= 1.6.0.1 && < 1.13
   - fast-logger
+  - vector
 
 library:
   source-dirs: src

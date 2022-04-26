@@ -12,9 +12,13 @@ where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
-import Data.Aeson
+import qualified Data.Aeson as JSON
+import qualified Data.Aeson.Text as JSONText
 import Data.Proxy
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder (toLazyText)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics
 import Logger (LogMessage (..))
@@ -30,14 +34,25 @@ import System.Log.FastLogger
   )
 import Prelude ()
 
-type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] SyntaxTree :> Post '[JSON] LogMessage
+type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] SyntaxTree :> Post '[JSON] FragmentHandlerResp
 
 data AppCtx = AppCtx
   { _getConfig :: SiteConfig,
     _getLogger :: LoggerSet
   }
 
-fragmentHandler :: String -> SyntaxTree -> AppM LogMessage
+encodeTreeToText :: SyntaxTree -> Text
+encodeTreeToText = toStrict . toLazyText . JSONText.encodeToTextBuilder . JSON.toJSON
+
+data FragmentHandlerResp = FragmentHandlerResp
+  { syntaxTree :: !SyntaxTree
+  }
+  deriving (Show, Generic)
+
+instance JSON.ToJSON FragmentHandlerResp where
+  toEncoding = JSON.genericToEncoding JSON.defaultOptions
+
+fragmentHandler :: String -> SyntaxTree -> AppM FragmentHandlerResp
 fragmentHandler fragmentId syntaxTree = do
   logset <- asks _getLogger
   tstamp <- liftIO getCurrentTime
@@ -45,7 +60,7 @@ fragmentHandler fragmentId syntaxTree = do
 
   let logMsg =
         LogMessage
-          { message = "Syntax tree: ", -- <> syntaxTree,
+          { message = "Syntax tree: " <> encodeTreeToText syntaxTree,
             timestamp = tstamp,
             level = "info",
             lversion = version config,
@@ -54,7 +69,8 @@ fragmentHandler fragmentId syntaxTree = do
   -- emit log message
   liftIO $ pushLogStrLn logset $ toLogStr logMsg
   -- return handler result (for simplicity, result is a LogMessage)
-  pure logMsg
+  let resp = FragmentHandlerResp {syntaxTree = syntaxTree}
+  pure resp
 
 -- fragmentHandler _ _ = throwError err401
 

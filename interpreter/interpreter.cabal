@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 140c21ea2d25da900e0aa54a85ff63cffc3a91ceafa6b0bfb9841d30b67253a3
+-- hash: 14c24bac842b8d3d760732457c6a027293ab4304df41916b033631016c58b17f
 
 name:           interpreter
 version:        0.1.0.0
@@ -27,7 +27,6 @@ source-repository head
 library
   exposed-modules:
       App
-      Lib
       Logger
       Models
       Settings
@@ -63,6 +62,7 @@ library
     , text
     , time >=1.6.0.1 && <1.13
     , transformers
+    , vector
     , wai
     , wai-cors
     , wai-extra
@@ -106,6 +106,7 @@ executable interpreter-exe
     , text
     , time >=1.6.0.1 && <1.13
     , transformers
+    , vector
     , wai
     , wai-cors
     , wai-extra
@@ -153,6 +154,7 @@ test-suite interpreter-test
     , text
     , time >=1.6.0.1 && <1.13
     , transformers
+    , vector
     , wai
     , wai-cors
     , wai-extra
