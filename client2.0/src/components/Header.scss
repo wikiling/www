@@ -1,13 +1,11 @@
 .header {
+  flex-basis: 100%;
   display: flex;
   flex-direction: row;
+  align-items: left;
   justify-content: space-between;
 
-  padding-top: 10px;
+  border-bottom: 1px solid;
 
-  .interpret-button {
-    border: 1px solid grey;
-    padding: 3px 5px;
-    font-variant: small-caps;
-  }
+  padding: 10px 38px 10px 5px;
 }

@@ -11,6 +11,7 @@ import { AuthorTextRouteParams, ID, SyntaxTree, SyntaxTreeID } from "types";
 import { registerMonaco } from "utils/monaco";
 import TreeHeader from "components/tree/TreeHeader";
 import { TreeContext } from "components/tree/TreeContext";
+import Header from "components/Header";
 
 const AuthorTextsRoute: React.FC = () => {
   const { authorId } = useParams<AuthorTextRouteParams>();
@@ -30,16 +31,13 @@ const AuthorTextsRoute: React.FC = () => {
   const uri = `file:///app/fragments/`;
 
   const options = {
-    model: monaco.editor.getModel(monaco.Uri.parse(uri))
-    ||
-    monaco.editor.createModel("// bar", 'haskell', monaco.Uri.parse(uri))
+    model: monaco.editor.getModel(monaco.Uri.parse(uri)) ||
+      monaco.editor.createModel("// bar", 'haskell', monaco.Uri.parse(uri))
   };
 
   return (
     <div className="author-texts-route">
-      <div className="author-texts-route-header">
-        {author?.full_name}
-      </div>
+      <Header left={author?.full_name}/>
       <div className="author-texts-route-editor">
         <MonacoEditor
           width="100%"
