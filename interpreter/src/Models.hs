@@ -55,6 +55,7 @@ type Lexeme = Text
 data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme
   deriving (Show, Generic, JSON.ToJSON)
 
+{-
 syntaxNodeArrayParser' :: [JSON.Value] -> Parser [SyntaxTree]
 syntaxNodeArrayParser' a = case a of
   [] -> return ([] :: [SyntaxTree])
@@ -63,11 +64,12 @@ syntaxNodeArrayParser' a = case a of
 syntaxNodeArrayParser :: JSON.Value -> Parser [SyntaxTree]
 syntaxNodeArrayParser v = case v of
   (Array a) -> syntaxNodeArrayParser' (V.toList a)
+-}
 
 syntaxNodeParser :: JSON.Object -> Parser SyntaxTree
 syntaxNodeParser obj =
   Leaf <$> obj .: "id" <*> obj .: "token"
-    <|> Node <$> obj .: "id" <*> obj .: "pos" <*> JSONT.explicitParseField syntaxNodeArrayParser obj "children"
+    <|> Node <$> obj .: "id" <*> obj .: "pos" <*> obj .: "children"
 
 instance FromJSON SyntaxTree where
   parseJSON = JSON.withObject "SyntaxTree" syntaxNodeParser

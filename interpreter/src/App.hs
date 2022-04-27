@@ -28,6 +28,7 @@ import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, Ser
 import Settings (SiteConfig (..))
 import System.Log.FastLogger
   ( LoggerSet,
+    ToLogStr,
     flushLogStr,
     pushLogStrLn,
     toLogStr,
@@ -66,13 +67,10 @@ fragmentHandler fragmentId syntaxTree = do
             lversion = version config,
             lenvironment = environment config
           }
-  -- emit log message
-  liftIO $ pushLogStrLn logset $ toLogStr logMsg
-  -- return handler result (for simplicity, result is a LogMessage)
-  let resp = FragmentHandlerResp {syntaxTree = syntaxTree}
-  pure resp
 
--- fragmentHandler _ _ = throwError err401
+  liftIO $ pushLogStrLn logset $ toLogStr logMsg
+
+  pure $ FragmentHandlerResp {syntaxTree = syntaxTree}
 
 fragmentApi :: Proxy FragmentAPI
 fragmentApi = Proxy
