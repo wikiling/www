@@ -1,4 +1,6 @@
 import logging
+import re
+import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -8,6 +10,23 @@ from emails.template import JinjaTemplate
 from jose import jwt
 
 from app.core.config import settings
+
+
+def slugify(value, allow_unicode=False):
+    """
+    Courtesy of https://docs.djangoproject.com/en/4.0/_modules/django/utils/text/#slugify.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize("NFKC", value)
+    else:
+        value = (
+            unicodedata.normalize("NFKD", value)
+            .encode("ascii", "ignore")
+            .decode("ascii")
+        )
+    value = re.sub(r"[^\w\s-]", "", value.lower())
+    return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
 def send_email(

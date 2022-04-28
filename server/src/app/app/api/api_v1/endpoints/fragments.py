@@ -53,16 +53,16 @@ def update_fragment(
     return fragment
 
 
-@router.get("/{id}", response_model=schemas.Fragment)
+@router.get("/{slug}", response_model=schemas.Fragment)
 def read_fragment(
     *,
     db: Session = Depends(deps.get_db),
-    id: int,
+    slug: str,
 ) -> Any:
     """
-    Get text by ID.
+    Get fragment by slug.
     """
-    fragment = crud.fragment.get(db=db, id=id)
+    fragment = crud.fragment.get(db=db, slug=slug)
     if not fragment:
         raise HTTPException(status_code=404, detail="fragment not found")
     return fragment
