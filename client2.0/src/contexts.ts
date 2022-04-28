@@ -1,9 +1,6 @@
 import { createContext } from 'react';
-import { SentenceStore } from 'stores/sentence';
-import { CentralStore } from 'stores/central';
+import { FragmentStore } from 'stores/FragmentStore';
 
 export const storeContext = createContext({
-  centralStore: new CentralStore({
-    sentenceStore: new SentenceStore()
-  })
+  fragmentStore: new FragmentStore()
 })

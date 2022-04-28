@@ -1,7 +1,8 @@
 import React from "react";
-import { SemanticTree, SyntaxTree } from "types";
+import { SemanticTree, Example, SyntaxTree } from "types";
 
 export interface TreeContextInterface {
+  example: Example
   interpretTree: (tree: SyntaxTree) => Promise<SemanticTree>
 }
   

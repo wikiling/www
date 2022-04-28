@@ -1,14 +1,14 @@
 import React from 'react';
 import './TreeHeader.scss';
 import Button from 'components/Button';
-import { Sentence } from 'types';
+import { Example } from 'types';
 
 type TreeHeaderProps = {
-  sentence: Sentence
+  example: Example
   onInterpretButtonClick: () => any
 }
 
-const TreeHeader: React.FC<TreeHeaderProps> = ({ sentence, onInterpretButtonClick }) => {
+const TreeHeader: React.FC<TreeHeaderProps> = ({ example, onInterpretButtonClick }) => {
   const handleInterpretButtonClick = async () => {
     onInterpretButtonClick()
       .catch((err: any) => {
@@ -19,7 +19,7 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({ sentence, onInterpretButtonClic
   }
   return (
     <div className="tree-header">
-      <div>({sentence.id})</div>
+      <div>({example.id})</div>
       <Button className="interpret-button" onClick={handleInterpretButtonClick}>interpret</Button>
     </div>
   )

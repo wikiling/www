@@ -2,15 +2,16 @@ import nltk
 import spacy
 import benepar
 
+
 class ParsingException(Exception):
     pass
 
-class JSONSerializableNLTKTree(nltk.ParentedTree):
 
+class JSONSerializableNLTKTree(nltk.ParentedTree):
     @property
     def is_pre_terminal(self):
         return len(self) == 1 and isinstance(self[0], str)
-    
+
     @property
     def id(self):
         pos = self.treeposition()
@@ -24,7 +25,8 @@ class JSONSerializableNLTKTree(nltk.ParentedTree):
         obj = {"pos": self.label(), "id": self.id}
 
         if self.is_pre_terminal:
-            obj["children"] = [{"token": child,  "id": "%s0" % self.id} for child in self]
+            obj["children"] = [{"token": child,  "id": "%s0" % self.id}
+                               for child in self]
         elif len(self) > 0:
             obj["children"] = [child.json() for child in self]
 
@@ -35,9 +37,12 @@ parser = spacy.load("en_core_web_sm")
 constituency_parser = spacy.load("en_core_web_sm")
 constituency_parser.add_pipe("benepar", config={"model": "benepar_en3"})
 
-# parse a *single* sentence
+
 def parse_sentence_constituency(text: str):
-    parse = constituency_parser(text)
+    punc = "!\"#$%&'()*+,-/:;<=>?@[\]^_`{|}~"
+    text_without_punc = text.translate(str.maketrans('', '', punc))
+
+    parse = constituency_parser(text_without_punc)
     sents = list(parse.sents)
 
     if len(sents) != 1:

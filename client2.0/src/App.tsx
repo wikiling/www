@@ -3,14 +3,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.scss";
 import { useStores } from "./hooks";
 import { observer } from "mobx-react-lite";
-import AuthorTextsRoute from "components/routes/AuthorTextsRoute";
+import AuthorTextsRoute from "components/routes/FragmentDetailRoute";
 
 const App: React.FC = () => {
-  const { centralStore } = useStores()
+  const { fragmentStore } = useStores()
 
   useEffect(() => {
-    centralStore.dispatchFetchAuthors();
-    centralStore.dispatchFetchTexts();
+    fragmentStore.dispatchFetchAuthors();
   }, []);
 
   return (

@@ -1,4 +1,4 @@
-from .crud_text import text
+from .crud_fragment import fragment
 from .crud_user import user
 from .crud_author import author
 

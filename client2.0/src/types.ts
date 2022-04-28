@@ -2,13 +2,8 @@ import { HierarchyNode } from "d3-hierarchy"
 
 export type toEnumType<EnumType> = EnumType[keyof EnumType]
 
-export const ParseTypes = {
-  CONSTITUENCY: 'CONSTITUENCY'
-} as const
-
-export type ParseType = toEnumType<typeof ParseTypes>
-
 export type ID = number
+export type Slug = string
 
 export type Author = {
   id: ID
@@ -33,32 +28,31 @@ export type SemanticTree = {
 
 export type CoordinatedSyntaxTree = HierarchyNode<SyntaxTree>
 
-export type IncomingSentence = {
+export type Example = {
   id: ID
   description: string
   content: string
-  // parse_type: ParseTypes.CONSTITUENCY
-  has_punctuation: boolean
+}
+
+export type ConstituencyParse = {
+  id: ID
+  example_id: ID
+  parse_string: string
   syntax_tree: SyntaxTree
 }
 
-export type Sentence = Omit<IncomingSentence, 'syntax_tree'> & {
-  syntax_tree: CoordinatedSyntaxTree
+export type CoordinatedConstituencyParse = ConstituencyParse & {
+  coordinated_syntax_tree: CoordinatedSyntaxTree
 }
 
-export type IncomingText = {
+export type Fragment = {
   id: ID
-  author_id: ID
+  author: Author
   title: string
   content: string
-  sentences: IncomingSentence[]
+  examples: Example[]
 }
 
-export type Text = Omit<IncomingText, 'sentences'> & {
-  sentences: Sentence[]
-}
-
-export type AuthorTextRouteParams = {
-  authorId: string
-  textId: string
+export type FragmentDetailRouteParams = {
+  slug: Slug
 }

@@ -1,16 +1,16 @@
 $editor-initial-width: 40;
 $tree-column-initial-width: 58;
 
-.author-texts-route {
+.fragment-detail-route {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
 }
 
-.author-texts-route-editor {
+.fragment-detail-route-editor {
   width: #{$editor-initial-width}vw;
 }
-.author-texts-route-trees {
+.fragment-detail-route-examples {
   width: #{$tree-column-initial-width}vw;
 
   .sentence-id {

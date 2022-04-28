@@ -47,7 +47,7 @@ $hamburger-active-hover-filter: $hamburger-hover-filter !default;
     }
   }
 
-  &.is-active {
+  &.active {
     &:hover {
       @if $hamburger-hover-use-filter == true {
         filter: $hamburger-active-hover-filter;
@@ -60,7 +60,7 @@ $hamburger-active-hover-filter: $hamburger-hover-filter !default;
     .hamburger-inner,
     .hamburger-inner::before,
     .hamburger-inner::after {
-      background-color: $hamburger-active-layer-color;
+      background-color: pink;
     }
   }
 }
@@ -70,6 +70,7 @@ $hamburger-active-hover-filter: $hamburger-hover-filter !default;
   height: $hamburger-layer-height * 3 + $hamburger-layer-spacing * 2;
   display: inline-block;
   position: relative;
+  top: 2.5px;
 }
 
 .hamburger-inner {
@@ -120,7 +121,7 @@ $hamburger-active-hover-filter: $hamburger-hover-filter !default;
       }
     }
 
-    &.is-active {
+    &.active {
       .hamburger-inner {
         transform: rotate(45deg);
         transition-delay: 0.12s;

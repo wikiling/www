@@ -1,6 +1,5 @@
 import axios from 'axios'
-import { hierarchy } from 'd3-hierarchy';
-import { IncomingText, Text, Author, SyntaxTree, SemanticTree } from './types'
+import { Fragment, Author, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse } from './types'
 
 const catalogueClient = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',
@@ -16,42 +15,30 @@ const interpreterClient = axios.create({
   },
 });
 
-const TextFactory = ({sentences, ...text}: IncomingText): Text => ({
-  ...text,
-  sentences: sentences.map(({ syntax_tree, ...sent }) => ({
-    ...sent,
-    syntax_tree: hierarchy(syntax_tree)
-  }))
-});
-
-const fetchTexts = (): Promise<Text[]> => catalogueClient
-  .get('texts/')
-  .then(({ data }: { data: IncomingText[] }) => data.map(TextFactory));
-
 const fetchAuthors = (): Promise<Author[]> => catalogueClient
   .get('authors/')
   .then(({ data }) => data);
 
-
-type InterpretationTree = {
-  meta: string
-  children: InterpretationTree[]
-}
-
-const toInterpretationTree = (syntaxTree: SyntaxTree): InterpretationTree => ({
-  meta: syntaxTree.pos || syntaxTree.token || '',
-  children: syntaxTree.children?.map(toInterpretationTree) ?? []
-});
-
-const interpret = (text: Text, syntaxTree: SyntaxTree): Promise<SemanticTree> => {
-  console.log(toInterpretationTree(syntaxTree));
-  return interpreterClient
-  .post(`fragments/${text.id}/`, syntaxTree)
+const fetchFragment = (slug: Slug): Promise<Fragment> => catalogueClient
+  .get(`fragments/${slug}`)
   .then(({ data }) => data);
-}
+
+const fetchExamples = (fragmentId: ID): Promise<Example[]> => catalogueClient
+  .get(`examples?fragment=${fragmentId}`)
+  .then(({ data }) => data);
+
+const fetchConstituencyParses = (exampleId: ID): Promise<ConstituencyParse[]> => catalogueClient
+  .get(`constituency-parses?example=${exampleId}`)
+  .then(({ data }) => data);
+
+const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpreterClient
+  .post(`fragments/${fragment.id}/`, syntaxTree)
+  .then(({ data }) => data);
 
 export {
   fetchAuthors,
-  fetchTexts,
-  interpret
+  fetchFragment,
+  fetchExamples,
+  fetchConstituencyParses,
+  fetchInterpretation
 }
