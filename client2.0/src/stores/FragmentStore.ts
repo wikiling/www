@@ -58,6 +58,8 @@ export class FragmentStore {
   }
 
   findConstituencyParseNode = (constituencyParseId: ID, nodeId: SyntaxTreeID) => {
+    console.log(constituencyParseId)
+    console.log(this.constituencyParseMap)
     const parse = this.constituencyParseMap[constituencyParseId];
     const tree = parse.coordinated_syntax_tree.copy();
     const node = tree.findById(nodeId);
@@ -68,7 +70,7 @@ export class FragmentStore {
     return { parse, tree, node };
   }
 
-  updateConstituencyParseNodeText = (exampleId: ID, nodeId: SyntaxTreeID, text: string) => {
+  updateConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID, text: string) => {
     const { parse, tree, node } = this.findConstituencyParseNode(exampleId, nodeId);
 
     if (!!node.data.pos) node.data.pos = text

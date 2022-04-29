@@ -4,11 +4,19 @@ import React from 'react';
 
 type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
   trans?: boolean
+  active?: boolean
 }
 
-const Button: React.FC<ButtonProps> = ({ className = '', trans = false, children, ...props }) => {
+const Button: React.FC<ButtonProps> = ({ className = '', trans = false, active = false, children, ...props }) => {
   return (
-    <div className={classNames('button', className, { 'button--trans': trans })} {...props}>
+    <div className={classNames(
+      'button',
+      className,
+      {
+        'button--trans': trans,
+        'button--active': active
+      }
+    )} {...props}>
       {children}
     </div>
   )

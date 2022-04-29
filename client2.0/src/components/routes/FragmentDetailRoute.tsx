@@ -43,34 +43,13 @@ const FragmentDetailRoute: React.FC = () => {
       <div className="fragment-detail-route-examples">
         {fs.examples.map((example) =>
           <Example
+            key={example.id}
             example={example}
             constituencyParses={fs.exampleConstituencyParses(example.id)}
-            onConstituencyParseNodeAdd={
-              (nodeId: SyntaxTreeID) => fs.addConstituencyParseNode(
-                example.id, nodeId
-              )
-            }
-            onConstituencyParseNodeEdit={
-              (values: EditableNodeValues) => {
-                fs.updateConstituencyParseNodeText(
-                  example.id, values.id, values.text
-                );
-              }
-            }
-            onConstituencyParseNodeMove={
-              (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
-                fs.moveConstituencyParseNode(
-                  example.id, nodeId, targetParentId
-                );
-              }
-            }
-            onConstituencyParseNodeRemove={
-              (nodeId: SyntaxTreeID) => {
-                fs.removeConstituencyParseNode(
-                  example.id, nodeId
-                );
-              }
-            }
+            onConstituencyParseNodeAdd={fs.addConstituencyParseNode}
+            onConstituencyParseNodeEdit={fs.updateConstituencyParseNode}
+            onConstituencyParseNodeMove={fs.moveConstituencyParseNode}
+            onConstituencyParseNodeRemove={fs.removeConstituencyParseNode}
             onConstituencyParseInterpret={(constituencyParse) =>
               fs.fragment && fs.dispatchInterpretConstituencyParse(
                 fs.fragment, constituencyParse
