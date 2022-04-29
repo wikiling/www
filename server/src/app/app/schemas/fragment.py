@@ -1,6 +1,7 @@
 from typing import Optional, List
 from pydantic import BaseModel
 from app.schemas.example import Example
+from app.schemas.author import Author
 
 
 class FragmentBase(BaseModel):
@@ -19,7 +20,7 @@ class FragmentUpdate(FragmentBase):
 class Fragment(FragmentBase):
     id: int
     title: str
-    author_id: int
+    author: Author
     examples: List[Example]
 
     class Config:

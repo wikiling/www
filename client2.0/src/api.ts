@@ -15,20 +15,16 @@ const interpreterClient = axios.create({
   },
 });
 
-const fetchAuthors = (): Promise<Author[]> => catalogueClient
-  .get('authors/')
-  .then(({ data }) => data);
-
 const fetchFragment = (slug: Slug): Promise<Fragment> => catalogueClient
   .get(`fragments/${slug}`)
   .then(({ data }) => data);
 
-const fetchExamples = (fragmentId: ID): Promise<Example[]> => catalogueClient
-  .get(`examples?fragment=${fragmentId}`)
+const fetchExamples = (fragment_id: ID): Promise<Example[]> => catalogueClient
+  .get('examples/', {params: { fragment_id }})
   .then(({ data }) => data);
 
-const fetchConstituencyParses = (exampleId: ID): Promise<ConstituencyParse[]> => catalogueClient
-  .get(`constituency-parses?example=${exampleId}`)
+const fetchConstituencyParses = (example_id: ID): Promise<ConstituencyParse[]> => catalogueClient
+  .get('constituency-parses/', {params: { example_id }})
   .then(({ data }) => data);
 
 const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpreterClient
@@ -36,7 +32,6 @@ const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promis
   .then(({ data }) => data);
 
 export {
-  fetchAuthors,
   fetchFragment,
   fetchExamples,
   fetchConstituencyParses,

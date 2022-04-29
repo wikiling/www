@@ -32,6 +32,7 @@ export type Example = {
   id: ID
   description: string
   content: string
+  label: string
 }
 
 export type ConstituencyParse = {
@@ -54,5 +55,5 @@ export type Fragment = {
 }
 
 export type FragmentDetailRouteParams = {
-  slug: Slug
+  fragmentSlug: Slug
 }

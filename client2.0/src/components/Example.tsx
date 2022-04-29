@@ -34,7 +34,7 @@ const Example: React.FC<ExampleProps> = ({
   return (
     <div className="example">
       <div className="example-header">
-        <div>({example.id})</div>
+        <div>({example.label}) {example.content}</div> <Button trans>expand</Button>
       </div>
 
       {constituencyParses.map((constituencyParse) => (

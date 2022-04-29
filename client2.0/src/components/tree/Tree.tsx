@@ -48,8 +48,6 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const editNodeRef = useRef<HTMLFormElement>(null);
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
-  console.log(syntaxTree)
-
   const resize = () => {
     const newCoordinatedRootNode = computeLayout(syntaxTree);
     const groupTranslateX = rootRef.current ? (

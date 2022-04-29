@@ -1,7 +1,7 @@
 
 import { makeAutoObservable } from 'mobx';
-import { ID, Author, Fragment, SyntaxTree, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID } from 'types';
-import { fetchFragment, fetchAuthors, fetchInterpretation, fetchExamples, fetchConstituencyParses } from 'api';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID } from 'types';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 
@@ -124,12 +124,6 @@ export class FragmentStore {
       if (!constituencyParses) continue
       this.setConstituencyParses(constituencyParses);
     }
-  }
-
-  dispatchFetchAuthors = () => {
-    fetchAuthors().then(authors => {
-      this.authors = authors;
-    });
   }
 
   dispatchInterpretConstituencyParse = (fragment: Fragment, constituencyParse: ConstituencyParse) => {

@@ -6,6 +6,7 @@ from app.schemas.constituency_parse import ConstituencyParse
 class ExampleBase(BaseModel):
     content: str
     description: Optional[str] = None
+    label: str
 
 
 class ExampleCreate(ExampleBase):

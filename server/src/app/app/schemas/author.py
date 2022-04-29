@@ -3,9 +3,9 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 
-# Shared properties
 class AuthorBase(BaseModel):
-    full_name: Optional[str] = None
+    first_name = str
+    last_name = str
 
 
 class AuthorCreate(AuthorBase):
@@ -16,16 +16,9 @@ class AuthorUpdate(AuthorBase):
     pass
 
 
-class AuthorInDBBase(AuthorBase):
+class Author(AuthorBase):
     id: int
+    full_name: str
 
     class Config:
         orm_mode = True
-
-
-class Author(AuthorInDBBase):
-    pass
-
-
-class AuthorInDB(AuthorInDBBase):
-    pass

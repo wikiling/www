@@ -11,7 +11,7 @@ import Header from "components/Header";
 import Example from "components/Example";
 
 const FragmentDetailRoute: React.FC = () => {
-  const { slug } = useParams<FragmentDetailRouteParams>();
+  const { fragmentSlug } = useParams<FragmentDetailRouteParams>();
   const { fragmentStore: fs } = useStores();
 
   const uri = `file:///app/fragments/`;
@@ -22,8 +22,8 @@ const FragmentDetailRoute: React.FC = () => {
   };
 
   useEffect(() => {
-    if (slug) fs.dispatchFetchFragment(slug);
-  }, [slug, fs])
+    if (fragmentSlug) fs.dispatchFetchFragment(fragmentSlug);
+  }, [fragmentSlug, fs])
 
   return (
     <div className="fragment-detail-route">

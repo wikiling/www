@@ -3,22 +3,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.scss";
 import { useStores } from "./hooks";
 import { observer } from "mobx-react-lite";
-import AuthorTextsRoute from "components/routes/FragmentDetailRoute";
+import FragmentDetailRoute from "components/routes/FragmentDetailRoute";
 
 const App: React.FC = () => {
-  const { fragmentStore } = useStores()
-
-  useEffect(() => {
-    fragmentStore.dispatchFetchAuthors();
-  }, []);
-
   return (
     <div className="app">
       <BrowserRouter>
         <Routes>
           <Route path="/">
             <Route index/>
-            <Route path="authors/:authorId" element={<AuthorTextsRoute/>}/>
+            <Route path=":fragmentSlug" element={<FragmentDetailRoute/>}/>
           </Route>
         </Routes>
       </BrowserRouter>
