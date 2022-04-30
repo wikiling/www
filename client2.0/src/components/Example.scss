@@ -1,5 +1,26 @@
-.example-header {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+.example {
+  .example-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .example-row {
+    &:not(:first-child) {
+      padding-top: 10px;
+    }
+  }
+  
+  .example-constituency-parse {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    .tree-wrapper {
+      flex-basis: 100%;
+      align-items: center;
+      justify-content: center;
+      display: flex;
+    }
+  }
 }

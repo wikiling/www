@@ -1,6 +1,6 @@
 
 import { makeAutoObservable } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID } from 'types';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseValues } from 'types';
 import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
@@ -70,11 +70,11 @@ export class FragmentStore {
     return { parse, tree, node };
   }
 
-  updateConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID, text: string) => {
-    const { parse, tree, node } = this.findConstituencyParseNode(exampleId, nodeId);
+  updateConstituencyParseNode = (exampleId: ID, values: EditableConstituencyParseValues) => {
+    const { parse, tree, node } = this.findConstituencyParseNode(exampleId, values.nodeId);
 
-    if (!!node.data.pos) node.data.pos = text
-    else node.data.token = text;
+    if (!!node.data.pos) node.data.pos = values.nodeText
+    else node.data.token = values.nodeText;
 
     parse.coordinated_syntax_tree = hierarchy(tree.data);
   }

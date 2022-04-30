@@ -42,6 +42,11 @@ export type ConstituencyParse = {
   syntax_tree: SyntaxTree
 }
 
+export type EditableConstituencyParseValues = {
+  nodeId: SyntaxTreeID
+  nodeText: string
+}
+
 export type CoordinatedConstituencyParse = ConstituencyParse & {
   coordinated_syntax_tree: CoordinatedSyntaxTree
 }

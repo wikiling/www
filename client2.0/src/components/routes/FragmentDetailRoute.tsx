@@ -1,14 +1,15 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./FragmentDetailRoute.scss";
 import { useParams } from "react-router-dom";
 import MonacoEditor, { monaco } from "react-monaco-editor";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
 import { EditableNodeValues } from "components/tree/types";
-import { FragmentDetailRouteParams, SyntaxTreeID } from "types";
+import { FragmentDetailRouteParams, ID, SyntaxTreeID } from "types";
 import { registerMonaco } from "utils/monaco";
 import Header from "components/Header";
 import Example from "components/Example";
+import { toJS } from "mobx";
 
 const FragmentDetailRoute: React.FC = () => {
   const { fragmentSlug } = useParams<FragmentDetailRouteParams>();
@@ -20,6 +21,10 @@ const FragmentDetailRoute: React.FC = () => {
     model: monaco.editor.getModel(monaco.Uri.parse(uri)) ||
       monaco.editor.createModel("-- write your fragment here...", "haskell", monaco.Uri.parse(uri))
   };
+  const [exampleEditCountMap, setExampleEditCountMap] = useState<{[key: ID]: number}>({});
+  const incrExampleEditCount = (exampleId: ID) => setExampleEditCountMap(
+    prev => ({ ...prev, [exampleId]: (prev[exampleId] ?? 0) + 1 })
+  );
 
   useEffect(() => {
     if (fragmentSlug) fs.dispatchFetchFragment(fragmentSlug);
@@ -43,13 +48,16 @@ const FragmentDetailRoute: React.FC = () => {
       <div className="fragment-detail-route-examples">
         {fs.examples.map((example) =>
           <Example
-            key={example.id}
+            key={`${example.id}-${exampleEditCountMap[example.id]}`}
             example={example}
-            constituencyParses={fs.exampleConstituencyParses(example.id)}
+            constituencyParses={toJS(fs.exampleConstituencyParses(example.id))}
             onConstituencyParseNodeAdd={fs.addConstituencyParseNode}
             onConstituencyParseNodeEdit={fs.updateConstituencyParseNode}
             onConstituencyParseNodeMove={fs.moveConstituencyParseNode}
-            onConstituencyParseNodeRemove={fs.removeConstituencyParseNode}
+            onConstituencyParseNodeRemove={(cpid: ID, nodeId: SyntaxTreeID) => {
+              fs.removeConstituencyParseNode(cpid, nodeId);
+              incrExampleEditCount(example.id)
+            }}
             onConstituencyParseInterpret={(constituencyParse) =>
               fs.fragment && fs.dispatchInterpretConstituencyParse(
                 fs.fragment, constituencyParse
