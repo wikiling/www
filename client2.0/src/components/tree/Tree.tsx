@@ -145,7 +145,10 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
 
   useClickAway(editNodeRef, () => setEditNode(null));
 
-  useEffect(resize, []);
+  useEffect(() => {
+    resize()
+    console.log('initial render')
+  }, []);
 
   return (
     <div className="tree" ref={rootRef}>

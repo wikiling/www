@@ -48,7 +48,7 @@ const FragmentDetailRoute: React.FC = () => {
       <div className="fragment-detail-route-examples">
         {fs.examples.map((example) =>
           <Example
-            key={`${example.id}-${exampleEditCountMap[example.id]}`}
+            key={example.id}
             example={example}
             constituencyParses={toJS(fs.exampleConstituencyParses(example.id))}
             onConstituencyParseNodeAdd={fs.addConstituencyParseNode}

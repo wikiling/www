@@ -5,6 +5,7 @@ import Tree from './tree/Tree';
 import { toJS } from 'mobx';
 import { EditableNodeValues } from './tree/types';
 import Button from "./Button";
+import { observer } from "mobx-react-lite";
 
 type ExampleProps = {
   example: ExampleModel
@@ -35,8 +36,7 @@ const Example: React.FC<ExampleProps> = ({
   const handleExpandButtonClick = (example: ExampleModel) => setTreeExpansionMap(
     prev => ({ ...prev, [example.id]: !prev[example.id] })
   );
-
-  console.log(treeEditCountMap)
+  console.log('...', treeEditCountMap, constituencyParses)
 
   return (
     <div className="example">
@@ -49,7 +49,7 @@ const Example: React.FC<ExampleProps> = ({
 
       <div className="example-body example-row">
         {constituencyParses.map((constituencyParse) => !!treeExpansionMap[example.id] && (
-          <div className="example-constituency-parse" key={`${example.id}-${treeEditCountMap[example.id]}`}>
+          <div className="example-constituency-parse" key={`${example.id}-${treeEditCountMap[constituencyParse.id]}`}>
             <div className="tree-wrapper">
               <Tree
                 id={example.id}
