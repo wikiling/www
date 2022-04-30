@@ -1,20 +1,22 @@
 import "./Example.scss";
-import React, { useState } from 'react';
-import { ConstituencyParse, CoordinatedConstituencyParse, EditableConstituencyParseValues, Example as ExampleModel, ID, SyntaxTreeID } from 'types';
+import React, { useRef, useState } from 'react';
+import { ConstituencyParse, CoordinatedConstituencyParse, EditableConstituencyParseValues, EditableExampleValues, Example as ExampleModel, ID, SyntaxTreeID } from 'types';
 import Tree from './tree/Tree';
-import { toJS } from 'mobx';
 import { EditableNodeValues } from './tree/types';
 import Button from "./Button";
-import { observer } from "mobx-react-lite";
+import { useForm } from "react-hook-form";
 
 type ExampleProps = {
   example: ExampleModel
   constituencyParses: CoordinatedConstituencyParse[]
+  onConstituencyParseInterpret: (constituencyParse: ConstituencyParse) => void
+  onConstituencyParseApproximate: (exampleId: ID) => Promise<ConstituencyParse>
   onConstituencyParseNodeAdd: (constituencyParseId: ID, nodeId: SyntaxTreeID) => void
   onConstituencyParseNodeEdit: (constituencyParseId: ID, values: EditableConstituencyParseValues) => void
   onConstituencyParseNodeRemove: (constituencyParseId: ID, nodeId: SyntaxTreeID) => void
   onConstituencyParseNodeMove: (constituencyParseId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
-  onConstituencyParseInterpret: (constituencyParse: ConstituencyParse) => void
+  onConstituencyParseRemove: (constituencyParseId: ID) => Promise<void>
+  onSave: (example: EditableExampleValues) => void
 }
 
 const Example: React.FC<ExampleProps> = ({
@@ -24,10 +26,32 @@ const Example: React.FC<ExampleProps> = ({
   onConstituencyParseNodeEdit,
   onConstituencyParseNodeRemove,
   onConstituencyParseNodeMove,
-  onConstituencyParseInterpret
+  onConstituencyParseInterpret,
+  onConstituencyParseApproximate,
+  onConstituencyParseRemove,
+  onSave
 }) => {
+  const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [treeEditCountMap, setTreeEditCountMap] = useState<{[key: ID]: number}>({});
   const [treeExpansionMap, setTreeExpansionMap] = useState<{[key: ID]: boolean}>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const {
+    register,
+    handleSubmit,
+    formState
+  } = useForm<EditableExampleValues>({
+    defaultValues: {
+      label: example.label,
+      content: example.content
+    }
+  });
+  const [inputWidthMap, setInputWidthMap] = useState<{[field: string]: number}>({
+    label: example.label.length,
+    content: example.content.length
+  });
+
+  const registerOnInputChange = (field: string) =>
+    (e: any) => setInputWidthMap(prev => ({ ...prev, [field]: e.target.value.length }));
 
   const incrTreeEditCount = (constituencyParseId: ID) => setTreeEditCountMap(
     prev => ({ ...prev, [constituencyParseId]: (prev[constituencyParseId] ?? 0) + 1 })
@@ -36,20 +60,40 @@ const Example: React.FC<ExampleProps> = ({
   const handleExpandButtonClick = (example: ExampleModel) => setTreeExpansionMap(
     prev => ({ ...prev, [example.id]: !prev[example.id] })
   );
-  console.log('...', treeEditCountMap, constituencyParses)
+
+  const handleApproximateSyntax = async () => {
+    await onConstituencyParseApproximate(example.id);
+    treeExpansionMap[example.id] = true;
+  }
+
+  const renderInput = (field: keyof EditableExampleValues) => <input
+    spellCheck={false}
+    style={{ width: `${inputWidthMap[field]}ch` }}
+    {...register(field, { onChange: registerOnInputChange(field)})}
+  />
 
   return (
     <div className="example">
       <div className="example-header example-row">
-        <div>({example.label}) {example.content}</div>
-        <Button onClick={() => handleExpandButtonClick(example)} trans>
-          {!treeExpansionMap[example.id] ? 'expand' : 'collapse'}
-        </Button>
+        <form className="example-form" onClick={() => !isInEdit && setIsInEdit(true)} onSubmit={handleSubmit(onSave)} ref={formRef}>
+          <fieldset disabled={!isInEdit}>
+            {renderInput('label')}
+            {renderInput('content')}
+          </fieldset>
+        </form>
+
+        <div className="example-text-toolbar">
+          {formState.isDirty && <Button onClick={handleSubmit(onSave)}>save</Button>}
+          <Button onClick={handleApproximateSyntax}>approximate syntax</Button>
+          <Button onClick={() => handleExpandButtonClick(example)}>
+            {!treeExpansionMap[example.id] ? 'expand' : 'collapse'}
+          </Button>
+        </div>
       </div>
 
       <div className="example-body example-row">
         {constituencyParses.map((constituencyParse) => !!treeExpansionMap[example.id] && (
-          <div className="example-constituency-parse" key={`${example.id}-${treeEditCountMap[constituencyParse.id]}`}>
+          <div className="example-constituency-parse" key={`${constituencyParse.id}-${treeEditCountMap[constituencyParse.id]}`}>
             <div className="tree-wrapper">
               <Tree
                 id={example.id}
@@ -75,9 +119,14 @@ const Example: React.FC<ExampleProps> = ({
                 }}
               />
             </div>
-            <Button trans onClick={() => onConstituencyParseInterpret(constituencyParse)}>
-              interpret
-            </Button>
+            <div className="example-syntax-toolbar">
+              <Button trans onClick={() => onConstituencyParseInterpret(constituencyParse)}>
+                interpret
+              </Button>
+              <Button trans onClick={() => onConstituencyParseRemove(constituencyParse.id)}>
+                remove
+              </Button>
+            </div>
           </div>
         ))}
       </div>

@@ -7,7 +7,7 @@ type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
   active?: boolean
 }
 
-const Button: React.FC<ButtonProps> = ({ className = '', trans = false, active = false, children, ...props }) => {
+const Button: React.FC<ButtonProps> = ({ className = '', trans = true, active = false, children, ...props }) => {
   return (
     <div className={classNames(
       'button',

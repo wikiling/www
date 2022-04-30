@@ -28,12 +28,16 @@ export type SemanticTree = {
 
 export type CoordinatedSyntaxTree = HierarchyNode<SyntaxTree>
 
-export type Example = {
-  id: ID
+export type ExampleBase = {
+  fragment_id: ID
   description: string
   content: string
   label: string
 }
+
+export type Example = ExampleBase & { id: ID }
+export type UnidentifiedExample = ExampleBase
+export type EditableExampleValues = Pick<ExampleBase, 'label' | 'content'>
 
 export type ConstituencyParse = {
   id: ID
@@ -55,7 +59,6 @@ export type Fragment = {
   id: ID
   author: Author
   title: string
-  content: string
   examples: Example[]
 }
 

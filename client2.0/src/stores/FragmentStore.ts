@@ -1,7 +1,7 @@
 
-import { makeAutoObservable } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses } from 'api';
+import { makeAutoObservable, ObservableMap, remove } from 'mobx';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseValues, UnidentifiedExample, EditableExampleValues } from 'types';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 
@@ -13,6 +13,13 @@ const { values } = Object;
 const SyntaxTreeNodeFactory = () => ({
   id: "",
   text: ""
+});
+
+const BlankExampleFactory = (fragment_id: ID): UnidentifiedExample => ({
+  fragment_id,
+  content: '',
+  label: '',
+  description: ''
 });
 
 const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyParse): CoordinatedConstituencyParse => ({
@@ -56,6 +63,8 @@ export class FragmentStore {
   exampleConstituencyParses = (exampleId: ID) => {
     return this.constituencyParses.filter(({ example_id }) => example_id === exampleId);
   }
+
+  createBlankExample = BlankExampleFactory
 
   findConstituencyParseNode = (constituencyParseId: ID, nodeId: SyntaxTreeID) => {
     console.log(constituencyParseId)
@@ -126,6 +135,25 @@ export class FragmentStore {
       if (!constituencyParses) continue
       this.setConstituencyParses(constituencyParses);
     }
+
+    return this.fragment;
+  }
+
+  dispatchUpdateExample = async (exampleId: ID, values: EditableExampleValues) => {
+    const updatedExample = await updateExample(exampleId, values);
+    this.exampleMap[exampleId] = updatedExample;
+    return updatedExample;
+  }
+
+  dispatchApproximateExampleConstituency = async (exampleId: ID) => {
+    const constituencyParse = await createConstituencyParse(exampleId);
+    this.setConstituencyParse(constituencyParse);
+    return constituencyParse;
+  }
+
+  dispatchDeleteConstituencyParse = async (constituencyParseId: ID) => {
+    await deleteConstituencyParse(constituencyParseId);
+    remove<ID, ConstituencyParse>(this.constituencyParseMap as unknown as ObservableMap<number, ConstituencyParse>, constituencyParseId);
   }
 
   dispatchInterpretConstituencyParse = (fragment: Fragment, constituencyParse: ConstituencyParse) => {

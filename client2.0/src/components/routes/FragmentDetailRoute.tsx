@@ -5,11 +5,12 @@ import MonacoEditor, { monaco } from "react-monaco-editor";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
 import { EditableNodeValues } from "components/tree/types";
-import { FragmentDetailRouteParams, ID, SyntaxTreeID } from "types";
+import { EditableExampleValues, FragmentDetailRouteParams, ID, SyntaxTreeID } from "types";
 import { registerMonaco } from "utils/monaco";
 import Header from "components/Header";
 import Example from "components/Example";
 import { toJS } from "mobx";
+
 
 const FragmentDetailRoute: React.FC = () => {
   const { fragmentSlug } = useParams<FragmentDetailRouteParams>();
@@ -32,7 +33,7 @@ const FragmentDetailRoute: React.FC = () => {
 
   return (
     <div className="fragment-detail-route">
-      <Header left={fs.fragment?.author?.full_name}/>
+      <Header left={`${fs.fragment?.author?.full_name}, ${fs.fragment?.title}`}/>
       <div className="fragment-detail-route-editor">
         <MonacoEditor
           width="100%"
@@ -63,7 +64,12 @@ const FragmentDetailRoute: React.FC = () => {
                 fs.fragment, constituencyParse
               )
             }
-            />
+            onConstituencyParseApproximate={fs.dispatchApproximateExampleConstituency}
+            onConstituencyParseRemove={fs.dispatchDeleteConstituencyParse}
+            onSave={(values: EditableExampleValues) => {
+              fs.dispatchUpdateExample(example.id, values);
+            }}
+          />
         )}
       </div>
     </div>
