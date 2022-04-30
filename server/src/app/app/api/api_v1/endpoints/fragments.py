@@ -33,12 +33,12 @@ def create_fragment(
     return crud.fragment.create(db=db, obj_in=fragment_in)
 
 
-@router.put("/{id}", response_model=schemas.Fragment)
+@router.patch("/{id}", response_model=schemas.Fragment)
 def update_fragment(
     *,
     db: Session = Depends(deps.get_db),
     id: int,
-    text_in: schemas.FragmentUpdate,
+    fragment_in: schemas.FragmentUpdate,
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
@@ -49,7 +49,7 @@ def update_fragment(
         raise HTTPException(status_code=404, detail="fragment not found")
     if not crud.user.is_superuser(current_user) and (fragment.author_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    fragment = crud.fragment.update(db=db, db_obj=fragment, obj_in=text_in)
+    fragment = crud.fragment.update(db=db, db_obj=fragment, obj_in=fragment_in)
     return fragment
 
 

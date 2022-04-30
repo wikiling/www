@@ -6,7 +6,6 @@ from app.schemas.author import Author
 
 class FragmentBase(BaseModel):
     title: Optional[str] = None
-    content: str
 
 
 class FragmentCreate(FragmentBase):

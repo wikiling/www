@@ -16,5 +16,19 @@ class CRUDConstituencyParse(CRUDBase[ConstituencyParse, ConstituencyParseCreate,
             ConstituencyParse.example_id == example_id
         ).all()
 
+    def create(self, db: Session, *, obj_in: ConstituencyParseCreate) -> ConstituencyParse:
+        obj_in_data = jsonable_encoder(obj_in)
+        constituency_parse = self.model(**obj_in_data)  # type: ignore
+
+        example = db.query(Example).filter(
+            Example.id == obj_in_data['example_id']).first()
+        constituency_parse.generate_parse_string(example.content)
+
+        db.add(constituency_parse)
+        db.commit()
+        db.refresh(constituency_parse)
+
+        return constituency_parse
+
 
 constituency_parse = CRUDConstituencyParse(ConstituencyParse)

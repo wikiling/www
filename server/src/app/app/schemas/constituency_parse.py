@@ -6,7 +6,7 @@ class ConstituencyParseBase(BaseModel):
     parse_string: str
 
 
-class ConstituencyParseCreate(ConstituencyParseBase):
+class ConstituencyParseCreate(BaseModel):
     example_id: int
 
 

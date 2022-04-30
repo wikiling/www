@@ -32,13 +32,12 @@ def create_constituency_parse(
     return crud.constituency_parse.create(db=db, obj_in=constituency_parse_in)
 
 
-@router.put("/{id}", response_model=schemas.ConstituencyParse)
+@router.patch("/{id}", response_model=schemas.ConstituencyParse)
 def update_constituency_parse(
     *,
     db: Session = Depends(deps.get_db),
     id: int,
     text_in: schemas.ConstituencyParseUpdate,
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Update a constituency parse.
@@ -46,8 +45,22 @@ def update_constituency_parse(
     constituency_parse = crud.constituency_parse.get(db=db, id=id)
     if not constituency_parse:
         raise HTTPException(status_code=404, detail="constituency_parse not found")
-    if not crud.user.is_superuser(current_user) and (constituency_parse.author_id != current_user.id):
-        raise HTTPException(status_code=400, detail="Not enough permissions")
     constituency_parse = crud.constituency_parse.update(
         db=db, db_obj=constituency_parse, obj_in=text_in)
+    return constituency_parse
+
+
+@router.delete("/{id}", response_model=schemas.ConstituencyParse)
+def delete_constituency_parse(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: int,
+) -> Any:
+    """
+    Delete a constituency_parse.
+    """
+    constituency_parse = crud.constituency_parse.get(db=db, id=id)
+    if not constituency_parse:
+        raise HTTPException(status_code=404, detail="constituency_parse not found")
+    constituency_parse = crud.constituency_parse.remove(db=db, id=id)
     return constituency_parse

@@ -1,8 +1,9 @@
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from app.services import parse_sentence_constituency
 from sqlalchemy_utils.types.choice import ChoiceType
 
 from app.db.base_class import Base
@@ -31,6 +32,11 @@ class ConstituencyParse(Base):
     @property
     def syntax_tree(self):
         return JSONSerializableNLTKTree.fromstring(self.parse_string).json()
+
+    def generate_parse_string(self, source: Optional[str]):
+        self.parse_string = parse_sentence_constituency(
+            source or self.example.content
+        )
 
 
 class DependencyParse(Base):
