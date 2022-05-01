@@ -58,21 +58,18 @@ d3Node.prototype.width = function () {
 }
 
 d3Node.prototype.isPreterminal = function () {
-  return (
-    this.children?.length === 1 &&
-    this.children[0].children?.length === 0
-  );
+  const { children } = this;
+
+  return children?.length === 1 && !children[0].children;
 }
 
 d3Node.prototype.parseString = function () {
   const { children } = this;
 
   if (this.isPreterminal()) {
-    console.log(0)
-    return `${this.data.pos} ${children[0].data.token}`;
+    return `(${this.data.pos} ${children[0].data.token})`;
   } else {
-    console.log(1, children, this.data.token, this.data.pos)
-    return `(${children.map((node: IdentifiableHierarchyNode) => node.parseString()).join()})`;
+    return `(${this.data.pos} ${children.map((node: IdentifiableHierarchyNode) => node.parseString()).join(' ')})`;
   }
 }
 

@@ -1,0 +1,25 @@
+.constituency-parse {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  .constituency-parse-tree {
+    flex-basis: 100%;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+
+  .constituency-parse-toolbar {
+    display: flex;
+    flex-direction: column;
+
+    .button:not(:first-child) {
+      margin-top: 10px;
+    }
+  }
+
+  .tree {
+    width: 100%;
+  }
+}

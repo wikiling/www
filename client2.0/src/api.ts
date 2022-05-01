@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Fragment, Author, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, EditableExampleValues } from './types'
+import { Fragment, Author, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, EditableExampleValues, EditableConstituencyParseValues } from './types'
 
 const catalogueClient = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',
@@ -39,6 +39,10 @@ const deleteConstituencyParse = (constituencyParseId: ID): Promise<string | numb
   .delete(`constituency-parses/${constituencyParseId}`)
   .then(({ status }) => status);
 
+const updateConstituencyParse = (constituencyParseId: ID, values: EditableConstituencyParseValues): Promise<ConstituencyParse> => catalogueClient
+  .patch(`constituency-parses/${constituencyParseId}/`, values)
+  .then(({ data }) => data);
+
 const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpretationClient
   .post(`fragments/${fragment.id}/`, syntaxTree)
   .then(({ data }) => data);
@@ -50,5 +54,6 @@ export {
   fetchConstituencyParses,
   createConstituencyParse,
   deleteConstituencyParse,
+  updateConstituencyParse,
   fetchInterpretation
 }

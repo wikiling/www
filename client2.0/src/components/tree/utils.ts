@@ -7,13 +7,11 @@ import { CoordinatedTreeNode } from './types';
 
 type ComputeLayout = (syntaxTree: CoordinatedSyntaxTree) => CoordinatedTreeNode
 
-export const discriminateNodeTextField = (node: CoordinatedTreeNode) => node.data.pos ? 'pos' : 'token';
+export const discriminateNodeTextField = (node: CoordinatedTreeNode) =>
+  node.data.pos ? 'pos' : 'token';
 
-export const nodeText = (node: CoordinatedTreeNode) => node.data.pos
-  ? node.data.pos
-  : node.data.token
-    ? node.data.token
-    : "";
+export const nodeText = (node: CoordinatedTreeNode) =>
+  node.data[discriminateNodeTextField(node)] ?? "";
 
 export const computeLayout: ComputeLayout = (syntaxTree) => {
   const createTreeLayout = tidyTreeLayout<SyntaxTree>()
@@ -24,12 +22,9 @@ export const computeLayout: ComputeLayout = (syntaxTree) => {
     .separation((a, b) => {
       const halfWidthA = getTextDimensions(nodeText(a)).width / 2;
       const halfWidthB = getTextDimensions(nodeText(b)).width / 2;
-      
-      if (halfWidthA + halfWidthB > NODE_WIDTH + NODE_SEP_X) {
-        return 1.5;
-      }
+      const diff = NODE_WIDTH + NODE_SEP_X - (halfWidthA + halfWidthB);
 
-      return a.parent === b.parent ? 1 : 1.25;
+      return diff < 0 ? 1 + (-1 * diff / NODE_WIDTH) : 1;
     });
 
   return createTreeLayout(syntaxTree);

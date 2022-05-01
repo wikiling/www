@@ -1,7 +1,7 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseValues, UnidentifiedExample, EditableExampleValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse } from 'api';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseNodeValues, UnidentifiedExample, EditableExampleValues, EditableConstituencyParseValues } from 'types';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 
@@ -67,8 +67,6 @@ export class FragmentStore {
   createBlankExample = BlankExampleFactory
 
   findConstituencyParseNode = (constituencyParseId: ID, nodeId: SyntaxTreeID) => {
-    console.log(constituencyParseId)
-    console.log(this.constituencyParseMap)
     const parse = this.constituencyParseMap[constituencyParseId];
     const tree = parse.coordinated_syntax_tree.copy();
     const node = tree.findById(nodeId);
@@ -79,7 +77,7 @@ export class FragmentStore {
     return { parse, tree, node };
   }
 
-  updateConstituencyParseNode = (exampleId: ID, values: EditableConstituencyParseValues) => {
+  updateConstituencyParseNode = (exampleId: ID, values: EditableConstituencyParseNodeValues) => {
     const { parse, tree, node } = this.findConstituencyParseNode(exampleId, values.nodeId);
 
     if (!!node.data.pos) node.data.pos = values.nodeText
@@ -148,7 +146,7 @@ export class FragmentStore {
   dispatchApproximateExampleConstituency = async (exampleId: ID) => {
     const constituencyParse = await createConstituencyParse(exampleId);
     this.setConstituencyParse(constituencyParse);
-    return constituencyParse;
+    return this.constituencyParses[constituencyParse.id];
   }
 
   dispatchDeleteConstituencyParse = async (constituencyParseId: ID) => {
@@ -156,8 +154,16 @@ export class FragmentStore {
     remove<ID, ConstituencyParse>(this.constituencyParseMap as unknown as ObservableMap<number, ConstituencyParse>, constituencyParseId);
   }
 
-  dispatchInterpretConstituencyParse = (fragment: Fragment, constituencyParse: ConstituencyParse) => {
-    return fetchInterpretation(fragment, constituencyParse.syntax_tree);
+  dispatchUpdateConstituencyParse = async (constituencyParseId: ID, values: EditableConstituencyParseValues) => {
+    const updatedConstituencyParse = await updateConstituencyParse(constituencyParseId, values);
+    this.setConstituencyParse(updatedConstituencyParse);
+    return this.constituencyParseMap[updatedConstituencyParse.id];
+  }
+
+  dispatchInterpretConstituencyParse = (constituencyParse: ConstituencyParse) => {
+    if (!this.fragment) throw new Error("No fragment to interpret!");
+
+    return fetchInterpretation(this.fragment, constituencyParse.syntax_tree);
   }
 }
 

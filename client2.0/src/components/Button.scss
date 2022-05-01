@@ -1,10 +1,19 @@
+$border-color: grey;
+
 .button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
 
   &--trans {
-    border: 1px solid grey;
+    border: 1px solid $border-color;
     padding: 3px 5px;
     height: 23px;
     font-variant: small-caps;
   }
+}
+
+:export {
+  borderColor: $border-color;
 }

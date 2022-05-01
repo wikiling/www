@@ -13,7 +13,6 @@ type NodeProps = {
   width: number
   height: number
   onClick: React.MouseEventHandler
-  onDragStart: NodeDragHandler
   onDragProceed: NodeDragHandler
   onDragEnd: NodeDragHandler
 }
@@ -22,7 +21,7 @@ const NODE_RADIUS = 15;
 
 const Node = forwardRef<
   SVGGElement, NodeProps
->(({ treeId, node, onClick, onDragStart, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
+>(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, forwardRef) => {
   const { id: nodeId } = node.data;
   const text = nodeText(node);
   const id = `${treeId}-${nodeId}`;
@@ -37,11 +36,10 @@ const Node = forwardRef<
 
     dragHandler(selection);
   
-    dragHandler.on("start", onDragStart)
-               .on("drag", (e) => {
-                 onDragProceed(e);
-                 setLatestDragEvent(e);
-               });
+    dragHandler.on("drag", (e) => {
+      onDragProceed(e);
+      setLatestDragEvent(e);
+    });
   }, []);
 
   // see https://github.com/d3/d3-drag#drag_on for why this contortion is necessary

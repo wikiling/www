@@ -61,19 +61,19 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   }
 
   const onMenuAdd = () => {
-    if (!menuNode) throw "No active node to append to!";
+    if (!menuNode) throw new Error("No active node to append to!");
 
     onNodeAdd(menuNode.data.id);
   };
 
   const onMenuEdit = () => {
-    if (!menuNode) throw "No active node to edit!";
+    if (!menuNode) throw new Error("No active node to edit!");
 
     setEditNode(menuNode);
   };
 
   const onMenuRemove = () => {
-    if (!menuNode) throw "No active node to remove!";
+    if (!menuNode) throw new Error("No active node to remove!");
 
     onNodeRemove(menuNode.data.id);
   };
@@ -95,18 +95,13 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     });
   };
 
-  const onNodeDragStart = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
-    if (!coordinatedRootNode) throw `Unexpected: event ${event} without root;`;
-
-    const node = coordinatedRootNode.findById(nodeId);
-
-    if (!node) throw `Unexpected: event ${event} from unattached node (${nodeId});`;
-
-    setDragNode(node);
-  };
-
   const onNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
-    if (!coordinatedRootNode) throw "Can't drag a tree without a root!";
+    if (!coordinatedRootNode) throw new Error("Can't drag a tree without a root!");
+
+    // this would make sense to assign in the drag start callback,
+    // but a drag start event doesn't guarantee a drag end event,
+    // so it's possible then to have an orphaned drag node.
+    setDragNode(node);
   
     // calculate new tree coordinates
     setCoordinatedRootNode((prev) => {
@@ -127,6 +122,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
       (n) => !node.isDescendant(n.data.id) && isWithinAdoptionDistance(n, event)
     );
     setPotentialParentNode(ppn ?? null);
+    console.log('drag node proceed...');
   };
 
   const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
@@ -139,16 +135,17 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     }
     
     setPotentialParentNode(null);
+    console.log('drag node end...');
   };
 
-  const linkIsGrounded = (link: CoordinatedTreeLink) => link.target.data.id !== dragNode?.data.id;
+  const linkIsGrounded = (link: CoordinatedTreeLink) => {
+    console.log(dragNode);
+    return link.target.data.id !== dragNode?.data.id;
+  }
 
   useClickAway(editNodeRef, () => setEditNode(null));
 
-  useEffect(() => {
-    resize()
-    console.log('initial render')
-  }, []);
+  useEffect(resize, []);
 
   return (
     <div className="tree" ref={rootRef}>
@@ -176,7 +173,6 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
                   height={NODE_HEIGHT}
                   className={classNames({ "node--highlit": nodeId === potentialParentNode?.data.id })}
                   onClick={(e) => onNodeClick(node, e)}
-                  onDragStart={(e) => onNodeDragStart(nodeId, e)}
                   onDragProceed={(e) => onNodeDragProceed(node, e)}
                   onDragEnd={(e) => onNodeDragEnd(nodeId, e)}
                   key={`${id}-${nodeId}`}/>
