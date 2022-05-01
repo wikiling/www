@@ -1,7 +1,27 @@
 .menu {
-  position: fixed;
+  position: absolute;
+  background: white;
+  border: 1px solid;
+  border-radius: 5px;
+  padding: 5px;
+
+  .menu-inner {
+    position: relative;
+  }
 
   .menu-option {
     cursor: pointer;
+  }
+
+  .menu-triangle {
+    position: absolute;
+    border-style: solid;
+    border-color: black green pink blue;
+    border-width: 10px 15px 10px 0;
+    display: inline-block;
+    height: 0px;
+    left: -20px;
+    width: 0;
+    top: 25px;
   }
 }

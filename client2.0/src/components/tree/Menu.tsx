@@ -10,7 +10,7 @@ type MenuProps = {
   onActionSuccess: () => void
 }
 
-const Menu: React.FC<MenuProps> = ({ onAdd, onEdit, onRemove, onActionSuccess, style }) => {
+const Menu = React.forwardRef<HTMLDivElement, MenuProps>(({ onAdd, onEdit, onRemove, onActionSuccess, style }, ref) => {
   const [onAddClick, onEditClick, onRemoveClick] = [
     onAdd, onEdit, onRemove
   ].map(
@@ -18,12 +18,15 @@ const Menu: React.FC<MenuProps> = ({ onAdd, onEdit, onRemove, onActionSuccess, s
   )
 
   return (
-    <div style={style} className="menu">
-      <div className="menu-option" onClick={onAddClick}>Add Node</div>
-      <div className="menu-option" onClick={onEditClick}>Edit Node</div>
-      <div className="menu-option" onClick={onRemoveClick}>Remove Node</div>
+    <div ref={ref} style={style} className="menu">
+      <div className="menu-inner">
+        <div className="menu-triangle"/>
+        <div className="menu-option" onClick={onAddClick}>Add Node</div>
+        <div className="menu-option" onClick={onEditClick}>Edit Node</div>
+        <div className="menu-option" onClick={onRemoveClick}>Remove Node</div>
+      </div>
     </div>
   )
-};
+});
 
-export default Menu
+export default Menu;

@@ -7,6 +7,7 @@ import { Example as ExampleT } from "types";
 import ConstituencyParse from "./ConstituencyParse";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
+import Field from "./forms/Field";
 
 type ExampleProps = {
   example: ExampleT
@@ -30,33 +31,33 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
   });
 
   const formHandler = (values: EditableExampleValues) => fs.dispatchUpdateExample(example.id, values);
-  const [inputWidthMap, setInputWidthMap] = useState<{[field: string]: number}>({
+  const [fieldWidthMap, setFieldWidthMap] = useState<{[field: string]: number}>({
     label: example.label.length,
     content: example.content.length
   });
 
-  const registerOnInputChange = (field: string) =>
-    (e: any) => setInputWidthMap(prev => ({ ...prev, [field]: e.target.value.length }));
+  const registerOnFieldChange = (field: string) =>
+    (e: any) => setFieldWidthMap(prev => ({ ...prev, [field]: e.target.value.length }));
 
   const handleExpand = () => setIsExpanded(!isExpanded);
 
   const handleApproximateSyntax = async () => {
     await fs.dispatchApproximateExampleConstituency(example.id);
     setIsExpanded(true);
-  }
+  };
 
   const handleConstituencyParseRemove = (constituencyParse: CoordinatedConstituencyParse) => {
     // collapse if this was the last cp
     if (constituencyParses.filter(({ id }) => id !== constituencyParse.id).length === 0) {
       setIsExpanded(false);
     }
-  }
+  };
 
-  const renderInput = (field: keyof EditableExampleValues) => <input
+  const renderField = (field: keyof EditableExampleValues) => <Field
     spellCheck={false}
-    style={{ width: `${inputWidthMap[field]}ch` }}
-    {...register(field, { onChange: registerOnInputChange(field) })}
-  />
+    style={{ width: `${fieldWidthMap[field]}ch` }}
+    {...register(field, { onChange: registerOnFieldChange(field) })}
+  />;
 
   return (
     <div className="example">
@@ -68,8 +69,8 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
           ref={formRef}
         >
           <fieldset disabled={!isInEdit}>
-            {renderInput('label')}
-            {renderInput('content')}
+            {renderField('label')}
+            {renderField('content')}
           </fieldset>
         </form>
 

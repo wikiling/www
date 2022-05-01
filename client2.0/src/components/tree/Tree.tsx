@@ -8,7 +8,7 @@ import Menu from './Menu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
 import { SubjectPosition } from 'd3-drag';
-import { NODE_HEIGHT, NODE_WIDTH } from './config';
+import { NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
 import { computeLayout, translateTree } from './utils';
 import { cloneDeep } from 'lodash';
@@ -24,9 +24,12 @@ type TreeProps = {
 };
 
 type MenuCoordinates = {
-  left: string
-  top: string
+  left?: string
+  top?: string
+  visibility: 'visible' | 'hidden'
 }
+
+const defaultMenuCoordinates: MenuCoordinates = { visibility: 'hidden' };
 
 const DRAG_DROP_ADOPTION_MIN_DISTANCE = 50;
 
@@ -39,13 +42,16 @@ const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX},
 
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates | null>(null);
+  const editNodeRef = useRef<HTMLFormElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const height = (syntaxTree.height + 1) * (NODE_HEIGHT + NODE_SEP_Y); 
+  const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates>(defaultMenuCoordinates);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
   const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(null);
   const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
-  const editNodeRef = useRef<HTMLFormElement>(null);
+ 
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   const resize = () => {
@@ -60,47 +66,71 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     );
   }
 
-  const onMenuAdd = () => {
+  const closeMenu = () => {
+    setMenuCoordinates(defaultMenuCoordinates);
+    setMenuNode(null);
+  };
+
+  const handleMenuAdd = () => {
     if (!menuNode) throw new Error("No active node to append to!");
 
     onNodeAdd(menuNode.data.id);
   };
 
-  const onMenuEdit = () => {
+  const handleMenuEdit = () => {
     if (!menuNode) throw new Error("No active node to edit!");
 
     setEditNode(menuNode);
   };
 
-  const onMenuRemove = () => {
+  const handleMenuRemove = () => {
     if (!menuNode) throw new Error("No active node to remove!");
 
     onNodeRemove(menuNode.data.id);
   };
 
-  const onMenuActionSuccess = () => {
-    setMenuCoordinates(null);
-    setMenuNode(null);
-  };
+  const handleMenuActionSuccess = closeMenu;
 
-  const onEditableNodeSubmit = (values: EditableNodeValues) => {
+  const handleEditableNodeSubmit = (values: EditableNodeValues) => {
     onNodeEdit(values);
     setEditNode(null);
   };
 
-  const onNodeClick = (node: CoordinatedTreeNode, e: React.MouseEvent) => {
+  const handleNodeClick = (node: CoordinatedTreeNode, e: React.MouseEvent) => {
+    const rootWidth = rootRef.current?.offsetWidth;
+    const menuDims = menuRef.current;
+    const buffer = 10;
+
+    if (!rootWidth) throw new Error("Can't click a tree without a root!");
+    if (!menuDims) throw new Error("Can't click a tree without a menu!");
+  
     setMenuNode(node);
+
+    const left = (
+      rootWidth / 2 +           // coordinate origin is center of top edge
+      node.x +                  // orient to node
+      buffer + NODE_WIDTH / 2   // account for width of node and apply a buffer
+    );
+
+    const top = (
+      node.y -                                    // orient to node
+      menuDims.offsetHeight / 2 + NODE_HEIGHT / 2 // center menu against node
+    );
+
     setMenuCoordinates({
-      left: `${e.clientX + 5}px`, top: `${e.clientY + 5}px`
+      left: `${left}px`,
+      top: `${top}px`,
+      visibility: 'visible'
     });
   };
 
-  const onNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
+  const handleNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw new Error("Can't drag a tree without a root!");
 
-    // this would make sense to assign in the drag start callback,
-    // but a drag start event doesn't guarantee a drag end event,
-    // so it's possible then to have an orphaned drag node.
+    // this would make sense to assign on d3's drag start event,
+    // but d3's drag start event doesn't guarantee a *drag end* event,
+    // so it's possible then to have an orphaned drag node. this avoids that
+    // situation without any cost.
     setDragNode(node);
   
     // calculate new tree coordinates
@@ -122,10 +152,9 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
       (n) => !node.isDescendant(n.data.id) && isWithinAdoptionDistance(n, event)
     );
     setPotentialParentNode(ppn ?? null);
-    console.log('drag node proceed...');
   };
 
-  const onNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
+  const handleNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
     setDragNode(null);
 
     if (potentialParentNode) {
@@ -135,21 +164,20 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     }
     
     setPotentialParentNode(null);
-    console.log('drag node end...');
   };
 
   const linkIsGrounded = (link: CoordinatedTreeLink) => {
-    console.log(dragNode);
     return link.target.data.id !== dragNode?.data.id;
   }
 
   useClickAway(editNodeRef, () => setEditNode(null));
+  useClickAway(menuRef, closeMenu);
 
   useEffect(resize, []);
 
   return (
     <div className="tree" ref={rootRef}>
-      <svg width="100%" height={1000} data-id={id}>
+      <svg width="100%" height={height} data-id={id}>
         <g transform={groupTransform}>
           {coordinatedRootNode?.links()
             .filter(linkIsGrounded)
@@ -163,7 +191,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
             return nodeId === editNode?.data.id
               ? <EditableNode
                   node={node}
-                  onSubmit={onEditableNodeSubmit}
+                  onSubmit={handleEditableNodeSubmit}
                   key={`${id}-${nodeId}-editable`}
                   ref={editNodeRef}/>
               : <Node
@@ -172,20 +200,21 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
                   width={NODE_WIDTH}
                   height={NODE_HEIGHT}
                   className={classNames({ "node--highlit": nodeId === potentialParentNode?.data.id })}
-                  onClick={(e) => onNodeClick(node, e)}
-                  onDragProceed={(e) => onNodeDragProceed(node, e)}
-                  onDragEnd={(e) => onNodeDragEnd(nodeId, e)}
+                  onClick={(e) => handleNodeClick(node, e)}
+                  onDragProceed={(e) => handleNodeDragProceed(node, e)}
+                  onDragEnd={(e) => handleNodeDragEnd(nodeId, e)}
                   key={`${id}-${nodeId}`}/>
             })}
         </g>
       </svg>
 
-      {menuNode && !!menuCoordinates && <Menu
+      <Menu
+        ref={menuRef}
         style={menuCoordinates}
-        onAdd={onMenuAdd}
-        onEdit={onMenuEdit}
-        onRemove={onMenuRemove}
-        onActionSuccess={onMenuActionSuccess}/>}
+        onAdd={handleMenuAdd}
+        onEdit={handleMenuEdit}
+        onRemove={handleMenuRemove}
+        onActionSuccess={handleMenuActionSuccess}/>
     </div>
   )
 };
