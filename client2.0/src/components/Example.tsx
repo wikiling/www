@@ -93,7 +93,10 @@ const Example: React.FC<ExampleProps> = ({
 
       <div className="example-body example-row">
         {constituencyParses.map((constituencyParse) => !!treeExpansionMap[example.id] && (
-          <div className="example-constituency-parse" key={`${constituencyParse.id}-${treeEditCountMap[constituencyParse.id]}`}>
+          <div key={`${constituencyParse.id}-${treeEditCountMap[constituencyParse.id]}`}>
+          <div>{constituencyParse.coordinated_syntax_tree.parseString()}</div>
+          <div className="example-constituency-parse" >
+            
             <div className="tree-wrapper">
               <Tree
                 id={example.id}
@@ -127,6 +130,7 @@ const Example: React.FC<ExampleProps> = ({
                 remove
               </Button>
             </div>
+          </div>
           </div>
         ))}
       </div>

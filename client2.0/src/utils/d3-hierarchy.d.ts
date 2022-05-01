@@ -14,6 +14,8 @@ declare module "d3-hierarchy" {
     detach(node: HierarchyNode<Datum>): void
     attach(parent: IdentifiableHierarchyNode, datum: IdentifiableNodeDatum)
     isDescendant(id: string): boolean
+    isPreterminal(): boolean
+    parseString(): string
     findById(id: string): this | undefined
     width(): number
   }
