@@ -3,13 +3,13 @@ import './Field.scss';
 import classNames from 'classnames';
 
 
-type FieldProps = React.HTMLAttributes<HTMLInputElement> & {
-  initialValue: string
+type FieldProps = React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {
+  initialValue?: string
   initialWidth?: number
 }
 
 const Field = React.forwardRef<HTMLInputElement, FieldProps>(({
-  initialValue,
+  initialValue = '',
   initialWidth = 1,
   className,
   onChange,

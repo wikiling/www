@@ -22,6 +22,7 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
   const constituencyParses = fs.exampleConstituencyParses(example.id);
   const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isUpdateLoading, setIsUpdateLoading] = useState<boolean>(false);
   const {
     register,
     handleSubmit,
@@ -32,9 +33,15 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
     }
   });
 
-  const formHandler = (values: ExampleEditValues) => fs.dispatchUpdateExample(example.id, values);
+  const formHandler = (values: ExampleEditValues) => {
+    setIsUpdateLoading(true);
+    fs.dispatchUpdateExample(example.id, values);
+    setIsUpdateLoading(false);
+  }
 
   const handleExpand = () => setIsExpanded(!isExpanded);
+
+  const handleRemove = () => fs.dispatchDeleteExample(example.id);
 
   const handleApproximateSyntax = async () => {
     await fs.dispatchApproximateExampleConstituency(example.id);
@@ -56,9 +63,10 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
           onClick={() => !isInEdit && setIsInEdit(true)}
           onSubmit={handleSubmit(formHandler)}
         >
-          <fieldset disabled={!isInEdit}>
+          <fieldset>
             <Field initialValue={example.label} {...register('label')}/>
             <Field className="example-form-field-content" initialValue={example.content} {...register('content')}/>
+            <Field type="submit"/>
           </fieldset>
         </form>
 
@@ -67,7 +75,8 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
           <Button onClick={handleExpand}>
             {isExpanded ? 'collapse' : 'expand'}
           </Button>
-          <Button onClick={handleSubmit(formHandler)}>save</Button>
+          <Button onClick={handleRemove}>remove</Button>
+          <Button onClick={handleSubmit(formHandler)} loading={isUpdateLoading}>save</Button>
         </div>
       </div>
 

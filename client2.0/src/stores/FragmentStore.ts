@@ -1,7 +1,7 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
 import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample } from 'api';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 import { v4 as uuid } from 'uuid';
@@ -92,13 +92,11 @@ export class FragmentStore {
   }
 
   createTemporaryExample = () => {
-    if (!this.fragment) throw new Error("Can't create a blank example without a fragment!");
+    if (!this.fragment) throw new Error("Can't create a temporary example without a fragment!");
 
     const temporaryExample = TemporaryExampleFactory(this.fragment.id);
-
-    const temporaryExamplesLength = this.temporaryExamples.length;
-    const lastExample = temporaryExamplesLength
-      ? this.temporaryExamples[temporaryExamplesLength - 1]
+    const lastExample = this.temporaryExamples.length
+      ? this.temporaryExamples[this.temporaryExamples.length - 1]
       : this.examples[this.examples.length - 1]
 
     temporaryExample.label = getNextLabel(lastExample);
@@ -140,9 +138,11 @@ export class FragmentStore {
     const { parse, tree, node: parent } = this.findConstituencyParseNode(exampleId, parentNodeId);
     const newNode = SyntaxTreeNodeFactory();
 
-    tree.attach(parent, newNode);
+    const newCoordinatedNodeId = tree.attach(parent, newNode);
 
     parse.coordinated_syntax_tree = hierarchy(tree.data);
+
+    return parse.coordinated_syntax_tree.findById(newCoordinatedNodeId);
   }
 
   moveConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
@@ -190,6 +190,13 @@ export class FragmentStore {
     return example;
   }
 
+  dispatchDeleteExample = async (exampleId: ID) => {
+    await deleteExample(exampleId);
+    // FIXME: mobx defaults the key type to string and doesn't infer the
+    // the type of the auto observed map.
+    remove<ID, Example>(this.exampleMap as unknown as ObservableMap<ID, Example>, exampleId);
+  }
+
   dispatchApproximateExampleConstituency = async (exampleId: ID) => {
     const constituencyParse = await createConstituencyParse(exampleId);
     this.setConstituencyParse(constituencyParse);
@@ -198,8 +205,7 @@ export class FragmentStore {
 
   dispatchDeleteConstituencyParse = async (constituencyParseId: ID) => {
     await deleteConstituencyParse(constituencyParseId);
-    // FIXME: mobx defaults the key type to string and doesn't infer the
-    // the type of the auto observed map.
+    // FIXME: ibid
     remove<ID, ConstituencyParse>(this.constituencyParseMap as unknown as ObservableMap<ID, ConstituencyParse>, constituencyParseId);
   }
 

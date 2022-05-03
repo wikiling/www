@@ -17,7 +17,7 @@ import classNames from 'classnames';
 type TreeProps = {
   id: ID
   syntaxTree: CoordinatedSyntaxTree
-  onNodeAdd: (node: SyntaxTreeID) => void
+  onNodeAdd: (node: SyntaxTreeID) => CoordinatedSyntaxTree | undefined
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
   onNodeMove: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
@@ -74,7 +74,10 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const handleMenuAdd = () => {
     if (!menuNode) throw new Error("No active node to append to!");
 
-    onNodeAdd(menuNode.data.id);
+    const newNode = onNodeAdd(menuNode.data.id);
+  
+    // console.log(newNode);
+    // if (newNode) setEditNode(newNode);
   };
 
   const handleMenuEdit = () => {
@@ -129,8 +132,8 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
 
     // this would make sense to assign on d3's drag start event,
     // but d3's drag start event doesn't guarantee a *drag end* event,
-    // so it's possible then to have an orphaned drag node. this avoids that
-    // situation without any cost.
+    // so it would be possiile then to have an orphaned drag node.
+    // this avoids that situation at no cost.
     setDragNode(node);
   
     // calculate new tree coordinates
@@ -154,14 +157,11 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     setPotentialParentNode(ppn ?? null);
   };
 
-  const handleNodeDragEnd = (nodeId: SyntaxTreeID, event: NodeDragEvent) => {
+  const handleNodeDragEnd = (nodeId: SyntaxTreeID) => {
     setDragNode(null);
 
-    if (potentialParentNode) {
-      onNodeMove(nodeId, potentialParentNode.data.id);
-    } else {
-      resize();
-    }
+    if (potentialParentNode) onNodeMove(nodeId, potentialParentNode.data.id);
+    else resize();
     
     setPotentialParentNode(null);
   };
@@ -207,7 +207,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
                   className={classNames({ "node--highlit": nodeId === potentialParentNode?.data.id })}
                   onClick={(e) => handleNodeClick(node, e)}
                   onDragProceed={(e) => handleNodeDragProceed(node, e)}
-                  onDragEnd={(e) => handleNodeDragEnd(nodeId, e)}
+                  onDragEnd={() => handleNodeDragEnd(nodeId)}
                   key={`${id}-${nodeId}`}/>
             })}
         </g>

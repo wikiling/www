@@ -1,8 +1,7 @@
 import Field from 'components/forms/Field';
 import { forwardRef, useEffect, useRef, useState } from 'react'
-import { useForm } from "react-hook-form";
+import { useForm, UseFormSetFocus } from "react-hook-form";
 import { getTextDimensions } from 'utils/document';
-import { NODE_RADIUS } from './config';
 import { EditableNodeValues, CoordinatedTreeNode } from "./types";
 import { nodeText } from './utils';
 
@@ -13,16 +12,16 @@ type EditableNodeProps = {
 
 const EditableNode = forwardRef<
   SVGGElement, EditableNodeProps
->(({ node, onSubmit }, forwardRef) => {
+>(({ node, onSubmit }, forwardedRef) => {
   const fieldRef = useRef<HTMLInputElement | null>(null);
   const fieldName = 'text';
   const initialValue = nodeText(node);
   const initialValueDims = getTextDimensions(initialValue);
-  console.log(initialValue, initialValue.length)
   const {
     register,
     handleSubmit,
-  } = useForm({
+    setFocus
+  } = useForm<EditableNodeValues>({
     defaultValues: {
       [fieldName]: initialValue,
       id: node.data.id
@@ -45,8 +44,6 @@ const EditableNode = forwardRef<
 
     setX(node.x - w / 2);
     setY(node.y - h / 2);
-
-    console.log(node.x - w / 2)
   };
 
   const {
@@ -54,23 +51,28 @@ const EditableNode = forwardRef<
     ...registration
   } = register(fieldName, { onChange: handleChange });
 
+  const assignFieldRef = (el: HTMLInputElement | null) => {
+    formRef(el);
+    fieldRef.current = el;
+  };
+
+  useEffect(() => {
+    setFocus('text');
+  }, [])
+
   return (
-    <g ref={forwardRef} className={`node node-editable`}>
+    <g ref={forwardedRef} className="node node-editable">
       <rect x={x} y={y} width={width} height={height} fill="white"/>
       <foreignObject
         width={width}
         height={height}
         x={x}
         y={y}
-        className="node node--editable"
       >
-        <form onSubmit={handleSubmit(onSubmit)} >
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Field
             initialValue={initialValue}
-            ref={(el) => {
-              formRef(el);
-              fieldRef.current = el;
-            }}
+            ref={assignFieldRef}
             {...registration}
           />
         </form>

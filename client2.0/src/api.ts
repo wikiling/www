@@ -31,6 +31,10 @@ const createExample = (values: ExampleCreateValues): Promise<Example> => catalog
   .post('examples/', values)
   .then(({ data }) => data);
 
+const deleteExample = (exampleId: ID): Promise<string | number> => catalogueClient
+  .delete(`examples/${exampleId}`)
+  .then(({ status }) => status);
+
 const fetchConstituencyParses = (example_id: ID): Promise<ConstituencyParse[]> => catalogueClient
   .get('constituency-parses/', {params: { example_id }})
   .then(({ data }) => data);
@@ -56,6 +60,7 @@ export {
   fetchExamples,
   updateExample,
   createExample,
+  deleteExample,
   fetchConstituencyParses,
   createConstituencyParse,
   deleteConstituencyParse,

@@ -44,6 +44,7 @@ const TemporaryExample: React.FC<TemporaryExampleProps> = ({ example }) => {
           <fieldset disabled={!isInEdit}>
             <Field initialValue={example.label} {...register('label')}/>
             <Field className="example-form-field-content" initialValue={example.content} {...register('content')}/>
+            <Field type="submit"/>
           </fieldset>
         </form>
         <div className="example-text-toolbar">

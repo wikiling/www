@@ -25,6 +25,10 @@
     &-field-content {
       flex: 1;
     }
+
+    .field[type=submit] {
+      display: none;
+    }
   }
 
   .example-body {

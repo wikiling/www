@@ -40,8 +40,9 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           key={`${constituencyParse.id}-${treeEditCount}`}
           syntaxTree={toJS(constituencyParse.coordinated_syntax_tree)}
           onNodeAdd={(nodeId: SyntaxTreeID) => {
-            fs.addConstituencyParseNode(constituencyParse.id, nodeId);
+            const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
             incrTreeEditCount();
+            return node;
           }}
           onNodeEdit={(values: EditableNodeValues) => {
             fs.updateConstituencyParseNode(constituencyParse.id, {

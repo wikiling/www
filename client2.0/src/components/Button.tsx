@@ -9,7 +9,7 @@ type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
   mode?: Mode
   active?: boolean
   loading?: boolean
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => any
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => any
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -24,8 +24,6 @@ const Button: React.FC<ButtonProps> = ({
   const [clickHandlerIsExecuting, setClickHandlerIsExecuting] = useState<boolean>(false);
 
   const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!onClick) return;
-
     setClickHandlerIsExecuting(true);
     await onClick(e);
     setClickHandlerIsExecuting(false);

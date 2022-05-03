@@ -1,4 +1,4 @@
-import { hierarchy, IdentifiableHierarchyNode, IdentifiableNodeDatum, NodeSignatureFn } from "d3-hierarchy";
+import { hierarchy, IdentifiableHierarchyNode, IdentifiableNodeDatum } from "d3-hierarchy";
 // @ts-ignore, FIXME: this gets around the global Node shadowing but sacrifices the typing
 import { Node as d3Node } from "d3-hierarchy";
 
@@ -28,11 +28,13 @@ d3Node.prototype.detach = function (node: IdentifiableHierarchyNode) {
   }
 }
 
-d3Node.prototype.attach = function (parent: IdentifiableHierarchyNode, nodeData: IdentifiableNodeDatum) {
+d3Node.prototype.attach = function (parent: IdentifiableHierarchyNode, nodeData: IdentifiableNodeDatum): string {
   nodeData.id = mintNewChildId(parent);
 
   if (!!parent.data.children) parent.data.children.push(nodeData);
   else parent.data.children = [nodeData];
+
+  return nodeData.id;
 }
 
 d3Node.prototype.findById = function (id: string) {
