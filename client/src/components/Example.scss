@@ -3,6 +3,10 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+
+    &:hover {
+      background: #f7f7f7;
+    }
   }
 
   .example-row {
@@ -11,38 +15,9 @@
     }
   }
 
-  .example-form {
-    flex: 1;
-
-    cursor: pointer;
-
-    fieldset {
-      display: flex;
-      border: none;
-      padding: 0;
-    }
-
-    &-field-content {
-      flex: 1;
-    }
-
-    .field[type=submit] {
-      display: none;
-    }
-  }
-
   .example-body {
     .constituency-parse {
       padding-top: 10px;
-    }
-  }
-
-  .example-text-toolbar {
-    display: flex;
-    flex-direction: row;
-
-    .button:not(:first-child) {
-      margin-left: 10px;
     }
   }
 }

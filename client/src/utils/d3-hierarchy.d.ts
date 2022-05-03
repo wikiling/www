@@ -16,7 +16,7 @@ declare module "d3-hierarchy" {
     isDescendant(id: string): boolean
     isPreterminal(): boolean
     parseString(): string
-    findById(id: string): this | undefined
+    findById(id: string): HierarchyPointNode<Datum> | undefined
     width(): number
   }
 

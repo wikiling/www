@@ -1,6 +1,6 @@
 import Field from 'components/forms/Field';
-import { forwardRef, useEffect, useRef, useState } from 'react'
-import { useForm, UseFormSetFocus } from "react-hook-form";
+import { forwardRef, useEffect, useState } from 'react'
+import { useForm } from "react-hook-form";
 import { getTextDimensions } from 'utils/document';
 import { EditableNodeValues, CoordinatedTreeNode } from "./types";
 import { nodeText } from './utils';
@@ -10,10 +10,14 @@ type EditableNodeProps = {
   onSubmit: (values: EditableNodeValues) => void
 }
 
+// FIXME: don't hardcode the default font size
+const DEFAULT_FONT_SIZE = 16;
+const DEFAULT_EMPTY_WIDTH = 5;
+const chToPx = (ch: number) => (ch / 2) * DEFAULT_FONT_SIZE;
+
 const EditableNode = forwardRef<
   SVGGElement, EditableNodeProps
 >(({ node, onSubmit }, forwardedRef) => {
-  const fieldRef = useRef<HTMLInputElement | null>(null);
   const fieldName = 'text';
   const initialValue = nodeText(node);
   const initialValueDims = getTextDimensions(initialValue);
@@ -28,33 +32,19 @@ const EditableNode = forwardRef<
     }
   });
 
-  const [width, setWidth] = useState<number>(1.25 * initialValueDims.width);
-  const [height, setHeight] = useState<number>(1.25 * initialValueDims.height);
+  const [width, setWidth] = useState<number>(initialValue.length === 0 ? DEFAULT_EMPTY_WIDTH : initialValue.length); // ch
+  const [height] = useState<number>(1.25 * initialValueDims.height); // px
   const [x, setX] = useState<number>(node.x - width / 2);
-  const [y, setY] = useState<number>(node.y - initialValueDims.height / 2);
+  const [y] = useState<number>(node.y - initialValueDims.height / 2);
 
-  const handleChange = () => {
-    if (!fieldRef.current) return
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const length = e.target.value.length;
 
-    const w = fieldRef.current.offsetWidth,
-          h = fieldRef.current.offsetHeight
-
-    setWidth(w);
-    setHeight(h)
-
-    setX(node.x - w / 2);
-    setY(node.y - h / 2);
+    setWidth(length > 0 ? length : DEFAULT_EMPTY_WIDTH);
+    setX(node.x - chToPx(length) / 2);
   };
 
-  const {
-    ref: formRef,
-    ...registration
-  } = register(fieldName, { onChange: handleChange });
-
-  const assignFieldRef = (el: HTMLInputElement | null) => {
-    formRef(el);
-    fieldRef.current = el;
-  };
+  const registration = register(fieldName, { onChange: handleChange });
 
   useEffect(() => {
     setFocus('text');
@@ -62,9 +52,9 @@ const EditableNode = forwardRef<
 
   return (
     <g ref={forwardedRef} className="node node-editable">
-      <rect x={x} y={y} width={width} height={height} fill="white"/>
+      <rect x={x} y={y} width={`${width}ch`} height={height} fill="white"/>
       <foreignObject
-        width={width}
+        width={`${width}ch`}
         height={height}
         x={x}
         y={y}
@@ -72,7 +62,6 @@ const EditableNode = forwardRef<
         <form onSubmit={handleSubmit(onSubmit)}>
           <Field
             initialValue={initialValue}
-            ref={assignFieldRef}
             {...registration}
           />
         </form>

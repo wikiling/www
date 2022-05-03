@@ -4,7 +4,7 @@ import { CoordinatedSyntaxTree, ID, SyntaxTreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
 import { EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
-import Menu from './Menu';
+import Menu from './TreeMenu';
 import EditableNode from './EditableNode';
 import { useClickAway } from 'react-use';
 import { SubjectPosition } from 'd3-drag';
@@ -17,7 +17,7 @@ import classNames from 'classnames';
 type TreeProps = {
   id: ID
   syntaxTree: CoordinatedSyntaxTree
-  onNodeAdd: (node: SyntaxTreeID) => CoordinatedSyntaxTree | undefined
+  onNodeAdd: (node: SyntaxTreeID) => CoordinatedTreeNode | undefined
   onNodeEdit: (values: EditableNodeValues) => void
   onNodeRemove: (nodeId: SyntaxTreeID) => void
   onNodeMove: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
@@ -75,9 +75,8 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     if (!menuNode) throw new Error("No active node to append to!");
 
     const newNode = onNodeAdd(menuNode.data.id);
-  
-    // console.log(newNode);
-    // if (newNode) setEditNode(newNode);
+
+    if (newNode) setEditNode(newNode);
   };
 
   const handleMenuEdit = () => {

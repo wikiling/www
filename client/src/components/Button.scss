@@ -16,6 +16,22 @@ $border-color: grey;
   &--clear {
     border: none;
   }
+
+  &--menu {
+    background: white;
+    justify-content: left;
+    line-height: 14px;
+    padding: 5px;
+    box-sizing: border-box;
+
+    &:not(:first-child) {
+      border-top: 1px solid $border-color;
+    }
+  }
+
+  &:hover {
+    background-color: #f2f2f2;
+  }
 }
 
 :export {

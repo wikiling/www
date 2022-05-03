@@ -2,13 +2,15 @@ import classNames from 'classnames';
 import styles from "./Button.scss";
 import React, { useState } from 'react';
 import ClipLoader from "react-spinners/ClipLoader";
+import useLoadWhile from 'hooks/useLoadWhile';
 
-type Mode = 'trans' | 'clear'
+type Mode = 'trans' | 'clear' | 'menu'
 
 type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
   mode?: Mode
   active?: boolean
-  loading?: boolean
+  isLoading?: boolean
+  clear?: boolean
   onClick: (e: React.MouseEvent<HTMLDivElement>) => any
 }
 
@@ -16,17 +18,17 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
   mode = 'trans',
   active = false,
-  loading,
+  isLoading,
   children,
   onClick,
   ...props
 }) => {
-  const [clickHandlerIsExecuting, setClickHandlerIsExecuting] = useState<boolean>(false);
+  const { isLoading: isClickHandlerExecuting, loadWhile: handleClickWhile } = useLoadWhile();
 
   const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
-    setClickHandlerIsExecuting(true);
-    await onClick(e);
-    setClickHandlerIsExecuting(false);
+    if (isLoading) return e.stopPropagation();
+
+    handleClickWhile(async () => await onClick(e));
   }
 
   return (
@@ -35,10 +37,10 @@ const Button: React.FC<ButtonProps> = ({
       `button--${mode}`,
       className,
       {
-        'button--active': active
+        'button--active': active,
       }
     )} {...props}>
-      {clickHandlerIsExecuting || loading ? <ClipLoader size={15} color={styles.borderColor}/> : children}
+      {isClickHandlerExecuting || isLoading ? <ClipLoader size={15} color={styles.borderColor}/> : children}
     </div>
   )
 };

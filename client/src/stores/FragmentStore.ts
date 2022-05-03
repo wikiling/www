@@ -25,10 +25,14 @@ const TemporaryExampleFactory = (fragment_id: ID): TemporaryExample => ({
   temp_id: uuid()
 });
 
-const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyParse): CoordinatedConstituencyParse => ({
-  coordinated_syntax_tree: hierarchy(constituencyParse.syntax_tree),
-  ...constituencyParse
-});
+const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyParse): CoordinatedConstituencyParse => {
+  console.log(constituencyParse.syntax_tree);
+
+  return ({
+    coordinated_syntax_tree: hierarchy(constituencyParse.syntax_tree),
+    ...constituencyParse
+  });
+}
 
 const labelTmpl = (inner: number) => `(${inner})`;
 
@@ -92,7 +96,7 @@ export class FragmentStore {
   }
 
   createTemporaryExample = () => {
-    if (!this.fragment) throw new Error("Can't create a temporary example without a fragment!");
+    if (!this.fragment) throw new Error("Can't create an example without a fragment!");
 
     const temporaryExample = TemporaryExampleFactory(this.fragment.id);
     const lastExample = this.temporaryExamples.length

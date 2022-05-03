@@ -2,15 +2,18 @@ import "./Example.scss";
 import React, { useState } from 'react';
 import { CoordinatedConstituencyParse, ExampleEditValues } from 'types';
 import Button from "./Button";
-import { useForm, UseFormSetFocus } from "react-hook-form";
+import { UseFormSetFocus } from "react-hook-form";
 import { Example as ExampleT } from "types";
 import ConstituencyParse from "./ConstituencyParse";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
-import Field from "./forms/Field";
+import Menu from "./Menu";
+import useLoadWhile from "hooks/useLoadWhile";
+import ExampleForm, { ExampleFormContext } from "./ExampleForm";
 
 type ExampleProps = {
   example: ExampleT
+  onSaveSuccess?: () => void
 }
 
 export type ExampleRef = {
@@ -20,33 +23,31 @@ export type ExampleRef = {
 const Example: React.FC<ExampleProps> = ({ example }) => {
   const { fragmentStore: fs } = useStores();
   const constituencyParses = fs.exampleConstituencyParses(example.id);
-  const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [isUpdateLoading, setIsUpdateLoading] = useState<boolean>(false);
-  const {
-    register,
-    handleSubmit,
-  } = useForm<ExampleEditValues>({
-    defaultValues: {
-      label: example.label,
-      content: example.content
-    }
-  });
+  const {isLoading, loadWhile} = useLoadWhile();
+  // this should be done with a ref instead?
+  const [formCtx, setFormCtx] = useState<ExampleFormContext | null>(null);
 
-  const formHandler = (values: ExampleEditValues) => {
-    setIsUpdateLoading(true);
-    fs.dispatchUpdateExample(example.id, values);
-    setIsUpdateLoading(false);
-  }
-
+  const handleFormInit = (formCtx: ExampleFormContext) => setFormCtx(formCtx)
   const handleExpand = () => setIsExpanded(!isExpanded);
+  const handleFormSubmit = (values: ExampleEditValues) => loadWhile(
+    () => fs.dispatchUpdateExample(example.id, values)
+  );
 
-  const handleRemove = () => fs.dispatchDeleteExample(example.id);
+  const handleRemove = () => loadWhile(
+    () => fs.dispatchDeleteExample(example.id)
+  );
 
-  const handleApproximateSyntax = async () => {
-    await fs.dispatchApproximateExampleConstituency(example.id);
-    setIsExpanded(true);
-  };
+  const handleSave = () => loadWhile(
+    async () => formCtx?.handleSubmit(handleFormSubmit)()
+  )
+
+  const handleApproximateSyntax = () => loadWhile(
+    async () => {
+      await fs.dispatchApproximateExampleConstituency(example.id);
+      setIsExpanded(true);
+    }
+  );
 
   const handleConstituencyParseRemove = (constituencyParse: CoordinatedConstituencyParse) => {
     // collapse if this was the last cp
@@ -58,26 +59,14 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
   return (
     <div className="example">
       <div className="example-header example-row">
-        <form
-          className="example-form"
-          onClick={() => !isInEdit && setIsInEdit(true)}
-          onSubmit={handleSubmit(formHandler)}
-        >
-          <fieldset>
-            <Field initialValue={example.label} {...register('label')}/>
-            <Field className="example-form-field-content" initialValue={example.content} {...register('content')}/>
-            <Field type="submit"/>
-          </fieldset>
-        </form>
+        <ExampleForm example={example} onSubmit={handleFormSubmit} onInit={handleFormInit}/>
 
-        <div className="example-text-toolbar">
-          <Button onClick={handleApproximateSyntax}>approximate syntax</Button>
-          <Button onClick={handleExpand}>
-            {isExpanded ? 'collapse' : 'expand'}
-          </Button>
-          <Button onClick={handleRemove}>remove</Button>
-          <Button onClick={handleSubmit(formHandler)} loading={isUpdateLoading}>save</Button>
-        </div>
+        <Menu isLoading={isLoading}>
+          <Button mode="menu" onClick={handleApproximateSyntax}>approximate syntax</Button>
+          <Button mode="menu" onClick={handleExpand}>{isExpanded ? 'collapse' : 'expand'}</Button>
+          <Button mode="menu" onClick={handleRemove}>remove</Button>
+          <Button mode="menu" onClick={handleSave} isLoading={isLoading}>save</Button>
+        </Menu>
       </div>
 
       <div className="example-body">

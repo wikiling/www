@@ -7,6 +7,8 @@ import Button from "./Button";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
 import { toJS } from "mobx";
+import Menu from "./Menu";
+import useLoadWhile from "hooks/useLoadWhile";
 
 type ConstituencyParseProps = {
   constituencyParse: CoordinatedConstituencyParse
@@ -17,20 +19,27 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
   const { fragmentStore: fs } = useStores();
   const [treeEditCount, setTreeEditCount] = useState<number>(0);
   const incrTreeEditCount = () => setTreeEditCount(prev => prev + 1);
+  const { isLoading, loadWhile } = useLoadWhile();
 
-  const handleInterpret = () => fs.dispatchInterpretConstituencyParse(constituencyParse)
+  const handleInterpret = () => loadWhile(
+    () => fs.dispatchInterpretConstituencyParse(constituencyParse)
+  );
 
-  const handleRemove = async () => {
-    await fs.dispatchDeleteConstituencyParse(constituencyParse.id);
-    onRemove();
-  }
+  const handleRemove = () => loadWhile(
+    async () => {
+      await fs.dispatchDeleteConstituencyParse(constituencyParse.id);
+      onRemove();
+    }
+  );
 
-  const handleSave = async () => {
-    await fs.dispatchUpdateConstituencyParse(constituencyParse.id, {
-      parse_string: constituencyParse.coordinated_syntax_tree.parseString()
-    });
-    setTreeEditCount(0);
-  };
+  const handleSave = () => loadWhile(
+    async () => {
+      await fs.dispatchUpdateConstituencyParse(constituencyParse.id, {
+        parse_string: constituencyParse.coordinated_syntax_tree.parseString()
+      });
+      setTreeEditCount(0);
+    }
+  );
 
   return (
     <div className="constituency-parse">
@@ -61,11 +70,12 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           }}
         />
       </div>
-      <div className="constituency-parse-toolbar">
-        <Button onClick={handleInterpret}>interpret</Button>
-        <Button onClick={handleRemove}>remove</Button>
-        <Button onClick={handleSave}>save</Button>
-      </div>
+
+      <Menu isLoading={isLoading}>
+        <Button mode="menu" onClick={handleInterpret}>interpret</Button>
+        <Button mode="menu" onClick={handleRemove}>remove</Button>
+        <Button mode="menu" onClick={handleSave}>save</Button>
+      </Menu>
     </div>
   );
 };
