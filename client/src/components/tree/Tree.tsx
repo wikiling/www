@@ -74,9 +74,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const handleMenuAdd = () => {
     if (!menuNode) throw new Error("No active node to append to!");
 
-    const newNode = onNodeAdd(menuNode.data.id);
-
-    if (newNode) setEditNode(newNode);
+    onNodeAdd(menuNode.data.id);
   };
 
   const handleMenuEdit = () => {
@@ -131,8 +129,8 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
 
     // this would make sense to assign on d3's drag start event,
     // but d3's drag start event doesn't guarantee a *drag end* event,
-    // so it would be possiile then to have an orphaned drag node.
-    // this avoids that situation at no cost.
+    // so it would be possible then to have an orphaned drag node.
+    // there doesn't appear to be a downside to just doing this here.
     setDragNode(node);
   
     // calculate new tree coordinates
