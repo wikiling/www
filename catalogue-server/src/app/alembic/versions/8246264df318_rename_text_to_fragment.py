@@ -25,7 +25,6 @@ def upgrade():
     op.execute('ALTER INDEX ix_text_title RENAME TO ix_fragment_title')
     op.execute('ALTER INDEX text_slug_key RENAME TO fragment_slug_key')
     op.drop_column('example', 'parse_string')
-    op.drop_column('example', 'parse_type')
 
 
 def downgrade():
@@ -35,7 +34,5 @@ def downgrade():
     op.execute('ALTER INDEX ix_fragment_id RENAME TO ix_text_id')
     op.execute('ALTER INDEX ix_fragment_title RENAME TO ix_text_title')
     op.execute('ALTER INDEX fragment_slug_key RENAME TO text_slug_key')
-    op.add_column('example', sa.Column('parse_type', sa.VARCHAR(
-        length=255), autoincrement=False, nullable=False))
     op.add_column('example', sa.Column('parse_string',
                   sa.VARCHAR(), autoincrement=False, nullable=True))
