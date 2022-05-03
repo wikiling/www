@@ -1,0 +1,43 @@
+$editor-initial-width: 40vw;
+$examples-pane-initial-width: 60vw;
+$examples-pane-gutter-left: 5px;
+$examples-pane-gutter-right: 15px;
+
+.fragment-detail-route {
+  .page {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  &-editor {
+    width: $editor-initial-width;
+  }
+
+  &-examples {
+    width: calc($examples-pane-initial-width - $examples-pane-gutter-left - $examples-pane-gutter-right);
+    overflow-y: scroll;
+    height: 92vh;
+    scrollbar-width: none; // firefox
+    padding-right: $examples-pane-gutter-right;
+    padding-left: $examples-pane-gutter-left;
+
+    &::-webkit-scrollbar { 
+      display: none; // safari and chrome
+    }
+    .example {
+      padding-top: 10px;
+    }
+  }
+
+  &-new-example-control {
+    padding-left: 0.5ch;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    display: flex;
+
+    &-text {
+      padding-left: 10px;
+    }
+  }
+}
