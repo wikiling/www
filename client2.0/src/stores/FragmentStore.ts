@@ -1,11 +1,13 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, EditableConstituencyParseNodeValues, UnidentifiedExample, EditableExampleValues, EditableConstituencyParseValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse } from 'api';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues } from 'types';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
+import { v4 as uuid } from 'uuid';
 
 type ExampleMap = {[key: ID]: Example}
+type TemporaryExampleMap = {[key: UUID]: TemporaryExample}
 type ConstituencyParseMap = {[key: ID]: CoordinatedConstituencyParse}
 
 const { values } = Object;
@@ -15,17 +17,36 @@ const SyntaxTreeNodeFactory = () => ({
   text: ""
 });
 
-const BlankExampleFactory = (fragment_id: ID): UnidentifiedExample => ({
+const TemporaryExampleFactory = (fragment_id: ID): TemporaryExample => ({
   fragment_id,
   content: '',
   label: '',
-  description: ''
+  description: '',
+  temp_id: uuid()
 });
 
 const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyParse): CoordinatedConstituencyParse => ({
   coordinated_syntax_tree: hierarchy(constituencyParse.syntax_tree),
   ...constituencyParse
 });
+
+const labelTmpl = (inner: number) => `(${inner})`;
+
+const getNextLabel = (example: Example | TemporaryExample | null) => {
+  const label = example?.label;
+
+  if (!label) return labelTmpl(1);
+
+  switch (label) {
+    case label.match(/\((.+)\)/)?.input:
+      const stripped = label.replace(/[()]/g, '')
+      const num = parseInt(stripped);
+      if (isNaN(num)) return ''
+      return labelTmpl(num + 1);
+    default:
+      return ''
+  }
+}
 
 export class FragmentStore {
   authors: Author[] = []
@@ -34,12 +55,18 @@ export class FragmentStore {
   exampleMap: ExampleMap = {}
   constituencyParseMap: ConstituencyParseMap = {}
 
+  temporaryExampleMap: TemporaryExampleMap = {}
+
   constructor() {
     makeAutoObservable(this);
   }
 
   get examples () {
     return values(this.exampleMap);
+  }
+
+  get temporaryExamples () {
+    return values(this.temporaryExampleMap);
   }
 
   get constituencyParses () {
@@ -64,7 +91,22 @@ export class FragmentStore {
     return this.constituencyParses.filter(({ example_id }) => example_id === exampleId);
   }
 
-  createBlankExample = BlankExampleFactory
+  createTemporaryExample = () => {
+    if (!this.fragment) throw new Error("Can't create a blank example without a fragment!");
+
+    const temporaryExample = TemporaryExampleFactory(this.fragment.id);
+
+    const temporaryExamplesLength = this.temporaryExamples.length;
+    const lastExample = temporaryExamplesLength
+      ? this.temporaryExamples[temporaryExamplesLength - 1]
+      : this.examples[this.examples.length - 1]
+
+    temporaryExample.label = getNextLabel(lastExample);
+
+    this.temporaryExampleMap[temporaryExample.temp_id] = temporaryExample;
+
+    return temporaryExample;
+  }
 
   findConstituencyParseNode = (constituencyParseId: ID, nodeId: SyntaxTreeID) => {
     const parse = this.constituencyParseMap[constituencyParseId];
@@ -77,7 +119,7 @@ export class FragmentStore {
     return { parse, tree, node };
   }
 
-  updateConstituencyParseNode = (exampleId: ID, values: EditableConstituencyParseNodeValues) => {
+  updateConstituencyParseNode = (exampleId: ID, values: ConstituencyParseNodeEditValues) => {
     const { parse, tree, node } = this.findConstituencyParseNode(exampleId, values.nodeId);
 
     if (!!node.data.pos) node.data.pos = values.nodeText
@@ -104,8 +146,6 @@ export class FragmentStore {
   }
 
   moveConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
-    console.log('moving...', nodeId, targetParentId);
-
     const { parse, tree, node: parent } = this.findConstituencyParseNode(exampleId, targetParentId);
     const child = tree.findById(nodeId);
 
@@ -137,10 +177,17 @@ export class FragmentStore {
     return this.fragment;
   }
 
-  dispatchUpdateExample = async (exampleId: ID, values: EditableExampleValues) => {
+  dispatchUpdateExample = async (exampleId: ID, values: ExampleEditValues) => {
     const updatedExample = await updateExample(exampleId, values);
     this.exampleMap[exampleId] = updatedExample;
     return updatedExample;
+  }
+
+  dispatchCreateExample = async (temporaryExampleId: UUID, values: ExampleCreateValues) => {
+    const example = await createExample(values);
+    this.exampleMap[example.id] = example;
+    remove(this.temporaryExampleMap, temporaryExampleId);
+    return example;
   }
 
   dispatchApproximateExampleConstituency = async (exampleId: ID) => {
@@ -151,19 +198,21 @@ export class FragmentStore {
 
   dispatchDeleteConstituencyParse = async (constituencyParseId: ID) => {
     await deleteConstituencyParse(constituencyParseId);
-    remove<ID, ConstituencyParse>(this.constituencyParseMap as unknown as ObservableMap<number, ConstituencyParse>, constituencyParseId);
+    // FIXME: mobx defaults the key type to string and doesn't infer the
+    // the type of the auto observed map.
+    remove<ID, ConstituencyParse>(this.constituencyParseMap as unknown as ObservableMap<ID, ConstituencyParse>, constituencyParseId);
   }
 
-  dispatchUpdateConstituencyParse = async (constituencyParseId: ID, values: EditableConstituencyParseValues) => {
+  dispatchUpdateConstituencyParse = async (constituencyParseId: ID, values: ConstituencyParseEditValues) => {
     const updatedConstituencyParse = await updateConstituencyParse(constituencyParseId, values);
     this.setConstituencyParse(updatedConstituencyParse);
     return this.constituencyParseMap[updatedConstituencyParse.id];
   }
 
-  dispatchInterpretConstituencyParse = (constituencyParse: ConstituencyParse) => {
+  dispatchInterpretConstituencyParse = (constituencyParse: CoordinatedConstituencyParse) => {
     if (!this.fragment) throw new Error("No fragment to interpret!");
 
-    return fetchInterpretation(this.fragment, constituencyParse.syntax_tree);
+    return fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
   }
 }
 

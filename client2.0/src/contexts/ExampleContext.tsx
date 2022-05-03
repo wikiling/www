@@ -1,18 +1,18 @@
 import React from "react";
-import { Example, CoordinatedConstituencyParse, ID, SyntaxTreeID, ConstituencyParse, EditableExampleValues, EditableConstituencyParseNodeValues, EditableConstituencyParseValues } from "types";
+import { Example, CoordinatedConstituencyParse, ID, SyntaxTreeID, ConstituencyParse, ExampleEditValues, ConstituencyParseNodeEditValues, ConstituencyParseEditValues } from "types";
 
 export type ExampleContextT = {
   example: Example
-  onExampleSave: (example: EditableExampleValues) => void
+  onExampleSave: (example: ExampleEditValues) => void
   constituencyParses: CoordinatedConstituencyParse[]
   onConstituencyParseInterpret: (constituencyParse: ConstituencyParse) => void
   onConstituencyParseApproximate: (exampleId: ID) => Promise<CoordinatedConstituencyParse>
   onConstituencyParseNodeAdd: (constituencyParseId: ID, nodeId: SyntaxTreeID) => void
-  onConstituencyParseNodeEdit: (constituencyParseId: ID, values: EditableConstituencyParseNodeValues) => void
+  onConstituencyParseNodeEdit: (constituencyParseId: ID, values: ConstituencyParseNodeEditValues) => void
   onConstituencyParseNodeRemove: (constituencyParseId: ID, nodeId: SyntaxTreeID) => void
   onConstituencyParseNodeMove: (constituencyParseId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
   onConstituencyParseRemove: (constituencyParseId: ID) => Promise<void>
-  onConstituencyParseSave: (constituencyParseId: ID, values: EditableConstituencyParseValues) => Promise<CoordinatedConstituencyParse>
+  onConstituencyParseSave: (constituencyParseId: ID, values: ConstituencyParseEditValues) => Promise<CoordinatedConstituencyParse>
 }
 
 export const ExampleContext = React.createContext<ExampleContextT | null>(null);

@@ -3,8 +3,10 @@ import styles from "./Button.scss";
 import React, { useState } from 'react';
 import ClipLoader from "react-spinners/ClipLoader";
 
+type Mode = 'trans' | 'clear'
+
 type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
-  trans?: boolean
+  mode?: Mode
   active?: boolean
   loading?: boolean
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => any
@@ -12,33 +14,33 @@ type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
 
 const Button: React.FC<ButtonProps> = ({
   className = '',
-  trans = true,
+  mode = 'trans',
   active = false,
   loading,
   children,
   onClick,
   ...props
 }) => {
-  const [clickHandlerIsLoading, setClickHandlerIsLoading] = useState<boolean>(false);
+  const [clickHandlerIsExecuting, setClickHandlerIsExecuting] = useState<boolean>(false);
 
   const handleClick = async (e: React.MouseEvent<HTMLDivElement>) => {
     if (!onClick) return;
 
-    setClickHandlerIsLoading(true);
+    setClickHandlerIsExecuting(true);
     await onClick(e);
-    setClickHandlerIsLoading(false);
+    setClickHandlerIsExecuting(false);
   }
 
   return (
     <div onClick={handleClick} className={classNames(
       'button',
+      `button--${mode}`,
       className,
       {
-        'button--trans': trans,
         'button--active': active
       }
     )} {...props}>
-      {clickHandlerIsLoading || loading ? <ClipLoader size={15} color={styles.borderColor}/> : children}
+      {clickHandlerIsExecuting || loading ? <ClipLoader size={15} color={styles.borderColor}/> : children}
     </div>
   )
 };

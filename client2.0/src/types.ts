@@ -3,6 +3,7 @@ import { HierarchyNode } from "d3-hierarchy"
 export type toEnumType<EnumType> = EnumType[keyof EnumType]
 
 export type ID = number
+export type UUID = string
 export type Slug = string
 
 export type Author = {
@@ -36,8 +37,12 @@ export type ExampleBase = {
 }
 
 export type Example = ExampleBase & { id: ID }
-export type UnidentifiedExample = ExampleBase
-export type EditableExampleValues = Pick<ExampleBase, 'label' | 'content'>
+export type TemporaryExample = ExampleBase & {
+  temp_id: UUID
+}
+
+export type ExampleEditValues = Pick<ExampleBase, 'label' | 'content'>
+export type ExampleCreateValues = ExampleBase
 
 export type ConstituencyParse = {
   id: ID
@@ -46,12 +51,12 @@ export type ConstituencyParse = {
   syntax_tree: SyntaxTree
 }
 
-export type EditableConstituencyParseNodeValues = {
+export type ConstituencyParseNodeEditValues = {
   nodeId: SyntaxTreeID
   nodeText: string
 }
 
-export type EditableConstituencyParseValues = {
+export type ConstituencyParseEditValues = {
   parse_string: string
 }
 

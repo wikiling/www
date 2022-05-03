@@ -4,6 +4,7 @@
   border: 1px solid;
   border-radius: 5px;
   padding: 5px;
+  opacity: 85%;
 
   .menu-inner {
     position: relative;
@@ -13,15 +14,27 @@
     cursor: pointer;
   }
 
-  .menu-triangle {
+  .menu-caret {
+    width: 30px;
+    height: 30px;
     position: absolute;
-    border-style: solid;
-    border-color: black green pink blue;
-    border-width: 10px 15px 10px 0;
+    overflow: hidden;
+    top: 50%;
+    left: -20.5px;
+    transform: translate(-50%, -50%);
+  }
+
+  .menu-caret:before {
+    content: "";
+    position: absolute;
     display: inline-block;
-    height: 0px;
-    left: -20px;
-    width: 0;
-    top: 25px;
+    top: 0;
+    left: 0;
+    width: 25px;
+    border: 1px solid;
+    height: 25px;
+    background-color: white;
+    transform-origin: 95% 175%;
+    transform: rotate(45deg);
   }
 }

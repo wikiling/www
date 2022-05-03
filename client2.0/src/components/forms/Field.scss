@@ -1,17 +1,14 @@
 .field {
-  input {
-    border: none;
-    font-size: 16px;
-    background: none;
-  }
+  border: none;
+  font-size: 16px;
+  background: none;
 
-  fieldset {
-    border: none;
-    padding: 0;
-  }
-
-  input:focus{
+  &:focus {
     outline: none;
     text-decoration: underline aqua;
+  }
+
+  &:disabled {
+    color: black;
   }
 }

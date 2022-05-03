@@ -42,7 +42,7 @@ const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX},
 
 const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const editNodeRef = useRef<HTMLFormElement>(null);
+  const editNodeRef = useRef<SVGGElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const height = (syntaxTree.height + 1) * (NODE_HEIGHT + NODE_SEP_Y); 
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates>(defaultMenuCoordinates);
@@ -170,7 +170,12 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     return link.target.data.id !== dragNode?.data.id;
   }
 
-  useClickAway(editNodeRef, () => setEditNode(null));
+  useClickAway(
+    // clickaway expects an HTMLElement, but works fine with our
+    // svgforeignobject
+    editNodeRef as unknown as React.RefObject<HTMLElement | null>,
+    () => setEditNode(null)
+  );
   useClickAway(menuRef, closeMenu);
 
   useEffect(resize, []);

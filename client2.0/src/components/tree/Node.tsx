@@ -5,6 +5,7 @@ import { ID } from 'types';
 import { getTextDimensions } from 'utils/document';
 import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
 import { nodeText } from './utils';
+import { NODE_RADIUS } from './config';
 
 type NodeProps = {
   treeId: ID
@@ -17,8 +18,6 @@ type NodeProps = {
   onDragEnd: NodeDragHandler
 }
 
-const NODE_RADIUS = 15;
-
 const Node = forwardRef<
   SVGGElement, NodeProps
 >(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, ref) => {
@@ -26,7 +25,7 @@ const Node = forwardRef<
   const text = nodeText(node);
   const id = `${treeId}-${nodeId}`;
   const { width: textWidth, height: textHeight } = getTextDimensions(text);
-  const textX = node.x - textWidth / 2, textY = node.y + textHeight /2;
+  const textX = node.x - textWidth / 2, textY = node.y + textHeight / 2;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
   const dragHandler = drag();

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Fragment, Author, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, EditableExampleValues, EditableConstituencyParseValues } from './types'
+import { Fragment, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, ExampleEditValues, ConstituencyParseEditValues, ExampleCreateValues } from './types'
 
 const catalogueClient = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',
@@ -23,8 +23,12 @@ const fetchExamples = (fragment_id: ID): Promise<Example[]> => catalogueClient
   .get('examples/', {params: { fragment_id }})
   .then(({ data }) => data);
 
-const updateExample = (exampleId: ID, values: EditableExampleValues): Promise<Example> => catalogueClient
+const updateExample = (exampleId: ID, values: ExampleEditValues): Promise<Example> => catalogueClient
   .patch(`examples/${exampleId}/`, values)
+  .then(({ data }) => data);
+
+const createExample = (values: ExampleCreateValues): Promise<Example> => catalogueClient
+  .post('examples/', values)
   .then(({ data }) => data);
 
 const fetchConstituencyParses = (example_id: ID): Promise<ConstituencyParse[]> => catalogueClient
@@ -39,7 +43,7 @@ const deleteConstituencyParse = (constituencyParseId: ID): Promise<string | numb
   .delete(`constituency-parses/${constituencyParseId}`)
   .then(({ status }) => status);
 
-const updateConstituencyParse = (constituencyParseId: ID, values: EditableConstituencyParseValues): Promise<ConstituencyParse> => catalogueClient
+const updateConstituencyParse = (constituencyParseId: ID, values: ConstituencyParseEditValues): Promise<ConstituencyParse> => catalogueClient
   .patch(`constituency-parses/${constituencyParseId}/`, values)
   .then(({ data }) => data);
 
@@ -51,6 +55,7 @@ export {
   fetchFragment,
   fetchExamples,
   updateExample,
+  createExample,
   fetchConstituencyParses,
   createConstituencyParse,
   deleteConstituencyParse,

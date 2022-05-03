@@ -20,7 +20,7 @@ const Menu = React.forwardRef<HTMLDivElement, MenuProps>(({ onAdd, onEdit, onRem
   return (
     <div ref={ref} style={style} className="menu">
       <div className="menu-inner">
-        <div className="menu-triangle"/>
+        <div className="menu-caret"/>
         <div className="menu-option" onClick={onAddClick}>Add Node</div>
         <div className="menu-option" onClick={onEditClick}>Edit Node</div>
         <div className="menu-option" onClick={onRemoveClick}>Remove Node</div>

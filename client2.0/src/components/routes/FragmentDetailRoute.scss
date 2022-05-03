@@ -1,20 +1,39 @@
 $editor-initial-width: 40;
-$tree-column-initial-width: 58;
+$tree-column-initial-width: 60;
 
 .fragment-detail-route {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
+  .page {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 
-.fragment-detail-route-editor {
-  width: #{$editor-initial-width}vw;
-}
-.fragment-detail-route-examples {
-  width: #{$tree-column-initial-width}vw;
+  &-editor {
+    width: #{$editor-initial-width}vw;
+  }
 
-  .example {
+  &-examples {
+    width: #{$tree-column-initial-width}vw;
+    overflow-y: scroll;
+    height: 92vh;
+    scrollbar-width: none; // firefox
+
+    &::-webkit-scrollbar { 
+      display: none; // safari and chrome
+    }
+    .example {
+      padding-top: 10px;
+    }
+  }
+
+  &-new-example-control {
+    padding-left: 0.5ch;
     padding-top: 10px;
+    padding-bottom: 10px;
+    display: flex;
+
+    &-text {
+      padding-left: 10px;
+    }
   }
 }
-

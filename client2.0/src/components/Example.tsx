@@ -1,8 +1,8 @@
 import "./Example.scss";
-import React, { useRef, useState } from 'react';
-import { CoordinatedConstituencyParse, EditableExampleValues } from 'types';
+import React, { useState } from 'react';
+import { CoordinatedConstituencyParse, ExampleEditValues } from 'types';
 import Button from "./Button";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormSetFocus } from "react-hook-form";
 import { Example as ExampleT } from "types";
 import ConstituencyParse from "./ConstituencyParse";
 import { useStores } from "hooks";
@@ -13,31 +13,26 @@ type ExampleProps = {
   example: ExampleT
 }
 
+export type ExampleRef = {
+  setFocus: UseFormSetFocus<ExampleEditValues>
+}
+
 const Example: React.FC<ExampleProps> = ({ example }) => {
   const { fragmentStore: fs } = useStores();
   const constituencyParses = fs.exampleConstituencyParses(example.id);
   const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const formRef = useRef<HTMLFormElement>(null);
   const {
     register,
     handleSubmit,
-    formState
-  } = useForm<EditableExampleValues>({
+  } = useForm<ExampleEditValues>({
     defaultValues: {
       label: example.label,
       content: example.content
     }
   });
 
-  const formHandler = (values: EditableExampleValues) => fs.dispatchUpdateExample(example.id, values);
-  const [fieldWidthMap, setFieldWidthMap] = useState<{[field: string]: number}>({
-    label: example.label.length,
-    content: example.content.length
-  });
-
-  const registerOnFieldChange = (field: string) =>
-    (e: any) => setFieldWidthMap(prev => ({ ...prev, [field]: e.target.value.length }));
+  const formHandler = (values: ExampleEditValues) => fs.dispatchUpdateExample(example.id, values);
 
   const handleExpand = () => setIsExpanded(!isExpanded);
 
@@ -53,12 +48,6 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
     }
   };
 
-  const renderField = (field: keyof EditableExampleValues) => <Field
-    spellCheck={false}
-    style={{ width: `${fieldWidthMap[field]}ch` }}
-    {...register(field, { onChange: registerOnFieldChange(field) })}
-  />;
-
   return (
     <div className="example">
       <div className="example-header example-row">
@@ -66,24 +55,23 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
           className="example-form"
           onClick={() => !isInEdit && setIsInEdit(true)}
           onSubmit={handleSubmit(formHandler)}
-          ref={formRef}
         >
           <fieldset disabled={!isInEdit}>
-            {renderField('label')}
-            {renderField('content')}
+            <Field initialValue={example.label} {...register('label')}/>
+            <Field className="example-form-field-content" initialValue={example.content} {...register('content')}/>
           </fieldset>
         </form>
 
         <div className="example-text-toolbar">
-          {formState.isDirty && <Button onClick={handleSubmit(formHandler)}>save</Button>}
           <Button onClick={handleApproximateSyntax}>approximate syntax</Button>
           <Button onClick={handleExpand}>
             {isExpanded ? 'collapse' : 'expand'}
           </Button>
+          <Button onClick={handleSubmit(formHandler)}>save</Button>
         </div>
       </div>
 
-      <div className="example-body example-row">
+      <div className="example-body">
         {isExpanded && constituencyParses.map((constituencyParse) =>
           <ConstituencyParse
             key={constituencyParse.id}
