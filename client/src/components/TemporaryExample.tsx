@@ -24,9 +24,8 @@ const TemporaryExample: React.FC<TemporaryExampleProps> = ({ example }) => {
     else formCtx.setFocus('label');
   };
 
-  const handleFormSubmit = (values: ExampleCreateValues) => {
+  const handleFormSubmit = (values: ExampleCreateValues) =>
     fs.dispatchCreateExample(example.temp_id, values);
-  };
 
   const handleSave = () => formCtx?.handleSubmit(handleFormSubmit)();
 

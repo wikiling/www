@@ -53,8 +53,13 @@ dependencies:
   - fast-logger
   - vector
 
+  - monad-memo
+  - pretty
+
 library:
-  source-dirs: src
+  source-dirs:
+    - src
+    - src/fragments
 
 executables:
   interpreter-exe:

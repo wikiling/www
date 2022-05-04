@@ -39,7 +39,7 @@ constituency_parser.add_pipe("benepar", config={"model": "benepar_en3"})
 
 
 def parse_sentence_constituency(text: str):
-    punc = "!\"#$%&'()*+,-/:;<=>?@[\]^_`{|}~"
+    punc = "!\"#$%&'()*+,-/:;<=>?@[\]^_`{|}~\."
     text_without_punc = text.translate(str.maketrans('', '', punc))
 
     parse = constituency_parser(text_without_punc)
