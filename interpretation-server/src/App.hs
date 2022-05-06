@@ -22,7 +22,7 @@ import Data.Text.Lazy.Builder (toLazyText)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics
 import Logger (LogMessage (..))
-import Models (SyntaxTree (..))
+import Models (SyntaxTree (..), SemTree (..), interpretTree)
 import Prelude.Compat
 import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, ServerT, err401, hoistServerWithContext, serveWithContext, throwError, (:>))
 import Settings (SiteConfig (..))
@@ -46,7 +46,8 @@ encodeTreeToText :: SyntaxTree -> Text
 encodeTreeToText = toStrict . toLazyText . JSONText.encodeToTextBuilder . JSON.toJSON
 
 data FragmentHandlerResp = FragmentHandlerResp
-  { syntaxTree :: !SyntaxTree
+  { syntaxTree :: !SyntaxTree,
+    semTree :: !SemTree
   }
   deriving (Show, Generic)
 
@@ -70,7 +71,10 @@ fragmentHandler fragmentId syntaxTree = do
 
   liftIO $ pushLogStrLn logset $ toLogStr logMsg
 
-  pure $ FragmentHandlerResp {syntaxTree = syntaxTree}
+  pure $ FragmentHandlerResp {
+    syntaxTree = syntaxTree,
+    semTree = interpretTree syntaxTree
+  }
 
 fragmentApi :: Proxy FragmentAPI
 fragmentApi = Proxy

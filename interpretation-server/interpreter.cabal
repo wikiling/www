@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 05ed83aa9c3e27af90bfd9af036f1fe85b1e00a448574bd45e9cca8d2c3d0b98
+-- hash: 9ebe6d08cd7d46f47a24cea567a3cdee81ed1056b0f471eaaeea38342bb648a2
 
 name:           interpreter
 version:        0.1.0.0
@@ -32,11 +32,14 @@ library
       Models
       Settings
       BarkerIslands
+      FPH
       FSynF
       InfEngine
       MCWPL
       Model1
       MyFSynF
+      Parsing
+      TCOM
   other-modules:
       Paths_interpreter
   hs-source-dirs:

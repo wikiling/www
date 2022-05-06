@@ -127,24 +127,24 @@ ass0 = \v -> A
 ass1 :: Lookup Entity 
 ass1 = change ass0 y B
 
-eval :: Eq a => 
+evl :: Eq a => 
     [a]              -> 
     Interp a         -> 
     Lookup a         -> 
     Formula Variable -> Bool
 
-eval domain i = eval' where 
-  eval' g (Atom str vs) = i str (map g vs)
-  eval' g (Eq   v1 v2)  = (g v1) == (g v2) 
-  eval' g (Neg  f)      = not (eval' g f)
-  eval' g (Impl f1 f2)  = not ((eval' g f1) && 
-                               not (eval' g f2))
-  eval' g (Equi f1 f2)  = (eval' g f1) == (eval' g f2)
-  eval' g (Conj fs)     = and (map (eval' g) fs)
-  eval' g (Disj fs)     = or  (map (eval' g) fs)
-  eval' g (Forall v f)  = and [ eval' (change g v d) f | 
+evl domain i = evl' where 
+  evl' g (Atom str vs) = i str (map g vs)
+  evl' g (Eq   v1 v2)  = (g v1) == (g v2) 
+  evl' g (Neg  f)      = not (evl' g f)
+  evl' g (Impl f1 f2)  = not ((evl' g f1) && 
+                               not (evl' g f2))
+  evl' g (Equi f1 f2)  = (evl' g f1) == (evl' g f2)
+  evl' g (Conj fs)     = and (map (evl' g) fs)
+  evl' g (Disj fs)     = or  (map (evl' g) fs)
+  evl' g (Forall v f)  = and [ evl' (change g v d) f | 
                                 d <- domain ]
-  eval' g (Exists v f)  = or  [ eval' (change g v d) f | 
+  evl' g (Exists v f)  = or  [ evl' (change g v d) f | 
                                 d <- domain ]
 
 int1 :: String -> [Int] -> Bool
@@ -173,14 +173,14 @@ liftLookup fint g (Var v)         = g v
 liftLookup fint g (Struct str ts) = 
            fint str (map (liftLookup fint g) ts)
 
-evl :: Eq a => 
+evlF :: Eq a => 
   [a]          -> 
   Interp  a    -> 
   FInterp a    -> 
   Lookup  a    -> 
   Formula Term -> Bool
 
-evl domain i fint = evl' where 
+evlF domain i fint = evl' where 
    lift = liftLookup fint 
    evl' g (Atom str ts) = i str (map (lift g) ts)
    evl' g (Eq   t1 t2)  = lift g t1 == lift g t2

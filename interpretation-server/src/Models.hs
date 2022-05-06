@@ -1,75 +1,86 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Models
   ( SyntaxTree (..),
+    SemTree (..),
+    interpretTree
   )
 where
 
 import Control.Applicative ((<|>))
-import Control.Monad.Except
-import Control.Monad.Reader
 import Data.Aeson ((.:))
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.KeyMap as AKM
-import qualified Data.Aeson.Parser
-import Data.Aeson.TH
-import Data.Aeson.Types
-import qualified Data.Aeson.Types as JSONT
-import qualified Data.Attoparsec.ByteString as BS
-import Data.ByteString (ByteString)
-import Data.List
-import Data.Maybe
-import Data.String.Conversions
 import Data.Text (Text)
-import Data.Time.Calendar
-import qualified Data.Vector as V
-import GHC.Generics
-import Lucid
-import Network.HTTP.Media ((//), (/:))
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Prelude.Compat
-import Servant
-import Servant.Types.SourceT (source)
-import System.Directory
-import Text.Blaze
-import qualified Text.Blaze.Html
-import Text.Blaze.Html.Renderer.Utf8
+import Data.List 
+import qualified Data.Aeson as JSON
+import qualified Data.Aeson.Parser as P
+import Data.Aeson.Types (Parser)
+import GHC.Generics (Generic)
 
-type Id = Text
+data Term = Const String | Var Int deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
 
-type Pos = Text
+data Abstract = MkAbstract Int LF deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
 
-type Lexeme = Text
+data LF = Rel String [Term] 
+        | Eq   Term Term
+        | Neg  LF 
+        | Impl LF LF 
+        | Equi LF LF 
+        | Conj [LF]
+        | Disj [LF]
+        | Abs Abstract
+     deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
 
-data SyntaxTree = Node Id Pos [SyntaxTree] | Leaf Id Lexeme
+instance Show Term where
+  show (Const name) = name 
+  show (Var i)      = 'x': show i
+
+instance Show Abstract where 
+  show (MkAbstract i lf) = 
+   "(λx" ++ show i ++ " " ++ show lf ++ ")"
+
+instance Show LF where
+  show (Rel r args)   = r ++ show args
+  show (Eq t1 t2)     = show t1 ++ "==" ++ show t2
+  show (Neg lf)       = '~': (show lf)
+  show (Impl lf1 lf2) = "(" ++ show lf1 ++ "==>" 
+                            ++ show lf2 ++ ")"
+  show (Equi lf1 lf2) = "(" ++ show lf1 ++ "<=>" 
+                            ++ show lf2 ++ ")"
+  show (Conj [])      = "true" 
+  show (Conj lfs)     = "conj" ++ concat [ show lfs ]
+  show (Disj [])      = "false" 
+  show (Disj lfs)     = "disj" ++ concat [ show lfs ]
+
+data Category = Cat String (String -> Abstract)
+instance Show Category where
+  show (Cat s _) = show s
+instance JSON.ToJSON Category where
+  toJSON (Cat s _) = JSON.toJSON s
+
+lookupAbstract :: String -> (String -> Abstract)
+-- [[NP]] = λP.λy.λx.λe.P(e)(y)(x), type: <R,<e,<e,<v,t>>>>
+lookupAbstract "V" rel = MkAbstract 1 (Abs $ MkAbstract 2 (Abs $ MkAbstract 3 (Rel rel [Var 1, Var 2, Var 3])))
+
+type Pos = String
+
+data SyntaxTree = Node Pos Category [SyntaxTree] | Leaf Pos Term
   deriving (Show, Generic, JSON.ToJSON)
-
-{-
-syntaxNodeArrayParser' :: [JSON.Value] -> Parser [SyntaxTree]
-syntaxNodeArrayParser' a = case a of
-  [] -> return ([] :: [SyntaxTree])
-  (Object o : os) -> syntaxNodeParser o >> syntaxNodeArrayParser' os
-
-syntaxNodeArrayParser :: JSON.Value -> Parser [SyntaxTree]
-syntaxNodeArrayParser v = case v of
-  (Array a) -> syntaxNodeArrayParser' (V.toList a)
--}
 
 syntaxNodeParser :: JSON.Object -> Parser SyntaxTree
 syntaxNodeParser obj =
-  Leaf <$> obj .: "id" <*> obj .: "token"
-    <|> Node <$> obj .: "id" <*> obj .: "pos" <*> obj .: "children"
+  Leaf <$> obj .: "id" <*> (Const <$> (obj .: "token"))
+    <|>
+  Node <$> obj .: "id" <*> (Cat <$> (obj .: "pos") <*> (lookupAbstract <$> (obj .: "pos"))) <*> obj .: "children"
 
-instance FromJSON SyntaxTree where
+instance JSON.FromJSON SyntaxTree where
   parseJSON = JSON.withObject "SyntaxTree" syntaxNodeParser
+
+data SemTree = SNode Pos LF | SLeaf Pos Term
+  deriving (Show, Generic, JSON.ToJSON)
+
+interpretTree :: SyntaxTree -> SemTree
+interpretTree (Node pos cat [c1, c2]) = 
+interpretTree (Node pos (Cat cat lam) [(Leaf _ (Const c))]) = SNode pos $ Abs $ lam c
+-- interpretTree (Leaf pos (Const const)) = SLeaf pos (Const const)
