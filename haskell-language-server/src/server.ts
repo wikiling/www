@@ -48,6 +48,7 @@ export function launch(socket: rpc.IWebSocket) {
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 // start the server
 const httpServer = app.listen(3003);
 // routes
@@ -56,11 +57,9 @@ app.get('/:filename', (req, res) => {
   res.json(buffer.toString());
 });
 app.post('/:filename', (req, res) => {
-  console.log(req);
-  fs.writeFileSync(path.join(fragmentDir, req.params.filename), req.body);
-  console.log(req);
+  fs.writeFileSync(path.join(fragmentDir, req.params.filename), req.body.content);
   res.send('POST request to the homepage');
-})
+});
 // create the web socket
 const wss = new ws.Server({
   noServer: true,

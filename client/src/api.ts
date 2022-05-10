@@ -66,7 +66,7 @@ const fetchFragmentGrammar = (filename: string): Promise<string> => languageServ
   .get(filename)
   .then(({ data }) => data);
 
-const updateFragmentGrammar = (filename: string, value: string) => languageServerClient.post(filename, value);
+const updateFragmentGrammar = (filename: string, content: string) => languageServerClient.post(filename, { content });
 
 export {
   fetchFragment,
