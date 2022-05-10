@@ -9,8 +9,13 @@ import * as net from "net";
 import * as rpc from "@codingame/monaco-jsonrpc";
 import * as server from "@codingame/monaco-jsonrpc/lib/server";
 import * as lsp from "vscode-languageserver";
+import cors from 'cors';
+import fs from "fs";
+import path from "path";
 
 import express from "express";
+
+const fragmentDir = path.join('/', 'app', 'fragments');
 
 process.on('uncaughtException', function (err: any) {
   console.error('Uncaught Exception: ', err.toString());
@@ -42,9 +47,20 @@ export function launch(socket: rpc.IWebSocket) {
 
 
 const app = express();
-app.use(express.static(__dirname));
+app.use(cors());
 // start the server
 const httpServer = app.listen(3003);
+// routes
+app.get('/:filename', (req, res) => {
+  const buffer = fs.readFileSync(path.join(fragmentDir, req.params.filename));
+  res.json(buffer.toString());
+});
+app.post('/:filename', (req, res) => {
+  console.log(req);
+  fs.writeFileSync(path.join(fragmentDir, req.params.filename), req.body);
+  console.log(req);
+  res.send('POST request to the homepage');
+})
 // create the web socket
 const wss = new ws.Server({
   noServer: true,

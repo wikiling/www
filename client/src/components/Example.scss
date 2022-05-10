@@ -20,4 +20,12 @@
       padding-top: 10px;
     }
   }
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  .field input:hover{
+    cursor: unset;
+  }
 }

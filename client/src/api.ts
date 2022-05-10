@@ -15,6 +15,13 @@ const interpretationClient = axios.create({
   },
 });
 
+const languageServerClient = axios.create({
+  baseURL: 'http://localhost:3003/',
+  headers: {
+    Accept: 'application/json',
+  },
+});
+
 const fetchFragment = (slug: Slug): Promise<Fragment> => catalogueClient
   .get(`fragments/${slug}`)
   .then(({ data }) => data);
@@ -55,6 +62,12 @@ const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promis
   .post(`fragments/${fragment.id}/`, syntaxTree)
   .then(({ data }) => data);
 
+const fetchFragmentGrammar = (filename: string): Promise<string> => languageServerClient
+  .get(filename)
+  .then(({ data }) => data);
+
+const updateFragmentGrammar = (filename: string, value: string) => languageServerClient.post(filename, value);
+
 export {
   fetchFragment,
   fetchExamples,
@@ -65,5 +78,7 @@ export {
   createConstituencyParse,
   deleteConstituencyParse,
   updateConstituencyParse,
-  fetchInterpretation
+  fetchInterpretation,
+  fetchFragmentGrammar,
+  updateFragmentGrammar
 }

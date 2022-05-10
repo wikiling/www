@@ -18,7 +18,7 @@ export type SyntaxTree = {
   id: SyntaxTreeID
   pos?: string
   token?: string
-  children?: [SyntaxTree]
+  children?: SyntaxTree[]
 }
 
 export type SemanticTree = {
@@ -66,6 +66,7 @@ export type CoordinatedConstituencyParse = ConstituencyParse & {
 
 export type Fragment = {
   id: ID
+  slug: Slug
   author: Author
   title: string
   examples: Example[]

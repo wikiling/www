@@ -8,6 +8,7 @@ type FieldProps = React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputEle
   initialWidth?: number
   error?: FieldError
   matchTextWidth?: boolean
+  noFocus?: boolean
 }
 
 const Field = React.forwardRef<HTMLInputElement, FieldProps>(({
@@ -19,6 +20,7 @@ const Field = React.forwardRef<HTMLInputElement, FieldProps>(({
   style,
   spellCheck = false,
   matchTextWidth = false,
+  noFocus = false,
   ...props
 }, forwardedRef) => {
   const [textWidth, setTextWidth] = useState<number>(initialValue.length > 0 ? initialValue.length : initialWidth);
@@ -28,17 +30,17 @@ const Field = React.forwardRef<HTMLInputElement, FieldProps>(({
     onChange && onChange(e);
   };
 
-  const styles = {
-    width: matchTextWidth ? `${textWidth}ch` : undefined,
-    ...style
-  };
-  
   return (
     <div className={classNames('field', className, { 'field--invalid': !!error })}>
       <input
+        onClick={(e) => noFocus && e.preventDefault()}
         ref={forwardedRef}
         onChange={handleChange}
-        style={styles}
+        style={{
+          width: matchTextWidth ? `${textWidth}ch` : undefined,
+          pointerEvents: noFocus ? "none" : undefined,
+          ...style
+        }}
         spellCheck={spellCheck}
         autoComplete="off"
         {...props}

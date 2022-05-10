@@ -4,8 +4,7 @@ import Data.List
 import Data.Char
 import FPH
 
-data ParseTree a b =  Ep | Leaf a | Branch b [ParseTree a b] 
-                   deriving Eq
+data ParseTree a b =  Ep | Leaf a | Branch b [ParseTree a b] deriving Eq
 
 instance (Show a, Show b) => Show (ParseTree a b) where
   show Ep            = "[]"
@@ -88,7 +87,7 @@ splitN n xs
                              rs     <- splitN (n-1) zs ]
 
 recognize :: String -> Bool
-recognize = \ xs -> 
+recognize = \xs -> 
     null xs || xs == "a" || xs == "b" || xs == "c"
     || or [ recognize ys | ["a",ys,"a"] <- splitN 3 xs ]
     || or [ recognize ys | ["b",ys,"b"] <- splitN 3 xs ]
@@ -110,7 +109,7 @@ generate = filter recognize (generateAll alphabet)
   where alphabet = ['a','b','c']
 
 parse :: String -> [ParseTree String String]
-parse = \ xs -> 
+parse = \xs -> 
     [Leaf "[]" | null xs ] 
  ++ [Leaf "a"  | xs == "a" ]    
  ++ [Leaf "b"  | xs == "b" ] 
@@ -181,12 +180,12 @@ digitize = f <$$> digit
   where f c = ord c - ord '0'
 
 type PARSER a b = Parser a (ParseTree a b)
-
+            --  = [a] -> [((ParseTree a b), [a])]
 epsilonT :: PARSER a b 
 epsilonT = succeed Ep
 
 symbolT :: Eq a => a -> PARSER a b
-symbolT s = (\ x -> Leaf x) <$$> symbol s
+symbolT s = (\x -> Leaf x) <$$> symbol s
 
 infixl 6 <:>
 
@@ -199,12 +198,11 @@ collect []     = succeed []
 collect (p:ps) = p <:> collect ps 
 
 parseAs :: b -> [PARSER a b] -> PARSER a b
-parseAs label ps = (\ xs -> Branch label xs) <$$> collect ps
+parseAs label ps = (\xs -> Branch label xs) <$$> collect ps
 
 sent, np, vp, det, cn :: PARSER String Char
 sent =  parseAs 'S' [np,vp]
-np   =  symbolT "Alice"  <|> symbolT "Dorothy" 
-    <|> parseAs 'N' [det,cn]
+np   =  symbolT "Alice"  <|> symbolT "Dorothy" <|> parseAs 'N' [det,cn]
 det  =  symbolT "every"  <|> symbolT "some" <|> symbolT "no"
 cn   =  symbolT "man"    <|> symbolT "woman" 
 vp   =  symbolT "smiled" <|> symbolT "laughed" 
@@ -220,7 +218,7 @@ many :: Parser a b -> Parser a [b]
 many p = (p <:> many p) <|> (succeed [])
 
 parseManyAs :: b -> PARSER a b -> PARSER a b
-parseManyAs l p = (\ xs -> Branch l xs) <$$> many p 
+parseManyAs l p = (\xs -> Branch l xs) <$$> many p 
 
 colour, answer, guess, reaction, turn, game 
    :: PARSER String String
@@ -524,7 +522,7 @@ lookupWord db w = [ c | c <- db w ]
 collectCats :: (String -> [Cat]) -> Words -> [[Cat]]
 collectCats db words = 
   let
-    listing = map (\ x -> (x,lookupWord db x)) words
+    listing = map (\x -> (x,lookupWord db x)) words
     unknown = map fst (filter (null.snd) listing)
   in
     if unknown /= [] then 
@@ -553,7 +551,7 @@ assignT f (Leaf   c)    = [Leaf   c'    | c' <- assign f c]
 assignT f (Branch c ts) = [Branch c' ts | c' <- assign f c]
 
 sRule :: PARSER Cat Cat
-sRule = \ xs -> 
+sRule = \xs -> 
        [ (Branch (Cat "_" "S" [] []) [np',vp],zs) | 
          (np,ys) <- parseNP xs,
          (vp,zs) <- parseVP ys, 
@@ -565,7 +563,7 @@ parseSent :: PARSER Cat Cat
 parseSent = sRule 
 
 npRule :: PARSER Cat Cat 
-npRule = \ xs -> 
+npRule = \xs -> 
   [ (Branch (Cat "_" "NP" fs []) [det,cn],zs) | 
     (det,ys) <- parseDET xs, 
     (cn,zs)  <- parseCN  ys,
@@ -576,7 +574,7 @@ parseNP :: PARSER Cat Cat
 parseNP = leafP "NP" <|> npRule
 
 ppRule :: PARSER Cat Cat
-ppRule = \ xs -> 
+ppRule = \xs -> 
    [ (Branch (Cat "_" "PP" fs []) [prep,np'],zs) | 
      (prep,ys) <- parsePrep xs, 
      (np,zs)   <- parseNP ys,
@@ -678,7 +676,7 @@ prsTXT :: SPARSER Cat Cat
 prsTXT = conjR <||> prsS
 
 conjR :: SPARSER Cat Cat 
-conjR = \ us xs -> 
+conjR = \us xs -> 
    [ (Branch (Cat "_" "TXT" [] []) [s, conj, txt], ws, zs) | 
        (s,vs,ys)      <- prsS us xs,
        (conj,vs1,ys1) <- leafPS "CONJ" vs ys, 
@@ -688,7 +686,7 @@ prsS :: SPARSER Cat Cat
 prsS = spR <||> cond1R <||> cond2R
 
 spR :: SPARSER Cat Cat 
-spR = \ us xs -> 
+spR = \us xs -> 
  [ (Branch (Cat "_" "S" (fs (t2c np)) []) [np',vp],ws,zs) | 
        (np,vs,ys) <- prsNP us xs,
        (vp,ws,zs) <- prsVP vs ys, 
@@ -697,14 +695,14 @@ spR = \ us xs ->
        subcatList (t2c vp) == [] ]
 
 cond1R :: SPARSER Cat Cat 
-cond1R = \ us xs -> 
+cond1R = \us xs -> 
    [ (Branch (Cat "_" "S" [] []) [cond,s1,s2], ws, zs) | 
        (cond,vs,ys) <- leafPS "COND" us xs, 
        (s1,vs1,ys1) <- prsS vs ys,
        (s2,ws,zs)   <- prsS vs1 ys1 ]
 
 cond2R :: SPARSER Cat Cat 
-cond2R = \ us xs -> 
+cond2R = \us xs -> 
      [ (Branch (Cat "_" "S" [] []) [cond,s1,s2], ws, zs) | 
          (cond,vs,ys) <- leafPS "COND" us xs, 
          (s1,vs1,ys1) <- prsS vs ys,
@@ -715,7 +713,7 @@ prsNP :: SPARSER Cat Cat
 prsNP = leafPS "NP" <||> npR <||> pop "NP" 
 
 npR :: SPARSER Cat Cat
-npR = \ us xs -> 
+npR = \us xs -> 
   [ (Branch (Cat "_" "NP" fs []) [det,cn], (us++ws), zs) | 
       (det,vs,ys) <- prsDET [] xs, 
       (cn,ws,zs)  <- prsCN vs ys,
@@ -795,7 +793,7 @@ relclauseR = \us xs ->
        (s,ws,zs)  <- push gap prsS vs ys ]
 
 thatlessR :: SPARSER Cat Cat 
-thatlessR = \ us xs -> 
+thatlessR = \us xs -> 
         [ (Branch (Cat "_" "COMP" [] []) [s], vs, ys) | 
            gap       <- [Cat "#" "NP" [AccOrDat] []], 
            (s,vs,ys) <- push gap prsS us xs, 
@@ -836,8 +834,7 @@ testSuite1 =
    "Did Atreyu give the sword to the princess?",
    "Who did Atreyu give the sword to?",
    "To whom did Atreyu give the sword?",
-   "Goldilocks helped the girl " 
-    ++ "that Atreyu gave the sword to.",
+   "Goldilocks helped the girl that Atreyu gave the sword to.",
 
   "Did Goldilocks help the girl " 
     ++ "that Atreyu gave the sword to.",
@@ -874,7 +871,7 @@ instance Show Term where
 
 instance Show Abstract where 
   show (MkAbstract i lf) = 
-   "(\\ x" ++ show i ++ " " ++ show lf ++ ")"
+   "(λ.x" ++ show i ++ " " ++ show lf ++ ")"
 
 instance Show LF where
   show (Rel r args)   = r ++ show args
@@ -891,99 +888,97 @@ instance Show LF where
   show (Qt gq a1 a2)   = show gq ++ (' ' : show a1) 
                                  ++ (' ' : show a2)
 
+-- data ParseTree a b =  Ep | Leaf a | Branch b [ParseTree a b] deriving Eq
 transS :: ParseTree Cat Cat -> LF
-transS (Branch (Cat _ "S" _ _) [np,vp]) = 
-  (transNP np) (transVP vp)
+transS (Branch (Cat _ "S" _ _) [np,vp]) = (transNP np) (transVP vp)
 
 transS (Branch (Cat _ "YN" _ _) 
        [Leaf (Cat "did"    "AUX" _ []),s]) = transS s 
 transS (Branch (Cat _ "YN" _ _) 
        [Leaf (Cat "didn't" "AUX" _ []),s]) = Neg (transS s)
 
-transNP :: ParseTree Cat Cat -> 
-                (Term -> LF) -> LF
-transNP (Leaf (Cat "#"  "NP" _ _)) = \ p -> p (Var 0)
-transNP (Leaf (Cat name "NP" _ _)) = \ p -> p (Const name)
-transNP (Branch (Cat _ "NP" _ _) [det,cn]) = 
-                             (transDET det) (transCN cn) 
+transNP :: ParseTree Cat Cat -> (Term -> LF) -> LF
+transNP (Leaf (Cat "#"  "NP" _ _)) = \p -> p (Var 0)
+transNP (Leaf (Cat name "NP" _ _)) = \p -> p (Const name)
+transNP (Branch (Cat _ "NP" _ _) [det,cn]) = (transDET det) (transCN cn) 
 
 transDET :: ParseTree Cat Cat -> (Term -> LF)
                               -> (Term -> LF) 
                               -> LF
 transDET (Leaf (Cat "every" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt All       (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 
 transDET (Leaf (Cat "all" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt All       (MkAbstract i (p (Var i)))  
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "some" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Sm      (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "a" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Sm      (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "several" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Sm      (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "no" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Neg (Qt Sm (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i))))
 transDET (Leaf (Cat "the" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Th        (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "most" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Most      (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "many" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Qt Many      (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i)))
 transDET (Leaf (Cat "few" "DET" _ _)) = 
-  \ p q -> let i = fresh[p,q] in 
+  \p q -> let i = fresh[p,q] in 
   Neg (Qt Many (MkAbstract i (p (Var i))) 
                (MkAbstract i (q (Var i))))
 
 transDET (Leaf (Cat "which" "DET" _ _)) = 
-  \ p q -> Conj [p (Var 0),q (Var 0)]
+  \p q -> Conj [p (Var 0),q (Var 0)]
 
 transCN :: ParseTree Cat Cat -> Term -> LF
-transCN (Leaf   (Cat name "CN" _ _))          = \ x -> 
+transCN (Leaf   (Cat name "CN" _ _))          = \x -> 
                                               Rel name [x]
-transCN (Branch (Cat _    "CN" _ _) [cn,rel]) = \ x -> 
+transCN (Branch (Cat _    "CN" _ _) [cn,rel]) = \x -> 
                        Conj [transCN cn x, transREL rel x]
 
 transREL :: ParseTree Cat Cat -> Term -> LF
 transREL (Branch (Cat _ "COMP" _ _ ) [rel,s]) = 
-  \ x -> sub x (transS s)
+  \x -> sub x (transS s)
 transREL (Branch (Cat _ "COMP" _ _ ) [s])     = 
-  \ x -> sub x (transS s)
+  \x -> sub x (transS s)
 
 transPP :: ParseTree Cat Cat -> (Term -> LF) -> LF
-transPP (Leaf   (Cat "#" "PP" _ _)) = \ p -> p (Var 0)
+transPP (Leaf   (Cat "#" "PP" _ _)) = \p -> p (Var 0)
 transPP (Branch (Cat _   "PP" _ _) [prep,np]) = transNP np
 
 transVP :: ParseTree Cat Cat -> Term -> LF
 transVP (Branch (Cat _ "VP" _ _) 
                 [Leaf (Cat name "VP" _ [])]) = 
-        \ t -> Rel name [t]
+        \t -> Rel name [t]
 transVP (Branch (Cat _ "VP" _ _) 
                 [Leaf (Cat name "VP" _ [_]),np]) = 
-        \ subj -> transNP np (\ obj -> Rel name [subj,obj])
+        \subj -> transNP np (\obj -> Rel name [subj,obj])
 
 transVP (Branch (Cat _ "VP" _ _) 
                 [Leaf (Cat name "VP" _ [_,_]),np,pp]) = 
-        \ subj   -> transNP np 
-        (\ obj   -> transPP pp
-         (\ iobj -> Rel name [subj,obj,iobj]))
+        \subj   -> transNP np 
+        (\obj   -> transPP pp
+         (\iobj -> Rel name [subj,obj,iobj]))
 transVP (Branch (Cat _ "VP" _ _) 
                 [Leaf (Cat "did" "AUX" _ []),vp]) = 
         transVP vp 

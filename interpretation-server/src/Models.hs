@@ -2,85 +2,39 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Models
-  ( SyntaxTree (..),
-    SemTree (..),
-    interpretTree
-  )
-where
+module Models where
 
 import Control.Applicative ((<|>))
-import Data.Aeson ((.:))
-import Data.Text (Text)
-import Data.List 
 import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Parser as P
 import Data.Aeson.Types (Parser)
+import Data.Aeson
+import qualified Data.HashMap.Strict as H
 import GHC.Generics (Generic)
 
-data Term = Const String | Var Int deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
+import FOL (Term, Func)
 
-data Abstract = MkAbstract Int LF deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
+type Const = String
+data Pos = String deriving (Show, Generic, JSON.FromJSON)
+data SyntaxTree = Leaf Const | Branch Pos [SyntaxTree, SyntaxTree]
 
-data LF = Rel String [Term] 
-        | Eq   Term Term
-        | Neg  LF 
-        | Impl LF LF 
-        | Equi LF LF 
-        | Conj [LF]
-        | Disj [LF]
-        | Abs Abstract
-     deriving (Eq, Ord, Generic, JSON.ToJSON, JSON.FromJSON)
 
-instance Show Term where
-  show (Const name) = name 
-  show (Var i)      = 'x': show i
+toVP :: SyntaxTree -> Term -> Term
+toVP (Branch "VP" [np@(Branch "NP" _), v'@(Branch "V'" _)] = toNP np $ toV' v' 
 
-instance Show Abstract where 
-  show (MkAbstract i lf) = 
-   "(λx" ++ show i ++ " " ++ show lf ++ ")"
+toNP :: SyntaxTree -> Term
+toNP (Branch "NP" [Leaf token]) -> token
 
-instance Show LF where
-  show (Rel r args)   = r ++ show args
-  show (Eq t1 t2)     = show t1 ++ "==" ++ show t2
-  show (Neg lf)       = '~': (show lf)
-  show (Impl lf1 lf2) = "(" ++ show lf1 ++ "==>" 
-                            ++ show lf2 ++ ")"
-  show (Equi lf1 lf2) = "(" ++ show lf1 ++ "<=>" 
-                            ++ show lf2 ++ ")"
-  show (Conj [])      = "true" 
-  show (Conj lfs)     = "conj" ++ concat [ show lfs ]
-  show (Disj [])      = "false" 
-  show (Disj lfs)     = "disj" ++ concat [ show lfs ]
+toV' :: SyntaxTree -> Term -> Term
+toV' (Branch "V'" [v@(Branch "V" _), np@(Branch "NP" _)] = toNP np $ toV v
 
-data Category = Cat String (String -> Abstract)
-instance Show Category where
-  show (Cat s _) = show s
-instance JSON.ToJSON Category where
-  toJSON (Cat s _) = JSON.toJSON s
+toV :: SyntaxTree -> Term -> Term -> Term
+toV (Branch "V" [Leaf token]) -> Func 
 
-lookupAbstract :: String -> (String -> Abstract)
--- [[NP]] = λP.λy.λx.λe.P(e)(y)(x), type: <R,<e,<e,<v,t>>>>
-lookupAbstract "V" rel = MkAbstract 1 (Abs $ MkAbstract 2 (Abs $ MkAbstract 3 (Rel rel [Var 1, Var 2, Var 3])))
-
-type Pos = String
-
-data SyntaxTree = Node Pos Category [SyntaxTree] | Leaf Pos Term
-  deriving (Show, Generic, JSON.ToJSON)
-
-syntaxNodeParser :: JSON.Object -> Parser SyntaxTree
-syntaxNodeParser obj =
-  Leaf <$> obj .: "id" <*> (Const <$> (obj .: "token"))
-    <|>
-  Node <$> obj .: "id" <*> (Cat <$> (obj .: "pos") <*> (lookupAbstract <$> (obj .: "pos"))) <*> obj .: "children"
+syntaxTreeParser :: JSON.Object -> Parser SyntaxTree
+syntaxTreeParser obj =
+  Leaf <$> obj .: "token"
+  <|>
+  Branch <$> obj .: "pos" <*> obj .: "children"
 
 instance JSON.FromJSON SyntaxTree where
-  parseJSON = JSON.withObject "SyntaxTree" syntaxNodeParser
-
-data SemTree = SNode Pos LF | SLeaf Pos Term
-  deriving (Show, Generic, JSON.ToJSON)
-
-interpretTree :: SyntaxTree -> SemTree
-interpretTree (Node pos cat [c1, c2]) = 
-interpretTree (Node pos (Cat cat lam) [(Leaf _ (Const c))]) = SNode pos $ Abs $ lam c
--- interpretTree (Leaf pos (Const const)) = SLeaf pos (Const const)
+  parseJSON = JSON.withObject "SyntaxTree" syntaxTreeParser

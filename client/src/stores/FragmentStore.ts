@@ -1,16 +1,20 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample } from 'api';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues, SyntaxTree } from 'types';
+import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample, fetchFragmentGrammar, updateFragmentGrammar } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 import { v4 as uuid } from 'uuid';
+import { toPascalCase } from 'utils/string';
 
 type ExampleMap = {[key: ID]: Example}
 type TemporaryExampleMap = {[key: UUID]: TemporaryExample}
 type ConstituencyParseMap = {[key: ID]: CoordinatedConstituencyParse}
 
 const { values } = Object;
+
+export const fragmentGrammarFilename = (fragment: Fragment) => `${toPascalCase(fragment.slug)}.hs`;
+export const fragmentGrammarURI = (fragment: Fragment) => `file:///app/fragments/${fragmentGrammarFilename(fragment)}`;
 
 const SyntaxTreeNodeFactory = () => ({
   id: "",
@@ -55,6 +59,8 @@ const getNextLabel = (example: Example | TemporaryExample | null) => {
 export class FragmentStore {
   authors: Author[] = []
   fragment: Fragment | null = null
+
+  initialGrammar?: string
 
   exampleMap: ExampleMap = {}
   constituencyParseMap: ConstituencyParseMap = {}
@@ -166,7 +172,12 @@ export class FragmentStore {
 
     if (!this.fragment) throw new Error(`Fragment ${fragmentSlug} not found!`);
 
-    const examples = await fetchExamples(this.fragment.id);
+    const [examples, grammar] = await Promise.all([
+      fetchExamples(this.fragment.id),
+      this.dispatchFetchFragmentGrammar(this.fragment)
+    ]);
+
+    this.initialGrammar = grammar ??  "-- write your fragment here...";
     
     if (!examples.length) return;
 
@@ -179,6 +190,19 @@ export class FragmentStore {
     }
 
     return this.fragment;
+  }
+
+  dispatchFetchFragmentGrammar = async (fragment: Fragment) => {
+    return fetchFragmentGrammar(fragmentGrammarFilename(fragment));
+  }
+
+  dispatchUpdateFragmentGrammar = async (value: string) => {
+    if (!this.fragment) throw new Error("Can't update grammar of nonexistent fragment!");
+  
+    return updateFragmentGrammar(
+      fragmentGrammarFilename(this.fragment),
+      value
+    );
   }
 
   dispatchUpdateExample = async (exampleId: ID, values: ExampleEditValues) => {
@@ -222,7 +246,14 @@ export class FragmentStore {
   dispatchInterpretConstituencyParse = (constituencyParse: CoordinatedConstituencyParse) => {
     if (!this.fragment) throw new Error("No fragment to interpret!");
 
-    return fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
+    const withDefaults = ({ pos = "", token = "", children, ...node }: SyntaxTree): SyntaxTree => ({
+      pos,
+      token,
+      children: children ? children.map(withDefaults) : undefined,
+      ...node
+    });
+
+    return fetchInterpretation(this.fragment, withDefaults(constituencyParse.coordinated_syntax_tree.data));
   }
 }
 

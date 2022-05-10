@@ -56,6 +56,11 @@ dependencies:
   - monad-memo
   - pretty
 
+  - ghc-paths
+  - ghc
+  - hashmap
+  - parsec
+
 library:
   source-dirs:
     - src

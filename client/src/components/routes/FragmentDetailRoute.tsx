@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import MonacoEditor, { monaco } from "react-monaco-editor";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
-import { FragmentDetailRouteParams, ID } from "types";
+import { Fragment, FragmentDetailRouteParams, ID } from "types";
 import { registerMonaco } from "utils/monaco";
 import Header from "components/Header";
 import Example, { ExampleRef } from "components/Example";
@@ -13,20 +13,26 @@ import Button from "components/Button";
 import TemporaryExample from "components/TemporaryExample";
 import Page from "components/Page";
 import Route from "./Route";
+import { toPascalCase } from "utils/string";
+import { useKey } from "react-use";
+import { updateFragmentGrammar } from "api";
+import { fragmentGrammarFilename, fragmentGrammarURI } from "stores/FragmentStore";
+
+const getMonacoModel = (fragment: Fragment) => monaco.editor.getModel(
+  monaco.Uri.parse(fragmentGrammarURI(fragment))
+);
+const createMonacoModel = (fragment: Fragment, initialValue: string) => monaco.editor.createModel(
+  initialValue,
+  "haskell",
+  monaco.Uri.parse(fragmentGrammarURI(fragment))
+);
+
+const getOrCreateMonacoModel = (fragment: Fragment, initialValue: string) =>
+  getMonacoModel(fragment) ?? createMonacoModel(fragment, initialValue);
 
 const FragmentDetailRoute: React.FC = () => {
   const { fragmentSlug } = useParams<FragmentDetailRouteParams>();
   const { fragmentStore: fs } = useStores();
-
-  const uri = `file:///app/fragments/`;
-
-  const options = {
-    model: monaco.editor.getModel(monaco.Uri.parse(uri)) ||
-      monaco.editor.createModel("-- write your fragment here...", "haskell", monaco.Uri.parse(uri)),
-    minimap: {
-      enabled: false
-    }
-  };
   
   const handleNewExample = fs.createTemporaryExample;
 
@@ -34,21 +40,40 @@ const FragmentDetailRoute: React.FC = () => {
     if (fragmentSlug) fs.dispatchFetchFragment(fragmentSlug);
   }, [fragmentSlug, fs])
 
+  const saveKeyFilter = (e: KeyboardEvent) => e.key === "s" && e.metaKey;
+
+  useKey(saveKeyFilter, (e: KeyboardEvent) => {
+    if (!fs.fragment) return;
+  
+    const model = getMonacoModel(fs.fragment);
+  
+    if (!model) return;
+
+    e.preventDefault();
+
+    fs.dispatchUpdateFragmentGrammar(model.getValue());
+  });
+
   return (
     <Route className="fragment-detail-route">
       <Header left={`${fs.fragment?.author?.full_name}, ${fs.fragment?.title}`}/>
       <Page>
         <div className="fragment-detail-route-editor">
-          <MonacoEditor
+          {fs.fragment && fs.initialGrammar && <MonacoEditor
             width="100%"
             height="90vh"
             language="haskell"
             editorWillMount={registerMonaco}
-            options={options}
+            options={{
+              model: getOrCreateMonacoModel(fs.fragment, fs.initialGrammar),
+              minimap: {
+                enabled: false
+              }
+            }}
             // theme="vs-dark"
             // onChange={::this.onChange}
             // editorDidMount={::this.editorDidMount}
-          />
+          />}
         </div>
         <div className="fragment-detail-route-examples">
           {fs.examples.map((example) =>

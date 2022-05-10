@@ -18,6 +18,7 @@ class FragmentUpdate(FragmentBase):
 
 class Fragment(FragmentBase):
     id: int
+    slug: str
     title: str
     author: Author
     examples: List[Example]

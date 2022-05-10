@@ -13,8 +13,6 @@ const useYupValidationResolver = <SchemaT extends yup.AnyObjectSchema>(validatio
         abortEarly: false
       });
 
-      console.log('-------->', values);
-
       return {
         values,
         errors: {}
@@ -37,6 +35,8 @@ const useYupValidationResolver = <SchemaT extends yup.AnyObjectSchema>(validatio
   }, [validationSchema]
 );
 
-const useYupResolver = (schemaObject: {}) => useYupValidationResolver(yup.object(schemaObject));
+const useYupResolver = (schemaObject: {}) => useYupValidationResolver(
+  yup.object(schemaObject)
+);
 
 export default useYupResolver;
