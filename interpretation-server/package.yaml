@@ -75,6 +75,7 @@ executables:
   interpreter-exe:
     main: Server.hs
     source-dirs: app
+    other-modules: []
     ghc-options:
       - -threaded
       - -rtsopts
@@ -85,6 +86,7 @@ executables:
   lang-exe:
     main: REPL.hs
     source-dirs: app
+    other-modules: []
     dependencies:
       - base
       - interpreter

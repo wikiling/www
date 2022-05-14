@@ -1,7 +1,9 @@
-module REPL where
+module REPL (main) where
 
-import Lang.Eval
+import Lang.Syntax
 import Lang.Parser
+import Lang.Check
+import Lang.Eval
 import Lang.Pretty
 
 import Control.Monad.Trans
@@ -12,15 +14,17 @@ process line = do
   let res = parseExpr line
   case res of
     Left err -> print err
-    Right ex -> case eval ex of
-      Nothing -> putStrLn "Cannot evaluate"
-      Just result -> putStrLn $ ppexpr result
+    Right ex -> do
+      let chk = checkTop [] ex
+      case chk of
+        Left tyerr -> print tyerr
+        Right _ -> print $ runEval ex
 
 main :: IO ()
 main = runInputT defaultSettings loop
   where
   loop = do
-    minput <- getInputLine "Arith> "
+    minput <- getInputLine "λ> "
     case minput of
       Nothing -> outputStrLn "Goodbye."
       Just input -> (liftIO $ process input) >> loop

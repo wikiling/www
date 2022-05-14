@@ -1,89 +1,136 @@
-module Lang.Parser
-  (parseExpr)
-where
+module Lang.Parser (
+  parseExpr
+) where
 
-import Lang.Syntax (Expr(..))
-import Text.Parsec (parse, letter, alphaNum, oneOf, eof, (<|>))
+import Text.Parsec
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Expr as Ex
-import qualified Text.Parsec.Token as Tok
-import Data.Functor.Identity (Identity)
+import Text.ParserCombinators.Parsec.Combinator (choice)
 
-langDef :: Tok.LanguageDef ()
-langDef = Tok.LanguageDef
-  { Tok.commentStart    = "{-"
-  , Tok.commentEnd      = "-}"
-  , Tok.commentLine     = "--"
-  , Tok.nestedComments  = True
-  , Tok.identStart      = letter
-  , Tok.identLetter     = alphaNum <|> oneOf "_'"
-  , Tok.opStart         = oneOf ":!#$%&*+./<=>?@\\^|-~"
-  , Tok.opLetter        = oneOf ":!#$%&*+./<=>?@\\^|-~"
-  , Tok.reservedNames   = []
-  , Tok.reservedOpNames = []
-  , Tok.caseSensitive   = True
-  }
+import Lang.Lexer
+import Lang.Syntax
 
-lexer :: Tok.TokenParser ()
-lexer = Tok.makeTokenParser langDef
+import Debug.Trace(trace)
+import Data.Functor.Identity
 
-parens :: Parser a -> Parser a
-parens = Tok.parens lexer
+println msg = trace (show msg) $ return ()
+seeNext :: Int -> ParsecT String u Identity ()
+seeNext n = do
+  s <- getParserState
+  let out = take n (stateInput s)
+  println out
 
-reserved :: String -> Parser ()
-reserved = Tok.reserved lexer
+-------------------------------------------------------------------------------
+-- Expression
+-------------------------------------------------------------------------------
 
-semiSep :: Parser a -> Parser [a]
-semiSep = Tok.semiSep lexer
+bool :: Parser Expr
+bool =  (reserved "True" >> return (Lit (LBool True)))
+    <|> (reserved "False" >> return (Lit (LBool False)))
 
-reservedOp :: String -> Parser ()
-reservedOp = Tok.reservedOp lexer
+number :: Parser Expr
+number = do
+  n <- natural
+  return (Lit (LInt (fromIntegral n)))
 
-prefixOp :: String -> (a -> a) -> Ex.Operator String () Identity a
-prefixOp s f = Ex.Prefix (reservedOp s >> return f)
+variable :: Parser Expr
+variable = do
+  x <- identifier
+  return (Var x)
 
-table :: Ex.OperatorTable String () Identity Expr
-table = [
-    [
-      prefixOp "succ" Succ
-    , prefixOp "pred" Pred
-    , prefixOp "iszero" IsZero
-    ]
-  ]
+lambda :: Parser Expr
+lambda = do
+  reservedOp "\\"
+  x <- identifier
+  reservedOp ":"
+  t <- type'
+  reservedOp "."
+  e <- expr
+  return (Lam x t e)
 
--- Ternary Conditional
-ifthen :: Parser Expr
-ifthen = do
-  reserved "if"
-  cond <- expr
-  reservedOp "then"
-  tr <- expr
-  reserved "else"
-  fl <- expr
-  return (If cond tr fl)
+parsePred :: Parser FOLExpr
+parsePred = do
+    x  <- capsName
+    ts <- parens (parseTerm `sepBy` char ',')
+    return $ Pred x ts
 
--- Constants
-true, false, zero :: Parser Expr
-true  = reserved "true"  >> return Tr
-false = reserved "false" >> return Fl
-zero  = reservedOp "0"   >> return Zero
+parseForAll :: Parser FOLExpr
+parseForAll = do
+    string "forall" >> spaces
+    x <- name
+    char '.' >> spaces
+    e <- expr
+    return $ ForAll x e
 
-expr :: Parser Expr
-expr = Ex.buildExpressionParser table factor
+parseExists :: Parser FOLExpr
+parseExists = do
+    string "exists" >> spaces
+    x <- name
+    char '.' >> spaces
+    e <- expr
+    return $ Exists x e
+
+capsName :: Parser String
+capsName = do
+    c  <- upper
+    cs <- many alphaNum
+    return (c:cs)
 
 factor :: Parser Expr
-factor =
-      true
-  <|> false
-  <|> zero
-  <|> ifthen
-  <|> parens expr
+factor = parens expr
+      <|> bool
+      <|> number
+      <|> variable
+      <|> lambda
 
-contents :: Parser a -> Parser a
-contents p = do
-  Tok.whiteSpace lexer
-  r <- p
-  eof
-  return r
+binOp :: String -> (Expr -> Expr -> Expr) -> Ex.Assoc -> Ex.Operator String () Identity Expr
+binOp name fun assoc = Ex.Infix (do{ reservedOp name; return fun }) assoc
 
-parseExpr s = parse (contents expr) "<stdin>" s
+unOp :: String -> (Expr -> Expr) -> Ex.Operator String () Identity Expr
+unOp name fun = Ex.Prefix (reservedOp s >> return f)
+
+table :: Ex.OperatorTable String () Identity Expr
+table = [ [ binOp "*" Mul Ex.AssocLeft
+          , binOp "/" Div Ex.AssocLeft ]
+        , [ binOp "+" Add Ex.AssocLeft
+          , binOp "-" Sub Ex.AssocLeft ]
+        , [binOp "==" Eq Ex.AssocNone]
+        , [unOp "~" Not]
+        , [ binary "&" Conj Ex.AssocLeft
+        , , binary "|" Disj Ex.AssocLeft ]
+        , [binary "=>" Impl Ex.AssocRight]
+        ]
+
+term :: Parser Expr
+term = Ex.buildExpressionParser table factor
+
+expr :: Parser Expr
+expr = do
+  seeNext 1
+  es <- many1 term
+  return (foldl1 App es)
+
+-------------------------------------------------------------------------------
+-- Types
+-------------------------------------------------------------------------------
+
+tyatom :: Parser Type
+tyatom = tylit <|> (parens type')
+
+tylit :: Parser Type
+tylit = (reservedOp "Bool" >> return TBool) <|> (reservedOp "Int" >> return TInt)
+
+type' :: Parser Type
+type' = Ex.buildExpressionParser tyops tyatom
+  where
+    infixOp x f = Ex.Infix (reservedOp x >> return f)
+    tyops = [
+        [infixOp "->" TArr Ex.AssocRight]
+      ]
+
+-------------------------------------------------------------------------------
+-- Toplevel
+-------------------------------------------------------------------------------
+
+parseExpr :: String -> Either ParseError Expr
+parseExpr input = parse (contents expr) "<stdin>" input

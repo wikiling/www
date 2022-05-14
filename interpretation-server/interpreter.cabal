@@ -32,7 +32,10 @@ library
       FSynF
       InfEngine
       Islands
+      Lang.Calc
+      Lang.Check
       Lang.Eval
+      Lang.Lexer
       Lang.Parser
       Lang.Pretty
       Lang.Syntax
@@ -49,7 +52,10 @@ library
       Util
       BarkerIslands
       VonStechowAnLfArchitecture
+      Calc
+      Check
       Eval
+      Lexer
       Parser
       Pretty
       Syntax
@@ -104,9 +110,6 @@ library
 
 executable interpreter-exe
   main-is: Server.hs
-  other-modules:
-      REPL
-      Paths_interpreter
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
@@ -156,9 +159,6 @@ executable interpreter-exe
 
 executable lang-exe
   main-is: REPL.hs
-  other-modules:
-      Server
-      Paths_interpreter
   hs-source-dirs:
       app
   build-depends:

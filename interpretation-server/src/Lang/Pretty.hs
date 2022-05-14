@@ -1,30 +1,53 @@
 module Lang.Pretty (
-  ppexpr
+  ppexpr,
+  pptype
 ) where
 
 import Lang.Syntax
+import Lang.Check
 
-import Text.PrettyPrint (Doc, (<>), (<+>))
-import qualified Text.PrettyPrint as PP
-
-parensIf ::  Bool -> Doc -> Doc
-parensIf True = PP.parens
-parensIf False = id
+import Text.PrettyPrint
 
 class Pretty p where
   ppr :: Int -> p -> Doc
 
+  pp :: p -> Doc
+  pp = ppr 0
+
+parensIf ::  Bool -> Doc -> Doc
+parensIf True = parens
+parensIf False = id
+
 instance Pretty Expr where
-  ppr _ Zero = PP.text "0"
-  ppr _ Tr = PP.text "true"
-  ppr _ Fl = PP.text "false"
-  ppr p (Succ a) = (parensIf (p > 0) $ PP.text "succ" <+> ppr (p+1) a)
-  ppr p (Pred a) = (parensIf (p > 0) $ PP.text "succ" <+> ppr (p+1) a)
-  ppr p (IsZero a) = (parensIf (p > 0) $ PP.text "iszero" <+> ppr (p+1) a)
-  ppr p (If a b c) =
-        PP.text "if"   <+> ppr p a
-    <+> PP.text "then" <+> ppr p b
-    <+> PP.text "else" <+> ppr p c
+  ppr p ex = case ex of
+    Var x -> text x
+    Lit (LInt a) -> text (show a)
+    Lit (LBool b) -> text (show b)
+    App a b -> (parensIf (p>0) (ppr (p+1) a)) <+> (ppr p b)
+    Lam x t a -> parensIf (p > 0) $
+          char '\\'
+      <+> parens (text x <+> char ':' <+> ppr p t)
+      <+> text "->"
+      <+> ppr (p+1) a
+
+instance Pretty Type where
+  ppr _ TInt  = text "Int"
+  ppr _ TBool = text "Bool"
+  ppr p (TArr a b) = (parensIf (isArrow a) (ppr p a)) <+> text "->" <+> ppr p b
+    where
+      isArrow TArr{} = True
+      isArrow _ = False
+
+instance Show TypeError where
+  show (Mismatch a b) =
+    "Expecting " ++ (pptype b) ++ " but got " ++ (pptype a)
+  show (NotFunction a) =
+    "Tried to apply to non-function type: " ++ (pptype a)
+  show (NotInScope a) =
+    "Variable " ++ a ++ " is not in scope"
 
 ppexpr :: Expr -> String
-ppexpr = PP.render . ppr 0
+ppexpr = render . ppr 0
+
+pptype :: Type -> String
+pptype = render . ppr 0

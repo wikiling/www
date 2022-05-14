@@ -1,39 +1,68 @@
 module Lang.Eval where
 
-import Lang.Syntax
+import qualified Lang.Syntax as S
 
-import Data.Maybe (fromMaybe)
-import Data.Functor ((<$>))
+import Control.Monad.Identity
+import qualified Data.Map as Map
 
-isNum :: Expr -> Bool
-isNum Zero     = True
-isNum (Succ t) = isNum t
-isNum _        = False
+data Value
+  = VInt Integer
+  | VBool Bool
+  | VClosure String S.Expr (EScope)
 
-isVal :: Expr -> Bool
-isVal Tr = True
-isVal Fl = True
-isVal t | isNum t = True
-isVal _ = False
+instance Show Value where
+  show (VInt x) = show x
+  show (VBool x) = show x
+  show VClosure{} = "<<closure>>"
 
-eval' :: Expr -> Maybe Expr
-eval' x = case x of
-  IsZero Zero               -> Just Tr
-  IsZero (Succ t) | isNum t -> Just Fl
-  IsZero t                  -> IsZero <$> (eval' t)
-  Succ t                    -> Succ <$> (eval' t)
-  Pred Zero                 -> Just Zero
-  Pred (Succ t) | isNum t   -> Just t
-  Pred t                    -> Pred <$> (eval' t)
-  If Tr c _                 -> Just c
-  If Fl _ a                 -> Just a
-  If t c a                  -> (\t' -> If t' c a) <$> eval' t
-  _                         -> Nothing
+type Evaluate t = Identity t
+type EScope = Map.Map String Value
 
-nf :: Expr -> Expr
-nf x = fromMaybe x (nf <$> eval' x)
+type ArithOp = Integer -> Integer -> Integer
+evalArith :: EScope -> ArithOp -> S.Expr -> S.Expr -> Integer
+evalArith env op e1 e2 = op (guardInt env e1) (guardInt env e2) where
+  guardInt env expr = case eval env expr of
+    Identity (VInt i) -> i
 
-eval :: Expr -> Maybe Expr
-eval t = case nf t of
-  nft | isVal nft -> Just nft
-      | otherwise -> Nothing -- term is "stuck"
+eval :: EScope -> S.Expr -> Identity Value
+eval env expr = case expr of
+
+  S.Lit (S.LInt x) -> return $ VInt (fromIntegral x)
+
+  S.Lit (S.LBool x) -> return $ VBool x
+
+  S.Var x -> return $ env Map.! x
+
+  S.Add a b -> return $ VInt $ evalArith env (+) a b
+  S.Mul a b -> return $ VInt $ evalArith env (*) a b
+  S.Sub a b -> return $ VInt $ evalArith env (-) a b
+  S.Div a b -> return $ VInt $ evalArith env (div) a b
+
+  S.Eq a b -> do
+    x <- eval env a
+    y <- eval env b
+    case x of
+      VInt i1 -> case y of
+        VInt i2 -> return $ VBool (i1 == i2)
+      VBool b1 -> case y of
+        VBool b2 -> return $ VBool (b1 == b2)
+
+  S.Lam x _ body -> return (VClosure x body env)
+
+  S.App a b -> do
+    x <- eval env a
+    y <- eval env b
+    apply x y
+
+extend :: EScope -> String -> Value -> EScope
+extend env v t = Map.insert v t env
+
+apply :: Value -> Value -> Evaluate Value
+apply (VClosure v t0 e) t1 = eval (extend e v t1) t0
+apply _ _  = error "Tried to apply closure"
+
+emptyScope :: EScope
+emptyScope = Map.empty
+
+runEval :: S.Expr -> Value
+runEval x = runIdentity (eval emptyScope x)
