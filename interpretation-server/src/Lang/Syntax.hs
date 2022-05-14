@@ -18,21 +18,28 @@ data Expr
   | App Expr Expr
   | Lam Name Type Expr
   | Pred Name [Name]
-  | Not Expr
-  | And [Expr]
-  | Or  [Expr]
+  | Neg Expr
+  | Conj Expr Expr
+  | Disj Expr Expr
   | Impl Expr Expr
-  | ForAll Name Expr
-  | Exists Name Expr
+  | UnivQ Name Type Expr
+  | ExisQ Name Type Expr
   | Add Expr Expr
   | Mul Expr Expr
   | Sub Expr Expr
   | Div Expr Expr
   | Eq  Expr Expr
+  -- | Set
+  -- | SetUnion
+  -- | SetInter
+  -- | SetDiff
+  -- | SetCompl
+  -- | SetCompr
   deriving (Eq, Show)
 
 data Type
   = TInt
+  | TEnt
   | TBool
-  | TArr Type Type
+  | TFunc Type Type
   deriving (Eq, Read, Show)

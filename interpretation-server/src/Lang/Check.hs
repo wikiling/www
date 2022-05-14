@@ -30,29 +30,38 @@ lookupVar x = do
     Just e  -> return e
     Nothing -> throwError $ NotInScope x
 
-checkArithmetic :: S.Expr -> S.Expr -> Check S.Type
-checkArithmetic e1 e2 = do
+checkBinaryOp :: S.Type -> S.Expr -> S.Expr -> Check S.Type
+checkBinaryOp = t e1 e2 do
   t1 <- check e1
   t2 <- check e2
-  if t1 == S.TInt
-    then if t2 == S.TInt
-      then return S.TInt
-      else throwError $  Mismatch t2 S.TInt
-    else throwError $  Mismatch t1 S.TInt
+  if t1 == t
+    then if t2 == t
+      then return t
+      else throwError $  Mismatch t2 t
+    else throwError $  Mismatch t1 t
 
 check :: S.Expr -> Check S.Type
 check expr = case expr of
-
   S.Lit S.LInt{} -> return S.TInt
-
   S.Lit S.LBool{} -> return S.TBool
 
   S.Var x -> lookupVar x
 
-  S.Add e1 e2 -> checkArithmetic e1 e2
-  S.Sub e1 e2 -> checkArithmetic e1 e2
-  S.Mul e1 e2 -> checkArithmetic e1 e2
-  S.Div e1 e2 -> checkArithmetic e1 e2
+  S.Add e1 e2 -> checkBinaryOp S.TInt e1 e2
+  S.Sub e1 e2 -> checkBinaryOp S.TInt e1 e2
+  S.Mul e1 e2 -> checkBinaryOp S.TInt e1 e2
+  S.Div e1 e2 -> checkBinaryOp S.TInt e1 e2
+
+  S.Pred n ns -> do
+    lookupVar <$> ns
+    return S.TConst
+
+  S.Neg e -> 
+  S.Conj e1 e2 -> checkBinaryOp S.TBool e1 e2
+  S.Disj e1 e2 -> checkBinaryOp S.TBool e1 e2
+  S.Impl e1 e2 -> checkBinaryOp S.TBool e1 e2
+  S.UnivQ n t e
+  S.ExisQ n t e
 
   S.Eq e1 e2 -> do
     t1 <- check e1
@@ -64,15 +73,15 @@ check expr = case expr of
 
   S.Lam x t e -> do
     body <- inEnv (x,t) (check e)
-    return (S.TArr t body)
+    return (S.TFunc t body)
 
   S.App e1 e2 -> do
     t1 <- check e1
     t2 <- check e2
     case t1 of
-       (S.TArr a b) | a == t2 -> return b
-                    | otherwise -> throwError $ Mismatch t2 a
-       ty -> throwError $ NotFunction ty
+      (S.TFunc a b) | a == t2 -> return b
+                   | otherwise -> throwError $ Mismatch t2 a
+      ty -> throwError $ NotFunction ty
 
 runCheck :: Env -> Check a -> Either TypeError a
 runCheck env = flip runReader env . runExceptT

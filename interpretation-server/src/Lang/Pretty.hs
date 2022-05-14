@@ -33,10 +33,11 @@ instance Pretty Expr where
 instance Pretty Type where
   ppr _ TInt  = text "Int"
   ppr _ TBool = text "Bool"
-  ppr p (TArr a b) = (parensIf (isArrow a) (ppr p a)) <+> text "->" <+> ppr p b
+  ppr _ TEnt = text "Entity"
+  ppr p (TFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
     where
-      isArrow TArr{} = True
-      isArrow _ = False
+      isFunc TFunc{} = True
+      isFunc _ = False
 
 instance Show TypeError where
   show (Mismatch a b) =

@@ -8,7 +8,7 @@ import qualified Text.Parsec.Expr as Ex
 import Text.ParserCombinators.Parsec.Combinator (choice)
 
 import Lang.Lexer
-import Lang.Syntax
+import qualified Lang.Syntax as S
 
 import Debug.Trace(trace)
 import Data.Functor.Identity
@@ -21,116 +21,126 @@ seeNext n = do
   println out
 
 -------------------------------------------------------------------------------
--- Expression
+-- Types
 -------------------------------------------------------------------------------
 
-bool :: Parser Expr
-bool =  (reserved "True" >> return (Lit (LBool True)))
-    <|> (reserved "False" >> return (Lit (LBool False)))
+tyatom :: Parser S.Type
+tyatom = tylit <|> (parens parseType)
 
-number :: Parser Expr
-number = do
+tylit :: Parser S.Type
+tylit = (reservedOp "Bool" >> return S.TBool)
+     <|> (reservedOp "Int" >> return S.TInt)
+     <|> (reservedOp "Ent" >> return S.TEnt)
+
+parseType :: Parser S.Type
+parseType = Ex.buildExpressionParser tyops tyatom
+  where
+    infixOp x f = Ex.Infix (reservedOp x >> return f)
+    tyops = [
+        [infixOp "->" S.TFunc Ex.AssocRight]
+      ]
+
+-------------------------------------------------------------------------------
+-- Expressions
+-------------------------------------------------------------------------------
+
+parseBool :: Parser S.Expr
+parseBool =  (reserved "True" >> return (S.Lit (S.LBool True)))
+    <|> (reserved "False" >> return (S.Lit (S.LBool False)))
+
+parseNumber :: Parser S.Expr
+parseNumber = do
   n <- natural
-  return (Lit (LInt (fromIntegral n)))
+  return (S.Lit (S.LInt (fromIntegral n)))
 
-variable :: Parser Expr
-variable = do
+parseVariable :: Parser S.Expr
+parseVariable = do
   x <- identifier
-  return (Var x)
+  return (S.Var x)
 
-lambda :: Parser Expr
-lambda = do
+parseLambda :: Parser S.Expr
+parseLambda = do
   reservedOp "\\"
   x <- identifier
   reservedOp ":"
-  t <- type'
+  t <- parseType
   reservedOp "."
-  e <- expr
-  return (Lam x t e)
+  e <- parseExpr'
+  return (S.Lam x t e)
 
-parsePred :: Parser FOLExpr
-parsePred = do
-    x  <- capsName
-    ts <- parens (parseTerm `sepBy` char ',')
-    return $ Pred x ts
-
-parseForAll :: Parser FOLExpr
+parseForAll :: Parser S.Expr
 parseForAll = do
-    string "forall" >> spaces
-    x <- name
-    char '.' >> spaces
-    e <- expr
-    return $ ForAll x e
+  reservedOp "forall"
+  x <- identifier
+  reservedOp ":"
+  t <- parseType
+  reservedOp "."
+  e <- parseExpr'
+  return (S.UnivQ x t e)
 
-parseExists :: Parser FOLExpr
+parseExists :: Parser S.Expr
 parseExists = do
-    string "exists" >> spaces
-    x <- name
-    char '.' >> spaces
-    e <- expr
-    return $ Exists x e
+  reservedOp "exists"
+  x <- identifier
+  reservedOp ":"
+  t <- parseType
+  reservedOp "."
+  e <- parseExpr'
+  return (S.ExisQ x t e)
 
 capsName :: Parser String
+
 capsName = do
     c  <- upper
     cs <- many alphaNum
     return (c:cs)
 
-factor :: Parser Expr
-factor = parens expr
-      <|> bool
-      <|> number
-      <|> variable
-      <|> lambda
+parsePred :: Parser S.Expr
+parsePred = do
+  x  <- capsName
+  ts <- parens (identifier `sepBy` char ',')
+  return $ S.Pred x ts
 
-binOp :: String -> (Expr -> Expr -> Expr) -> Ex.Assoc -> Ex.Operator String () Identity Expr
+factor :: Parser S.Expr
+factor = parens parseExpr'
+      <|> parseBool
+      <|> parseNumber
+      <|> parseVariable
+      <|> parseLambda
+      <|> parsePred
+      <|> parseForAll
+      <|> parseExists
+
+binOp :: String -> (S.Expr -> S.Expr -> S.Expr) -> Ex.Assoc -> Ex.Operator String () Identity S.Expr
 binOp name fun assoc = Ex.Infix (do{ reservedOp name; return fun }) assoc
 
-unOp :: String -> (Expr -> Expr) -> Ex.Operator String () Identity Expr
-unOp name fun = Ex.Prefix (reservedOp s >> return f)
+unOp :: String -> (S.Expr -> S.Expr) -> Ex.Operator String () Identity S.Expr
+unOp name fun = Ex.Prefix (reservedOp name >> return fun)
 
-table :: Ex.OperatorTable String () Identity Expr
-table = [ [ binOp "*" Mul Ex.AssocLeft
-          , binOp "/" Div Ex.AssocLeft ]
-        , [ binOp "+" Add Ex.AssocLeft
-          , binOp "-" Sub Ex.AssocLeft ]
-        , [binOp "==" Eq Ex.AssocNone]
-        , [unOp "~" Not]
-        , [ binary "&" Conj Ex.AssocLeft
-        , , binary "|" Disj Ex.AssocLeft ]
-        , [binary "=>" Impl Ex.AssocRight]
+table :: Ex.OperatorTable String () Identity S.Expr
+table = [ [ binOp "*" S.Mul Ex.AssocLeft
+          , binOp "/" S.Div Ex.AssocLeft ]
+        , [ binOp "+" S.Add Ex.AssocLeft
+          , binOp "-" S.Sub Ex.AssocLeft ]
+        , [binOp "==" S.Eq Ex.AssocNone]
+        , [unOp "~" S.Neg]
+        , [ binOp "&" S.Conj Ex.AssocLeft
+          , binOp "|" S.Disj Ex.AssocLeft ]
+        , [binOp "=>" S.Impl Ex.AssocRight]
         ]
 
-term :: Parser Expr
+term :: Parser S.Expr
 term = Ex.buildExpressionParser table factor
 
-expr :: Parser Expr
-expr = do
+parseExpr' :: Parser S.Expr
+parseExpr' = do
   seeNext 1
   es <- many1 term
-  return (foldl1 App es)
+  return (foldl1 S.App es)
 
 -------------------------------------------------------------------------------
--- Types
+-- Entrypoint
 -------------------------------------------------------------------------------
 
-tyatom :: Parser Type
-tyatom = tylit <|> (parens type')
-
-tylit :: Parser Type
-tylit = (reservedOp "Bool" >> return TBool) <|> (reservedOp "Int" >> return TInt)
-
-type' :: Parser Type
-type' = Ex.buildExpressionParser tyops tyatom
-  where
-    infixOp x f = Ex.Infix (reservedOp x >> return f)
-    tyops = [
-        [infixOp "->" TArr Ex.AssocRight]
-      ]
-
--------------------------------------------------------------------------------
--- Toplevel
--------------------------------------------------------------------------------
-
-parseExpr :: String -> Either ParseError Expr
-parseExpr input = parse (contents expr) "<stdin>" input
+parseExpr :: String -> Either ParseError S.Expr
+parseExpr input = parse (contents parseExpr') "<stdin>" input
