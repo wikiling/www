@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Main where
+module Server where
 
 import App (AppCtx (..), mkApp)
 import Control.Monad.IO.Class (liftIO)

@@ -33,10 +33,8 @@ dependencies:
   - http-client
   - http-media
   - http-types
-  - mtl
   - string-conversions
   - text
-  - transformers
   - wai
   - wai-logger
   - wai-extra
@@ -59,21 +57,34 @@ dependencies:
   - ghc-paths
   - ghc
   - hashmap
+
+  # lang
+  - mtl
+  - haskeline
+  - containers
   - parsec
+  - transformers
 
 library:
   source-dirs:
     - src
     - src/fragments
+    - src/Lang
 
 executables:
   interpreter-exe:
-    main: Main.hs
+    main: Server.hs
     source-dirs: app
     ghc-options:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+    dependencies:
+      - base
+      - interpreter
+  lang-exe:
+    main: REPL.hs
+    source-dirs: app
     dependencies:
       - base
       - interpreter
