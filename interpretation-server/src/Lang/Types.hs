@@ -1,4 +1,4 @@
-module Lang.Check (
+module Lang.Types (
   check,
   checkTop,
   TypeError(..)
@@ -24,26 +24,36 @@ inEnv :: (S.Name, S.Type) -> Check a -> Check a
 inEnv (x,t) = local (extend (x,t))
 
 lookupVar :: S.Name -> Check S.Type
-lookupVar x = do
+lookupVar n = do
   env <- ask
-  case lookup x env of
-    Just e  -> return e
-    Nothing -> throwError $ NotInScope x
+  case lookup n env of
+    Just e  -> pure e
+    Nothing -> throwError $ NotInScope n
+
+lookupVars :: [S.Name] -> [Check S.Type]
+lookupVars ns = lookupVar <$> ns
 
 checkBinaryOp :: S.Type -> S.Expr -> S.Expr -> Check S.Type
-checkBinaryOp = t e1 e2 do
+checkBinaryOp t e1 e2 = do
   t1 <- check e1
   t2 <- check e2
   if t1 == t
     then if t2 == t
-      then return t
+      then pure t
       else throwError $  Mismatch t2 t
     else throwError $  Mismatch t1 t
 
+checkQuant :: S.Name -> S.Type -> S.Expr -> Check S.Type 
+checkQuant n t e = do
+    bodyT <- inEnv (n,t) (check e)
+    if bodyT == S.TBool
+      then pure S.TBool
+      else throwError $ Mismatch bodyT S.TBool
+
 check :: S.Expr -> Check S.Type
 check expr = case expr of
-  S.Lit S.LInt{} -> return S.TInt
-  S.Lit S.LBool{} -> return S.TBool
+  S.Lit S.LInt{} -> pure S.TInt
+  S.Lit S.LBool{} -> pure S.TBool
 
   S.Var x -> lookupVar x
 
@@ -52,35 +62,38 @@ check expr = case expr of
   S.Mul e1 e2 -> checkBinaryOp S.TInt e1 e2
   S.Div e1 e2 -> checkBinaryOp S.TInt e1 e2
 
-  S.Pred n ns -> do
-    lookupVar <$> ns
-    return S.TConst
+  S.Pred n ns -> mapM_ lookupVar ns >> pure S.TBool
 
-  S.Neg e -> 
+  S.Neg e -> do
+    t <- check e
+    case t of
+      S.TBool -> pure S.TBool
+      _       -> throwError $ Mismatch t S.TBool
+
   S.Conj e1 e2 -> checkBinaryOp S.TBool e1 e2
   S.Disj e1 e2 -> checkBinaryOp S.TBool e1 e2
   S.Impl e1 e2 -> checkBinaryOp S.TBool e1 e2
-  S.UnivQ n t e
-  S.ExisQ n t e
+  S.UnivQ n t e -> checkQuant n t e
+  S.ExisQ n t e -> checkQuant n t e
 
   S.Eq e1 e2 -> do
     t1 <- check e1
     t2 <- check e2
     case t1 of
-      (S.TInt) | t2 == S.TInt -> return S.TInt
-      (S.TBool) | t2 == S.TBool -> return S.TBool
-      _ -> throwError $ Mismatch t1 t2
+      (S.TInt)  | t2 == S.TInt  -> pure S.TInt
+      (S.TBool) | t2 == S.TBool -> pure S.TBool
+      _                         -> throwError $ Mismatch t1 t2
 
-  S.Lam x t e -> do
-    body <- inEnv (x,t) (check e)
-    return (S.TFunc t body)
+  S.Lam n t e -> do
+    bodyT <- inEnv (n,t) (check e)
+    pure (S.TFunc t bodyT)
 
   S.App e1 e2 -> do
     t1 <- check e1
     t2 <- check e2
     case t1 of
-      (S.TFunc a b) | a == t2 -> return b
-                   | otherwise -> throwError $ Mismatch t2 a
+      (S.TFunc a b) | a == t2   -> pure b
+                    | otherwise -> throwError $ Mismatch t2 a
       ty -> throwError $ NotFunction ty
 
 runCheck :: Env -> Check a -> Either TypeError a

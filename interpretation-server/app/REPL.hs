@@ -2,7 +2,7 @@ module REPL (main) where
 
 import Lang.Syntax
 import Lang.Parser
-import Lang.Check
+import Lang.Types
 import Lang.Eval
 import Lang.Pretty
 

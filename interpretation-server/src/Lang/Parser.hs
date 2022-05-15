@@ -45,8 +45,8 @@ parseType = Ex.buildExpressionParser tyops tyatom
 -------------------------------------------------------------------------------
 
 parseBool :: Parser S.Expr
-parseBool =  (reserved "True" >> return (S.Lit (S.LBool True)))
-    <|> (reserved "False" >> return (S.Lit (S.LBool False)))
+parseBool = (reserved "True" >> return (S.Lit (S.LBool True)))
+         <|> (reserved "False" >> return (S.Lit (S.LBool False)))
 
 parseNumber :: Parser S.Expr
 parseNumber = do
@@ -58,47 +58,43 @@ parseVariable = do
   x <- identifier
   return (S.Var x)
 
+parseBinder :: Parser (String, S.Type, S.Expr)
+parseBinder = do
+  x <- identifier
+  reservedOp ":"
+  t <- parseType
+  reservedOp "."
+  e <- parseExpr'
+  return (x,t,e)
+
 parseLambda :: Parser S.Expr
 parseLambda = do
   reservedOp "\\"
-  x <- identifier
-  reservedOp ":"
-  t <- parseType
-  reservedOp "."
-  e <- parseExpr'
+  (x,t,e) <- parseBinder
   return (S.Lam x t e)
 
-parseForAll :: Parser S.Expr
-parseForAll = do
+parseUnivQ :: Parser S.Expr
+parseUnivQ = do
   reservedOp "forall"
-  x <- identifier
-  reservedOp ":"
-  t <- parseType
-  reservedOp "."
-  e <- parseExpr'
+  (x,t,e) <- parseBinder
   return (S.UnivQ x t e)
 
-parseExists :: Parser S.Expr
-parseExists = do
+parseExisQ :: Parser S.Expr
+parseExisQ = do
   reservedOp "exists"
-  x <- identifier
-  reservedOp ":"
-  t <- parseType
-  reservedOp "."
-  e <- parseExpr'
+  (x,t,e) <- parseBinder
   return (S.ExisQ x t e)
 
-capsName :: Parser String
-
-capsName = do
-    c  <- upper
-    cs <- many alphaNum
-    return (c:cs)
+title :: Parser String
+title = do
+  c  <- upper
+  cs <- many alphaNum
+  return (c:cs)
 
 parsePred :: Parser S.Expr
 parsePred = do
-  x  <- capsName
-  ts <- parens (identifier `sepBy` char ',')
+  x  <- title
+  ts <- parens ((spaces *> identifier <* spaces) `sepBy` char ',')
   return $ S.Pred x ts
 
 factor :: Parser S.Expr
@@ -108,8 +104,8 @@ factor = parens parseExpr'
       <|> parseVariable
       <|> parseLambda
       <|> parsePred
-      <|> parseForAll
-      <|> parseExists
+      <|> parseUnivQ
+      <|> parseExisQ
 
 binOp :: String -> (S.Expr -> S.Expr -> S.Expr) -> Ex.Assoc -> Ex.Operator String () Identity S.Expr
 binOp name fun assoc = Ex.Infix (do{ reservedOp name; return fun }) assoc

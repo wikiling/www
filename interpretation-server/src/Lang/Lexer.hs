@@ -3,13 +3,15 @@ module Lang.Lexer where
 import Text.Parsec
 import Text.Parsec.String
 import qualified Text.Parsec.Token as Tok
+import qualified Text.ParserCombinators.Parsec.Char as CTok
 import Text.Parsec.Language (haskellStyle)
 
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style
   where ops = ["->", "\\", "="]
         names = ["True", "False"]
-        style = haskellStyle {Tok.reservedOpNames = ops,
+        style = haskellStyle {Tok.identStart = CTok.lower,
+                              Tok.reservedOpNames = ops,
                               Tok.reservedNames = names,
                               Tok.commentLine = "#"}
 

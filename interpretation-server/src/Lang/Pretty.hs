@@ -4,7 +4,7 @@ module Lang.Pretty (
 ) where
 
 import Lang.Syntax
-import Lang.Check
+import Lang.Types
 
 import Text.PrettyPrint
 
