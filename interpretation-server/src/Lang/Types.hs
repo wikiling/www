@@ -54,6 +54,7 @@ check :: S.Expr -> Check S.Type
 check expr = case expr of
   S.Lit S.LInt{} -> pure S.TInt
   S.Lit S.LBool{} -> pure S.TBool
+  S.Lit S.LConst{} -> pure S.TEnt
 
   S.Var x -> lookupVar x
 

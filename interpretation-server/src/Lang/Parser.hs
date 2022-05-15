@@ -43,6 +43,11 @@ parseType = Ex.buildExpressionParser tyops tyatom
 -------------------------------------------------------------------------------
 -- Expressions
 -------------------------------------------------------------------------------
+title :: Parser String
+title = do
+  c  <- upper
+  cs <- many alphaNum
+  return (c:cs)
 
 parseBool :: Parser S.Expr
 parseBool = (reserved "True" >> return (S.Lit (S.LBool True)))
@@ -57,6 +62,12 @@ parseVariable :: Parser S.Expr
 parseVariable = do
   x <- identifier
   return (S.Var x)
+
+parseConst :: Parser S.Expr
+parseConst = do
+  c <- title
+  -- notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
+  return (S.Lit (S.LConst c))
 
 parseBinder :: Parser (String, S.Type, S.Expr)
 parseBinder = do
@@ -85,12 +96,6 @@ parseExisQ = do
   (x,t,e) <- parseBinder
   return (S.ExisQ x t e)
 
-title :: Parser String
-title = do
-  c  <- upper
-  cs <- many alphaNum
-  return (c:cs)
-
 parsePred :: Parser S.Expr
 parsePred = do
   x  <- title
@@ -101,9 +106,11 @@ factor :: Parser S.Expr
 factor = parens parseExpr'
       <|> parseBool
       <|> parseNumber
+      
       <|> parseVariable
       <|> parseLambda
       <|> parsePred
+      <|> parseConst
       <|> parseUnivQ
       <|> parseExisQ
 

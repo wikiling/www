@@ -10,6 +10,7 @@ type Name = String
 data Ground
   = LInt Int
   | LBool Bool
+  | LConst String
   deriving (Show, Eq, Ord)
 
 data Expr
