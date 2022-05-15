@@ -13,7 +13,7 @@ import qualified Lang.Syntax as S
 import Debug.Trace(trace)
 import Data.Functor.Identity
 
-println msg = trace (show msg) $ return ()
+println msg = trace (show msg) $ pure ()
 seeNext :: Int -> ParsecT String u Identity ()
 seeNext n = do
   s <- getParserState
@@ -28,14 +28,14 @@ tyatom :: Parser S.Type
 tyatom = tylit <|> (parens parseType)
 
 tylit :: Parser S.Type
-tylit = (reservedOp "Bool" >> return S.TBool)
-     <|> (reservedOp "Int" >> return S.TInt)
-     <|> (reservedOp "Ent" >> return S.TEnt)
+tylit = (reservedOp "Bool" >> pure S.TBool)
+     <|> (reservedOp "Int" >> pure S.TInt)
+     <|> (reservedOp "Ent" >> pure S.TEnt)
 
 parseType :: Parser S.Type
 parseType = Ex.buildExpressionParser tyops tyatom
   where
-    infixOp x f = Ex.Infix (reservedOp x >> return f)
+    infixOp x f = Ex.Infix (reservedOp x >> pure f)
     tyops = [
         [infixOp "->" S.TFunc Ex.AssocRight]
       ]
@@ -43,31 +43,29 @@ parseType = Ex.buildExpressionParser tyops tyatom
 -------------------------------------------------------------------------------
 -- Expressions
 -------------------------------------------------------------------------------
-title :: Parser String
-title = do
-  c  <- upper
-  cs <- many alphaNum
-  return (c:cs)
+parseTitleIdentifier :: Parser String
+parseTitleIdentifier = lookAhead upper >> identifier
 
 parseBool :: Parser S.Expr
-parseBool = (reserved "True" >> return (S.Lit (S.LBool True)))
-         <|> (reserved "False" >> return (S.Lit (S.LBool False)))
+parseBool = (reserved "True" >> pure (S.Lit (S.LBool True)))
+         <|> (reserved "False" >> pure (S.Lit (S.LBool False)))
 
 parseNumber :: Parser S.Expr
 parseNumber = do
   n <- natural
-  return (S.Lit (S.LInt (fromIntegral n)))
+  pure (S.Lit (S.LInt (fromIntegral n)))
 
 parseVariable :: Parser S.Expr
 parseVariable = do
-  x <- identifier
-  return (S.Var x)
+  lookAhead lower
+  n <- identifier
+  pure (S.Var n)
 
 parseConst :: Parser S.Expr
 parseConst = do
-  c <- title
-  -- notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
-  return (S.Lit (S.LConst c))
+  c <- parseTitleIdentifier
+  notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
+  pure (S.Lit (S.LConst c))
 
 parseBinder :: Parser (String, S.Type, S.Expr)
 parseBinder = do
@@ -76,49 +74,48 @@ parseBinder = do
   t <- parseType
   reservedOp "."
   e <- parseExpr'
-  return (x,t,e)
+  pure (x,t,e)
 
 parseLambda :: Parser S.Expr
 parseLambda = do
   reservedOp "\\"
   (x,t,e) <- parseBinder
-  return (S.Lam x t e)
+  pure (S.Lam x t e)
 
 parseUnivQ :: Parser S.Expr
 parseUnivQ = do
   reservedOp "forall"
   (x,t,e) <- parseBinder
-  return (S.UnivQ x t e)
+  pure (S.UnivQ x t e)
 
 parseExisQ :: Parser S.Expr
 parseExisQ = do
   reservedOp "exists"
   (x,t,e) <- parseBinder
-  return (S.ExisQ x t e)
+  pure (S.ExisQ x t e)
 
 parsePred :: Parser S.Expr
 parsePred = do
-  x  <- title
+  n  <- parseTitleIdentifier
   ts <- parens ((spaces *> identifier <* spaces) `sepBy` char ',')
-  return $ S.Pred x ts
+  pure $ S.Pred n ts
 
 factor :: Parser S.Expr
 factor = parens parseExpr'
       <|> parseBool
       <|> parseNumber
-      
+      <|> try parseConst
       <|> parseVariable
       <|> parseLambda
-      <|> parsePred
-      <|> parseConst
+      <|> try parsePred
       <|> parseUnivQ
       <|> parseExisQ
 
 binOp :: String -> (S.Expr -> S.Expr -> S.Expr) -> Ex.Assoc -> Ex.Operator String () Identity S.Expr
-binOp name fun assoc = Ex.Infix (do{ reservedOp name; return fun }) assoc
+binOp name fun assoc = Ex.Infix (do{ reservedOp name; pure fun }) assoc
 
 unOp :: String -> (S.Expr -> S.Expr) -> Ex.Operator String () Identity S.Expr
-unOp name fun = Ex.Prefix (reservedOp name >> return fun)
+unOp name fun = Ex.Prefix (reservedOp name >> pure fun)
 
 table :: Ex.OperatorTable String () Identity S.Expr
 table = [ [ binOp "*" S.Mul Ex.AssocLeft
@@ -137,9 +134,9 @@ term = Ex.buildExpressionParser table factor
 
 parseExpr' :: Parser S.Expr
 parseExpr' = do
-  seeNext 1
+  -- seeNext 1
   es <- many1 term
-  return (foldl1 S.App es)
+  pure (foldl1 S.App es)
 
 -------------------------------------------------------------------------------
 -- Entrypoint

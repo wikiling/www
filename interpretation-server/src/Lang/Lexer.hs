@@ -10,8 +10,7 @@ lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style
   where ops = ["->", "\\", "="]
         names = ["True", "False"]
-        style = haskellStyle {Tok.identStart = CTok.lower,
-                              Tok.reservedOpNames = ops,
+        style = haskellStyle {Tok.reservedOpNames = ops,
                               Tok.reservedNames = names,
                               Tok.commentLine = "#"}
 

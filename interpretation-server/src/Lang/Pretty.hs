@@ -33,7 +33,7 @@ instance Pretty Expr where
 instance Pretty Type where
   ppr _ TInt  = text "Int"
   ppr _ TBool = text "Bool"
-  ppr _ TEnt = text "Entity"
+  ppr _ TEnt  = text "Entity"
   ppr p (TFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
     where
       isFunc TFunc{} = True

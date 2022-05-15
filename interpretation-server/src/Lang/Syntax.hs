@@ -7,10 +7,11 @@ module Lang.Syntax (
 
 type Name = String
 
+-- | Ground terms are those without free variables.
 data Ground
   = LInt Int
   | LBool Bool
-  | LConst String
+  | LConst Name
   deriving (Show, Eq, Ord)
 
 data Expr

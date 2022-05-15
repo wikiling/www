@@ -47,7 +47,15 @@ eval env expr = case expr of
       VBool b1 -> case y of
         VBool b2 -> return $ VBool (b1 == b2)
 
-  S.Lam x _ body -> return (VClosure x body env)
+  | S.Pred n ns ->
+  | S.Neg e ->
+  | S.Conj e1 e2 ->
+  | S.Disj e1 e2 ->
+  | S.Impl e1 e2 ->
+  | S.UnivQ n _ e ->
+  | S.ExisQ n _ e ->
+
+  S.Lam x _ e -> return (VClosure x e env)
 
   S.App a b -> do
     x <- eval env a

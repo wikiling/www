@@ -32,13 +32,12 @@ library
       FSynF
       InfEngine
       Islands
-      Lang.Calc
-      Lang.Check
       Lang.Eval
       Lang.Lexer
       Lang.Parser
       Lang.Pretty
       Lang.Syntax
+      Lang.Types
       Logger
       MCWPL
       Model1
@@ -52,13 +51,12 @@ library
       Util
       BarkerIslands
       VonStechowAnLfArchitecture
-      Calc
-      Check
       Eval
       Lexer
       Parser
       Pretty
       Syntax
+      Types
   other-modules:
       Paths_interpreter
   hs-source-dirs:
