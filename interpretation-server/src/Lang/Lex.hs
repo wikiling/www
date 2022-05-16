@@ -1,4 +1,4 @@
-module Lang.Lexer where
+module Lang.Lex where
 
 import Text.Parsec
 import Text.Parsec.String

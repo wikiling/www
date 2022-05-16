@@ -1,4 +1,4 @@
-module Lang.Parser (
+module Lang.Parse (
   parseExpr
 ) where
 
@@ -7,8 +7,8 @@ import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Expr as Ex
 import Text.ParserCombinators.Parsec.Combinator (choice)
 
-import Lang.Lexer
-import qualified Lang.Syntax as S
+import Lang.Lex
+import qualified Lang.Syn as S
 
 import Debug.Trace(trace)
 import Data.Functor.Identity
@@ -28,16 +28,16 @@ tyatom :: Parser S.Type
 tyatom = tylit <|> (parens parseType)
 
 tylit :: Parser S.Type
-tylit = (reservedOp "Bool" >> pure S.TBool)
-     <|> (reservedOp "Int" >> pure S.TInt)
-     <|> (reservedOp "Ent" >> pure S.TEnt)
+tylit = (reservedOp "Bool" >> pure S.TyBool)
+     <|> (reservedOp "Int" >> pure S.TyInt)
+     <|> (reservedOp "Ent" >> pure S.TyEnt)
 
 parseType :: Parser S.Type
 parseType = Ex.buildExpressionParser tyops tyatom
   where
     infixOp x f = Ex.Infix (reservedOp x >> pure f)
     tyops = [
-        [infixOp "->" S.TFunc Ex.AssocRight]
+        [infixOp "->" S.TyFunc Ex.AssocRight]
       ]
 
 -------------------------------------------------------------------------------
@@ -47,25 +47,34 @@ parseTitleIdentifier :: Parser String
 parseTitleIdentifier = lookAhead upper >> identifier
 
 parseBool :: Parser S.Expr
-parseBool = (reserved "True" >> pure (S.Lit (S.LBool True)))
-         <|> (reserved "False" >> pure (S.Lit (S.LBool False)))
+parseBool = (reserved "True" >> pure (S.ELit (S.LBool True)))
+         <|> (reserved "False" >> pure (S.ELit (S.LBool False)))
 
 parseNumber :: Parser S.Expr
 parseNumber = do
   n <- natural
-  pure (S.Lit (S.LInt (fromIntegral n)))
+  pure (S.ELit (S.LInt (fromIntegral n)))
 
-parseVariable :: Parser S.Expr
-parseVariable = do
+parseTVar :: Parser S.Term
+parseTVar = do
   lookAhead lower
   n <- identifier
-  pure (S.Var n)
+  pure (S.TVar n)
 
-parseConst :: Parser S.Expr
-parseConst = do
+parseTConst :: Parser S.Term
+parseTConst = do
   c <- parseTitleIdentifier
   notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
-  pure (S.Lit (S.LConst c))
+  pure (S.TConst c)
+
+parseTerm :: Parser S.Term
+parseTerm = try parseTVar <|> parseTConst
+
+parseVariable :: Parser S.Expr
+parseVariable = parseTVar >>= \v -> pure (S.ETerm v)
+
+parseConst :: Parser S.Expr
+parseConst = parseTConst >>= \c -> pure (S.ETerm c)
 
 parseBinder :: Parser (String, S.Type, S.Expr)
 parseBinder = do
@@ -97,7 +106,7 @@ parseExisQ = do
 parsePred :: Parser S.Expr
 parsePred = do
   n  <- parseTitleIdentifier
-  ts <- parens ((spaces *> identifier <* spaces) `sepBy` char ',')
+  ts <- parens ((spaces *> parseTerm <* spaces) `sepBy` char ',')
   pure $ S.Pred n ts
 
 factor :: Parser S.Expr

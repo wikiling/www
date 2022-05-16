@@ -1,10 +1,11 @@
-module Lang.Types (
+module Lang.Type (
   check,
   checkTop,
   TypeError(..)
 ) where
 
-import qualified Lang.Syntax as S
+import qualified Lang.Syn as S
+
 import Control.Monad.Except
 import Control.Monad.Reader
 
@@ -46,34 +47,38 @@ checkBinaryOp t e1 e2 = do
 checkQuant :: S.Name -> S.Type -> S.Expr -> Check S.Type 
 checkQuant n t e = do
     bodyT <- inEnv (n,t) (check e)
-    if bodyT == S.TBool
-      then pure S.TBool
-      else throwError $ Mismatch bodyT S.TBool
+    if bodyT == S.TyBool
+      then pure S.TyBool
+      else throwError $ Mismatch bodyT S.TyBool
+
+checkTerm :: S.Term -> Check S.Type
+checkTerm t = case t of
+  S.TVar v   -> lookupVar v
+  S.TConst c -> pure S.TyEnt
 
 check :: S.Expr -> Check S.Type
 check expr = case expr of
-  S.Lit S.LInt{} -> pure S.TInt
-  S.Lit S.LBool{} -> pure S.TBool
-  S.Lit S.LConst{} -> pure S.TEnt
+  S.ELit S.LInt{} -> pure S.TyInt
+  S.ELit S.LBool{} -> pure S.TyBool
 
-  S.Var x -> lookupVar x
+  S.ETerm t -> checkTerm t
 
-  S.Add e1 e2 -> checkBinaryOp S.TInt e1 e2
-  S.Sub e1 e2 -> checkBinaryOp S.TInt e1 e2
-  S.Mul e1 e2 -> checkBinaryOp S.TInt e1 e2
-  S.Div e1 e2 -> checkBinaryOp S.TInt e1 e2
+  S.Add e1 e2 -> checkBinaryOp S.TyInt e1 e2
+  S.Sub e1 e2 -> checkBinaryOp S.TyInt e1 e2
+  S.Mul e1 e2 -> checkBinaryOp S.TyInt e1 e2
+  S.Div e1 e2 -> checkBinaryOp S.TyInt e1 e2
 
-  S.Pred n ns -> mapM_ lookupVar ns >> pure S.TBool
+  S.Pred n ns -> mapM_ checkTerm ns >> pure S.TyBool
 
   S.Neg e -> do
     t <- check e
     case t of
-      S.TBool -> pure S.TBool
-      _       -> throwError $ Mismatch t S.TBool
+      S.TyBool -> pure S.TyBool
+      _       -> throwError $ Mismatch t S.TyBool
 
-  S.Conj e1 e2 -> checkBinaryOp S.TBool e1 e2
-  S.Disj e1 e2 -> checkBinaryOp S.TBool e1 e2
-  S.Impl e1 e2 -> checkBinaryOp S.TBool e1 e2
+  S.Conj e1 e2 -> checkBinaryOp S.TyBool e1 e2
+  S.Disj e1 e2 -> checkBinaryOp S.TyBool e1 e2
+  S.Impl e1 e2 -> checkBinaryOp S.TyBool e1 e2
   S.UnivQ n t e -> checkQuant n t e
   S.ExisQ n t e -> checkQuant n t e
 
@@ -81,19 +86,19 @@ check expr = case expr of
     t1 <- check e1
     t2 <- check e2
     case t1 of
-      (S.TInt)  | t2 == S.TInt  -> pure S.TInt
-      (S.TBool) | t2 == S.TBool -> pure S.TBool
+      (S.TyInt)  | t2 == S.TyInt  -> pure S.TyInt
+      (S.TyBool) | t2 == S.TyBool -> pure S.TyBool
       _                         -> throwError $ Mismatch t1 t2
 
   S.Lam n t e -> do
     bodyT <- inEnv (n,t) (check e)
-    pure (S.TFunc t bodyT)
+    pure (S.TyFunc t bodyT)
 
   S.App e1 e2 -> do
     t1 <- check e1
     t2 <- check e2
     case t1 of
-      (S.TFunc a b) | a == t2   -> pure b
+      (S.TyFunc a b) | a == t2   -> pure b
                     | otherwise -> throwError $ Mismatch t2 a
       ty -> throwError $ NotFunction ty
 

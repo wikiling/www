@@ -3,8 +3,8 @@ module Lang.Pretty (
   pptype
 ) where
 
-import Lang.Syntax
-import Lang.Types
+import qualified Lang.Syn as S
+import qualified Lang.Type as T
 
 import Text.PrettyPrint
 
@@ -18,37 +18,41 @@ parensIf ::  Bool -> Doc -> Doc
 parensIf True = parens
 parensIf False = id
 
-instance Pretty Expr where
+instance Pretty S.Expr where
   ppr p ex = case ex of
-    Var x -> text x
-    Lit (LInt a) -> text (show a)
-    Lit (LBool b) -> text (show b)
-    App a b -> (parensIf (p>0) (ppr (p+1) a)) <+> (ppr p b)
-    Lam x t a -> parensIf (p > 0) $
+    S.ETerm (S.TVar v)   -> text v
+    S.ETerm (S.TConst c) -> text c
+    S.ELit (S.LInt i)    -> text (show i)
+    S.ELit (S.LBool b)   -> text (show b)
+    S.App a b -> (parensIf (p>0) (ppr (p+1) a)) <+> (ppr p b)
+    S.Lam x t a -> parensIf (p > 0) $
           char '\\'
       <+> parens (text x <+> char ':' <+> ppr p t)
       <+> text "->"
       <+> ppr (p+1) a
 
-instance Pretty Type where
-  ppr _ TInt  = text "Int"
-  ppr _ TBool = text "Bool"
-  ppr _ TEnt  = text "Entity"
-  ppr p (TFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
+instance Pretty S.Type where
+  ppr _ S.TyInt  = text "Int"
+  ppr _ S.TyBool = text "Bool"
+  ppr _ S.TyEnt  = text "Entity"
+  ppr p (S.TyFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
     where
-      isFunc TFunc{} = True
+      isFunc S.TyFunc{} = True
       isFunc _ = False
 
-instance Show TypeError where
-  show (Mismatch a b) =
+instance Show S.Expr where
+  show = show . pp
+
+instance Show T.TypeError where
+  show (T.Mismatch a b) =
     "Expecting " ++ (pptype b) ++ " but got " ++ (pptype a)
-  show (NotFunction a) =
+  show (T.NotFunction a) =
     "Tried to apply to non-function type: " ++ (pptype a)
-  show (NotInScope a) =
+  show (T.NotInScope a) =
     "Variable " ++ a ++ " is not in scope"
 
-ppexpr :: Expr -> String
+ppexpr :: S.Expr -> String
 ppexpr = render . ppr 0
 
-pptype :: Type -> String
+pptype :: S.Type -> String
 pptype = render . ppr 0

@@ -1,9 +1,9 @@
 module REPL (main) where
 
-import Lang.Syntax
-import Lang.Parser
-import Lang.Types
-import Lang.Eval
+import Lang.Syn
+import Lang.Parse
+import Lang.Type
+import Lang.Sem
 import Lang.Pretty
 
 import Control.Monad.Trans
