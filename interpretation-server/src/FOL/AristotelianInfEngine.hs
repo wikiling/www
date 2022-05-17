@@ -1,4 +1,4 @@
-module AristotelianInfEngine where
+module FOL.AristotelianInfEngine where
 
 import Data.List
 import Data.Char

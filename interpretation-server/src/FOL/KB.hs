@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module FOL where
+module FOL.KB where
 
 import Control.Monad.Error
 import Data.Map (Map, (!))

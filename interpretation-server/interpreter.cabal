@@ -13,7 +13,6 @@ author:         Author name here
 maintainer:     example@example.com
 copyright:      2022 Author name here
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
@@ -24,49 +23,38 @@ source-repository head
 
 library
   exposed-modules:
-      A
       App
-      B
-      FOL
-      FPH
-      FSynF
-      InfEngine
-      Islands
-      Lang.Comp
-      Lang.Frag
-      Lang.Lex
-      Lang.Parse
-      Lang.Pretty
-      Lang.Sem
-      Lang.Syn
-      Lang.Type
+      Compile.Lex
+      Compile.Parse
+      Compile.Pretty
+      Compile.Syn
+      Compile.Type
+      FOL.AristotelianInfEngine
+      FOL.KB
+      Interpret.Comp
+      Interpret.Frag
+      Interpret.Sem
       Logger
-      MCWPL
-      Model1
       Models
-      Models0
-      Models1
-      MyFSynF
-      Parsing
       Settings
-      TCOM
       Util
       BarkerIslands
       VonStechowAnLfArchitecture
-      Comp
-      Frag
       Lex
       Parse
       Pretty
-      Sem
       Syn
       Type
+      Comp
+      Frag
+      Sem
   other-modules:
       Paths_interpreter
   hs-source-dirs:
       src
       src/fragments
-      src/Lang
+      src/Compile
+      src/Interpret
   build-depends:
       aeson
     , attoparsec

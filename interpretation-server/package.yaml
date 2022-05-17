@@ -69,7 +69,8 @@ library:
   source-dirs:
     - src
     - src/fragments
-    - src/Lang
+    - src/Compile
+    - src/Interpret
 
 executables:
   interpreter-exe:
