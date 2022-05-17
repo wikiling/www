@@ -1,15 +1,17 @@
-module Lang.Sem where
+module Interpret.Sem where
 
-import Lang.Pretty
-import qualified Lang.Syn as S
+import Compile.Pretty
+import qualified Compile.Syn as S
 
 import Control.Monad.Identity
 import qualified Data.Map as Map
 
+import Debug.Trace (traceM)
+
 data Value
   = VInt Integer
   | VBool Bool
-  | VClosure String S.Expr (EvalCtx)
+  | VClosure String S.Expr EvalCtx
 
 instance Show Value where
   show (VInt x) = show x
@@ -20,11 +22,11 @@ type Evaluate t = Identity t
 type EvalCtx = Map.Map String Value
 
 eval :: EvalCtx -> S.Expr -> Identity Value
-eval env expr = let
+eval ctx expr = let
 
-  guardBool e = case eval env e of
+  guardBool e = case eval ctx e of
     Identity (VBool b) -> b
-  guardInt e = case eval env e of
+  guardInt e = case eval ctx e of
     Identity (VInt i) -> i
   evalArith op e1 e2 = pure $ VInt $ op (guardInt e1) (guardInt e2)
 
@@ -33,8 +35,8 @@ eval env expr = let
     S.ELit (S.LInt x) -> pure $ VInt (fromIntegral x)
     S.ELit (S.LBool x) -> pure $ VBool x
 
-    S.ETerm (S.TVar x) -> pure $ env Map.! x
-    S.ETerm (S.TConst x) -> pure $ env Map.! x
+    S.ESym (S.SVar x) -> pure $ ctx Map.! x
+    S.ESym (S.SConst x) -> pure $ ctx Map.! x
 
     S.Add a b -> evalArith (+) a b
     S.Mul a b -> evalArith (*) a b
@@ -42,8 +44,8 @@ eval env expr = let
     S.Div a b -> evalArith (div) a b
 
     S.Eq a b -> do
-      x <- eval env a
-      y <- eval env b
+      x <- eval ctx a
+      y <- eval ctx b
       case x of
         VInt i1 -> case y of
           VInt i2 -> pure $ VBool (i1 == i2)
@@ -59,27 +61,30 @@ eval env expr = let
     S.Disj e1 e2 -> disjoin [e1,e2] where
       disjoin = pure . VBool . or . map guardBool
     S.Impl e1 e2 -> imply e1 e2 where
-      imply e1 e2 = pure $ VBool $ not (and [(guardBool e1), (not $ guardBool e2)])
+      imply e1 e2 = pure $ VBool $ not (and [(guardBool e1),(not $ guardBool e2)])
     -- S.UnivQ n _ e ->
     -- S.ExisQ n _ e ->
     -- S.IotaQ n _ e ->
 
-    S.Lam x _ e -> pure (VClosure x e env)
+    S.Lam x _ e -> pure (VClosure x e ctx)
 
     S.App a b -> do
-      x <- eval env a
-      y <- eval env b
+      traceM "eval 1..."
+      x <- eval ctx a
+      traceM "eval 2..."
+      y <- eval ctx b
+      traceM "eval 3..."
       apply x y
 
 extend :: EvalCtx -> String -> Value -> EvalCtx
-extend env v t = Map.insert v t env
+extend ctx v t = Map.insert v t ctx
 
 apply :: Value -> Value -> Evaluate Value
-apply (VClosure v t0 e) t1 = eval (extend e v t1) t0
+apply (VClosure n body ctx) arg = eval (extend ctx n arg) body
 apply _ _  = error "Tried to apply closure"
 
-emptyScope :: EvalCtx
-emptyScope = Map.empty
+emptyCtx :: EvalCtx
+emptyCtx = Map.empty
 
 runEval :: S.Expr -> Value
-runEval x = runIdentity (eval emptyScope x)
+runEval x = runIdentity (eval emptyCtx x)

@@ -1,17 +1,19 @@
-module Lang.Type (
+module Compile.Type (
   check,
   checkTop,
   TypeError(..)
 ) where
 
-import qualified Lang.Syn as S
+import qualified Compile.Syn as S
 
 import Control.Monad.Except
 import Control.Monad.Reader
 
-type Env = [(S.Name, S.Type)]
+import Debug.Trace (traceM)
 
-extend :: (S.Name, S.Type) -> Env -> Env
+type Ctx = [(S.Name, S.Type)]
+
+extend :: (S.Name, S.Type) -> Ctx -> Ctx
 extend xt env = xt : env
 
 data TypeError
@@ -19,10 +21,10 @@ data TypeError
   | NotFunction S.Type
   | NotInScope S.Name
 
-type Check = ExceptT TypeError (Reader Env)
+type Check = ExceptT TypeError (Reader Ctx)
 
-inEnv :: (S.Name, S.Type) -> Check a -> Check a
-inEnv (x,t) = local (extend (x,t))
+inCtx :: (S.Name, S.Type) -> Check a -> Check a
+inCtx (x,t) = local (extend (x,t))
 
 lookupVar :: S.Name -> Check S.Type
 lookupVar n = do
@@ -46,22 +48,22 @@ checkBinaryOp t e1 e2 = do
 
 checkQuant :: S.Name -> S.Type -> S.Expr -> Check S.Type 
 checkQuant n t e = do
-    bodyT <- inEnv (n,t) (check e)
+    bodyT <- inCtx (n,t) (check e)
     if bodyT == S.TyBool
       then pure S.TyBool
       else throwError $ Mismatch bodyT S.TyBool
 
-checkTerm :: S.Term -> Check S.Type
+checkTerm :: S.Sym -> Check S.Type
 checkTerm t = case t of
-  S.TVar v   -> lookupVar v
-  S.TConst c -> pure S.TyEnt
+  S.SVar v   -> lookupVar v
+  S.SConst c -> pure S.TyEnt
 
 check :: S.Expr -> Check S.Type
 check expr = case expr of
   S.ELit S.LInt{} -> pure S.TyInt
   S.ELit S.LBool{} -> pure S.TyBool
 
-  S.ETerm t -> checkTerm t
+  S.ESym t -> checkTerm t
 
   S.Add e1 e2 -> checkBinaryOp S.TyInt e1 e2
   S.Sub e1 e2 -> checkBinaryOp S.TyInt e1 e2
@@ -74,7 +76,7 @@ check expr = case expr of
     t <- check e
     case t of
       S.TyBool -> pure S.TyBool
-      _       -> throwError $ Mismatch t S.TyBool
+      _        -> throwError $ Mismatch t S.TyBool
 
   S.Conj e1 e2 -> checkBinaryOp S.TyBool e1 e2
   S.Disj e1 e2 -> checkBinaryOp S.TyBool e1 e2
@@ -88,10 +90,11 @@ check expr = case expr of
     case t1 of
       (S.TyInt)  | t2 == S.TyInt  -> pure S.TyInt
       (S.TyBool) | t2 == S.TyBool -> pure S.TyBool
-      _                         -> throwError $ Mismatch t1 t2
+      _                           -> throwError $ Mismatch t1 t2
 
+  -- TODO: if t is TyFunc check that its domain matches the type of e
   S.Lam n t e -> do
-    bodyT <- inEnv (n,t) (check e)
+    bodyT <- inCtx (n,t) (check e)
     pure (S.TyFunc t bodyT)
 
   S.App e1 e2 -> do
@@ -99,11 +102,11 @@ check expr = case expr of
     t2 <- check e2
     case t1 of
       (S.TyFunc a b) | a == t2   -> pure b
-                    | otherwise -> throwError $ Mismatch t2 a
-      ty -> throwError $ NotFunction ty
+                     | otherwise -> throwError $ Mismatch t2 a
+      t -> throwError $ NotFunction t
 
-runCheck :: Env -> Check a -> Either TypeError a
+runCheck :: Ctx -> Check a -> Either TypeError a
 runCheck env = flip runReader env . runExceptT
 
-checkTop :: Env -> S.Expr -> Either TypeError S.Type
+checkTop :: Ctx -> S.Expr -> Either TypeError S.Type
 checkTop env x = runCheck env $ (check x)

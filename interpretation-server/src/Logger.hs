@@ -1,9 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Logger
   ( LogMessage (..),

@@ -1,7 +1,7 @@
-module Lang.Syn (
+module Compile.Syn (
   Name,
   Lit(..),
-  Term(..),
+  Sym(..),
   Expr(..),
   Type(..),
 ) where
@@ -14,22 +14,27 @@ data Lit
   | LBool Bool
   deriving (Show, Eq, Ord)
 
-data Term
-  = TVar Name
-  | TConst Name
+-- | Symbols. Variables are bound in an evaluation context,
+--   constants in a semantic model.
+data Sym
+  = SVar Name
+  | SConst Name
   deriving (Eq, Show)
 
 data Expr
   = Eq Expr Expr
   | ELit Lit
-  | ETerm Term
+  | ESym Sym
   | Lam Name Type Expr
   | App Expr Expr
-  | Pred Name [Term]
+  -- TODO: predicate argument type should be
+  -- [Expr] to accommodate e.g. functions that return terms
+  | Pred Name [Sym]
   | Neg Expr
   | Conj Expr Expr
   | Disj Expr Expr
   | Impl Expr Expr
+  -- TODO: Name/Type should be Expr to allow arbitrary restriction
   | UnivQ Name Type Expr
   | ExisQ Name Type Expr
   | IotaQ Name Type Expr

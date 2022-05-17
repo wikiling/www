@@ -1,4 +1,4 @@
-module Lang.Parse (
+module Compile.Parse (
   parseExpr
 ) where
 
@@ -7,10 +7,12 @@ import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Expr as Ex
 import Text.ParserCombinators.Parsec.Combinator (choice)
 
-import Lang.Lex
-import qualified Lang.Syn as S
+import Compile.Lex
+import qualified Compile.Syn as S
+import Compile.Pretty
 
-import Debug.Trace(trace)
+import Debug.Trace (trace, traceM)
+import Data.List (intercalate)
 import Data.Functor.Identity
 
 println msg = trace (show msg) $ pure ()
@@ -36,9 +38,8 @@ parseType :: Parser S.Type
 parseType = Ex.buildExpressionParser tyops tyatom
   where
     infixOp x f = Ex.Infix (reservedOp x >> pure f)
-    tyops = [
-        [infixOp "->" S.TyFunc Ex.AssocRight]
-      ]
+    tyops = [ [infixOp "->" S.TyFunc Ex.AssocRight]
+            ]
 
 -------------------------------------------------------------------------------
 -- Expressions
@@ -55,26 +56,26 @@ parseNumber = do
   n <- natural
   pure (S.ELit (S.LInt (fromIntegral n)))
 
-parseTVar :: Parser S.Term
-parseTVar = do
+parseSVar :: Parser S.Sym
+parseSVar = do
   lookAhead lower
   n <- identifier
-  pure (S.TVar n)
+  pure (S.SVar n)
 
-parseTConst :: Parser S.Term
-parseTConst = do
+parseSConst :: Parser S.Sym
+parseSConst = do
   c <- parseTitleIdentifier
   notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
-  pure (S.TConst c)
+  pure (S.SConst c)
 
-parseTerm :: Parser S.Term
-parseTerm = try parseTVar <|> parseTConst
+parseSym :: Parser S.Sym
+parseSym = try parseSVar <|> parseSConst
 
-parseVariable :: Parser S.Expr
-parseVariable = parseTVar >>= \v -> pure (S.ETerm v)
+parseVar :: Parser S.Expr
+parseVar = parseSVar >>= pure . S.ESym
 
 parseConst :: Parser S.Expr
-parseConst = parseTConst >>= \c -> pure (S.ETerm c)
+parseConst = parseSConst >>= pure . S.ESym
 
 parseBinder :: Parser (String, S.Type, S.Expr)
 parseBinder = do
@@ -91,34 +92,44 @@ parseLambda = do
   (x,t,e) <- parseBinder
   pure (S.Lam x t e)
 
+parseApp :: Parser S.Expr
+parseApp = do
+  es <- many1 parseTerm
+  pure (foldl1 S.App es)
+
 parseUnivQ :: Parser S.Expr
 parseUnivQ = do
-  reservedOp "forall"
+  reservedOp "\\forall"
   (x,t,e) <- parseBinder
   pure (S.UnivQ x t e)
 
 parseExisQ :: Parser S.Expr
 parseExisQ = do
-  reservedOp "exists"
+  reservedOp "\\exists"
   (x,t,e) <- parseBinder
   pure (S.ExisQ x t e)
 
 parsePred :: Parser S.Expr
 parsePred = do
   n  <- parseTitleIdentifier
-  ts <- parens ((spaces *> parseTerm <* spaces) `sepBy` char ',')
+  ts <- parens ((spaces *> parseSym <* spaces) `sepBy` char ',')
   pure $ S.Pred n ts
 
+completeParse p = traceM ("ok, parsed " ++ p)
+tryParse p = traceM ("parsing " ++ p ++ "...")
+debugParse :: String -> Parser S.Expr -> Parser S.Expr
+debugParse s p = (tryParse s) *> p <* (completeParse s)
+
 factor :: Parser S.Expr
-factor = parens parseExpr'
-      <|> parseBool
-      <|> parseNumber
-      <|> try parseConst
-      <|> parseVariable
-      <|> parseLambda
-      <|> try parsePred
-      <|> parseUnivQ
-      <|> parseExisQ
+factor = debugParse "app"   (parens parseExpr') <|>
+         debugParse "bool"   (parseBool) <|>
+         debugParse "number" (parseNumber) <|>
+         debugParse "const"  (parseConst) <|>
+         debugParse "var"    (parseVar) <|>
+         debugParse "lambda" (parseLambda) <|>
+         debugParse "pred"   (parsePred) <|>
+         debugParse "univq"  (parseUnivQ) <|>
+         debugParse "exisq"  (parseExisQ)
 
 binOp :: String -> (S.Expr -> S.Expr -> S.Expr) -> Ex.Assoc -> Ex.Operator String () Identity S.Expr
 binOp name fun assoc = Ex.Infix (do{ reservedOp name; pure fun }) assoc
@@ -126,26 +137,23 @@ binOp name fun assoc = Ex.Infix (do{ reservedOp name; pure fun }) assoc
 unOp :: String -> (S.Expr -> S.Expr) -> Ex.Operator String () Identity S.Expr
 unOp name fun = Ex.Prefix (reservedOp name >> pure fun)
 
-table :: Ex.OperatorTable String () Identity S.Expr
-table = [ [ binOp "*" S.Mul Ex.AssocLeft
-          , binOp "/" S.Div Ex.AssocLeft ]
-        , [ binOp "+" S.Add Ex.AssocLeft
-          , binOp "-" S.Sub Ex.AssocLeft ]
-        , [binOp "==" S.Eq Ex.AssocNone]
-        , [unOp "~" S.Neg]
-        , [ binOp "&" S.Conj Ex.AssocLeft
-          , binOp "|" S.Disj Ex.AssocLeft ]
-        , [binOp "=>" S.Impl Ex.AssocRight]
-        ]
+opTable :: Ex.OperatorTable String () Identity S.Expr
+opTable = [ [ binOp "*" S.Mul Ex.AssocLeft
+            , binOp "/" S.Div Ex.AssocLeft ]
+          , [ binOp "+" S.Add Ex.AssocLeft
+            , binOp "-" S.Sub Ex.AssocLeft ]
+          , [binOp "==" S.Eq Ex.AssocNone]
+          , [unOp "~" S.Neg]
+          , [ binOp "&" S.Conj Ex.AssocLeft
+            , binOp "|" S.Disj Ex.AssocLeft ]
+          , [binOp "=>" S.Impl Ex.AssocRight]
+          ]
 
-term :: Parser S.Expr
-term = Ex.buildExpressionParser table factor
+parseTerm :: Parser S.Expr
+parseTerm = Ex.buildExpressionParser opTable factor
 
 parseExpr' :: Parser S.Expr
-parseExpr' = do
-  -- seeNext 1
-  es <- many1 term
-  pure (foldl1 S.App es)
+parseExpr' = parseApp
 
 -------------------------------------------------------------------------------
 -- Entrypoint

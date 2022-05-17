@@ -1,10 +1,11 @@
 module REPL (main) where
 
-import Lang.Syn
-import Lang.Parse
-import Lang.Type
-import Lang.Sem
-import Lang.Pretty
+import Compile.Syn
+import Compile.Parse
+import Compile.Type
+import Compile.Pretty
+
+import Interpret.Sem
 
 import Control.Monad.Trans
 import System.Console.Haskeline
@@ -27,4 +28,5 @@ main = runInputT defaultSettings loop
     minput <- getInputLine "λ> "
     case minput of
       Nothing -> outputStrLn "Goodbye."
-      Just input -> (liftIO $ process input) >> loop
+      Just input | length input > 0 -> (liftIO $ process input) >> loop
+                 | otherwise        -> loop

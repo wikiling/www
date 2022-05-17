@@ -11,24 +11,12 @@ import Data.Aeson
 import qualified Data.HashMap.Strict as H
 import GHC.Generics (Generic)
 
-import FOL (Term, Func)
+import qualified Compile.Frag as F
+import qualified Compile.Comp as C
 
 type Const = String
 data Pos = String deriving (Show, Generic, JSON.FromJSON)
-data SyntaxTree = Leaf Const | Branch Pos [SyntaxTree, SyntaxTree]
-
-
-toVP :: SyntaxTree -> Term -> Term
-toVP (Branch "VP" [np@(Branch "NP" _), v'@(Branch "V'" _)] = toNP np $ toV' v' 
-
-toNP :: SyntaxTree -> Term
-toNP (Branch "NP" [Leaf token]) -> token
-
-toV' :: SyntaxTree -> Term -> Term
-toV' (Branch "V'" [v@(Branch "V" _), np@(Branch "NP" _)] = toNP np $ toV v
-
-toV :: SyntaxTree -> Term -> Term -> Term
-toV (Branch "V" [Leaf token]) -> Func 
+type SyntaxTree = C.BTree Const Pos
 
 syntaxTreeParser :: JSON.Object -> Parser SyntaxTree
 syntaxTreeParser obj =

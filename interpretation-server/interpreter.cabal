@@ -32,12 +32,14 @@ library
       FSynF
       InfEngine
       Islands
-      Lang.Eval
-      Lang.Lexer
-      Lang.Parser
+      Lang.Comp
+      Lang.Frag
+      Lang.Lex
+      Lang.Parse
       Lang.Pretty
-      Lang.Syntax
-      Lang.Types
+      Lang.Sem
+      Lang.Syn
+      Lang.Type
       Logger
       MCWPL
       Model1
@@ -51,12 +53,14 @@ library
       Util
       BarkerIslands
       VonStechowAnLfArchitecture
-      Eval
-      Lexer
-      Parser
+      Comp
+      Frag
+      Lex
+      Parse
       Pretty
-      Syntax
-      Types
+      Sem
+      Syn
+      Type
   other-modules:
       Paths_interpreter
   hs-source-dirs:
