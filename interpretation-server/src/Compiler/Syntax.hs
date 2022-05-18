@@ -1,9 +1,10 @@
-module Compile.Syn (
+module Compiler.Syntax (
   Name,
   Lit(..),
   Sym(..),
   Expr(..),
   Type(..),
+  Decl
 ) where
 
 type Name = String
@@ -27,6 +28,7 @@ data Expr
   | ESym Sym
   | Lam Name Type Expr
   | App Expr Expr
+  | Let Sym Expr
   -- TODO: predicate argument type should be
   -- [Expr] to accommodate e.g. functions that return terms
   | Pred Name [Sym]
@@ -55,3 +57,5 @@ data Type
   | TyBool
   | TyFunc Type Type
   deriving (Eq, Read, Show)
+
+type Decl = (Name, Expr)

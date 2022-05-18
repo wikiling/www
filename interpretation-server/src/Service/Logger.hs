@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Logger
+module Service.Logger
   ( LogMessage (..),
   )
 where

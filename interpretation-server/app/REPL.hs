@@ -1,11 +1,11 @@
 module REPL (main) where
 
-import Compile.Syn
-import Compile.Parse
-import Compile.Type
-import Compile.Pretty
+import Compiler.Syntax
+import Compiler.Parser
+import Compiler.Types
+import Compiler.Pretty
 
-import Interpret.Sem
+import Interpreter.Semantics
 
 import Control.Monad.Trans
 import System.Console.Haskeline

@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Util where
+module Service.Utils where
 {-
 import qualified Data.List as L
 import qualified Data.Map as M

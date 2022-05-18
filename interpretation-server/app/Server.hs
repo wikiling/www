@@ -6,7 +6,10 @@
 
 module Server where
 
-import App (AppCtx (..), mkApp)
+import Service.App (AppCtx (..), mkApp)
+import Service.Settings (SiteConfig (..))
+import Service.Logger (LogMessage (..))
+
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import Data.Aeson
@@ -15,7 +18,6 @@ import Data.Proxy
 import Data.Text
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Generics
-import Logger (LogMessage (..))
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp as Warp
 import Network.Wai.Middleware.Cors (cors, corsMethods, corsOrigins, corsRequestHeaders, simpleCors, simpleCorsResourcePolicy, simpleHeaders)
@@ -23,7 +25,6 @@ import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.RequestLogger.JSON
 import Prelude.Compat
 import Servant
-import Settings (SiteConfig (..))
 import System.Log.FastLogger
   ( LoggerSet,
     ToLogStr (..),

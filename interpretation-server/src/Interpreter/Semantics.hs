@@ -1,7 +1,7 @@
-module Interpret.Sem where
+module Interpreter.Semantics where
 
-import Compile.Pretty
-import qualified Compile.Syn as S
+import Compiler.Pretty
+import qualified Compiler.Syntax as Syn
 
 import Control.Monad.Identity
 import qualified Data.Map as Map
@@ -11,7 +11,7 @@ import Debug.Trace (traceM)
 data Value
   = VInt Integer
   | VBool Bool
-  | VClosure String S.Expr EvalCtx
+  | VClosure String Syn.Expr EvalCtx
 
 instance Show Value where
   show (VInt x) = show x
@@ -21,7 +21,7 @@ instance Show Value where
 type Evaluate t = Identity t
 type EvalCtx = Map.Map String Value
 
-eval :: EvalCtx -> S.Expr -> Identity Value
+eval :: EvalCtx -> Syn.Expr -> Identity Value
 eval ctx expr = let
 
   guardBool e = case eval ctx e of
@@ -32,18 +32,18 @@ eval ctx expr = let
 
   in case expr of
 
-    S.ELit (S.LInt x) -> pure $ VInt (fromIntegral x)
-    S.ELit (S.LBool x) -> pure $ VBool x
+    Syn.ELit (Syn.LInt x) -> pure $ VInt (fromIntegral x)
+    Syn.ELit (Syn.LBool x) -> pure $ VBool x
 
-    S.ESym (S.SVar x) -> pure $ ctx Map.! x
-    S.ESym (S.SConst x) -> pure $ ctx Map.! x
+    Syn.ESym (Syn.SVar x) -> pure $ ctx Map.! x
+    Syn.ESym (Syn.SConst x) -> pure $ ctx Map.! x
 
-    S.Add a b -> evalArith (+) a b
-    S.Mul a b -> evalArith (*) a b
-    S.Sub a b -> evalArith (-) a b
-    S.Div a b -> evalArith (div) a b
+    Syn.Add a b -> evalArith (+) a b
+    Syn.Mul a b -> evalArith (*) a b
+    Syn.Sub a b -> evalArith (-) a b
+    Syn.Div a b -> evalArith (div) a b
 
-    S.Eq a b -> do
+    Syn.Eq a b -> do
       x <- eval ctx a
       y <- eval ctx b
       case x of
@@ -53,22 +53,22 @@ eval ctx expr = let
           VBool b2 -> pure $ VBool (b1 == b2)
 
     -- No model theory yet, so all predicates are true.
-    S.Pred n ns -> pure $ VBool True
-    S.Neg e -> negate e where
+    Syn.Pred n ns -> pure $ VBool True
+    Syn.Neg e -> negate e where
       negate = pure . VBool . not . guardBool
-    S.Conj e1 e2 -> conjoin [e1,e2] where
+    Syn.Conj e1 e2 -> conjoin [e1,e2] where
       conjoin = pure . VBool . and . map guardBool
-    S.Disj e1 e2 -> disjoin [e1,e2] where
+    Syn.Disj e1 e2 -> disjoin [e1,e2] where
       disjoin = pure . VBool . or . map guardBool
-    S.Impl e1 e2 -> imply e1 e2 where
+    Syn.Impl e1 e2 -> imply e1 e2 where
       imply e1 e2 = pure $ VBool $ not (and [(guardBool e1),(not $ guardBool e2)])
-    -- S.UnivQ n _ e ->
-    -- S.ExisQ n _ e ->
-    -- S.IotaQ n _ e ->
+    -- Syn.UnivQ n _ e ->
+    -- Syn.ExisQ n _ e ->
+    -- Syn.IotaQ n _ e ->
 
-    S.Lam x _ e -> pure (VClosure x e ctx)
+    Syn.Lam x _ e -> pure (VClosure x e ctx)
 
-    S.App a b -> do
+    Syn.App a b -> do
       traceM "eval 1..."
       x <- eval ctx a
       traceM "eval 2..."
@@ -86,5 +86,5 @@ apply _ _  = error "Tried to apply closure"
 emptyCtx :: EvalCtx
 emptyCtx = Map.empty
 
-runEval :: S.Expr -> Value
+runEval :: Syn.Expr -> Value
 runEval x = runIdentity (eval emptyCtx x)

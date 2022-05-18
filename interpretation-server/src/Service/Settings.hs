@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Settings
+module Service.Settings
   ( SiteConfig(..)
   )
 where

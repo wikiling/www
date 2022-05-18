@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module App
+module Service.App
   ( mkApp,
     AppCtx (..),
   )
@@ -20,12 +20,9 @@ import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder (toLazyText)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import GHC.Generics
-import Logger (LogMessage (..))
-import Models (SyntaxTree (..), LF, transVP)
+import GHComp.Generics
 import Prelude.Compat
 import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, ServerT, err401, hoistServerWithContext, serveWithContext, throwError, (:>))
-import Settings (SiteConfig (..))
 import System.Log.FastLogger
   ( LoggerSet,
     ToLogStr,
@@ -33,47 +30,52 @@ import System.Log.FastLogger
     pushLogStrLn,
     toLogStr,
   )
-import Prelude ()
 
-type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] SyntaxTree :> Post '[JSON] FragmentHandlerResp
+import Service.Logger (LogMessage)
+import Service.Settings (SiteConfig)
+import Service.Serializers
+
+import qualified Interpreter.Composition as Comp
+
+type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] Comp.SynTree :> Post '[JSON] FragmentHandlerResp
 
 data AppCtx = AppCtx
   { _getConfig :: SiteConfig,
     _getLogger :: LoggerSet
   }
 
-encodeTreeToText :: SyntaxTree -> Text
+encodeTreeToText :: Comp.SynTree -> Text
 encodeTreeToText = toStrict . toLazyText . JSONText.encodeToTextBuilder . JSON.toJSON
 
 data FragmentHandlerResp = FragmentHandlerResp
-  { syntaxTree :: !SyntaxTree,
-    lf :: !LF
+  { syntaxTree :: !Comp.SynTree,
+    semanticTree :: !Comp.SemTree
   }
   deriving (Show, Generic)
 
 instance JSON.ToJSON FragmentHandlerResp where
   toEncoding = JSON.genericToEncoding JSON.defaultOptions
 
-fragmentHandler :: String -> SyntaxTree -> AppM FragmentHandlerResp
+fragmentHandler :: String -> Comp.SynTree -> AppM FragmentHandlerResp
 fragmentHandler fragmentId syntaxTree = do
   logset <- asks _getLogger
   tstamp <- liftIO getCurrentTime
   config <- asks _getConfig
 
-  let logMsg =
-        LogMessage
-          { message = "Syntax tree: " <> encodeTreeToText syntaxTree,
-            timestamp = tstamp,
-            level = "info",
-            lversion = version config,
-            lenvironment = environment config
-          }
-
-  liftIO $ pushLogStrLn logset $ toLogStr logMsg
+  liftIO $ pushLogStrLn logset $ toLogStr LogMessage
+    { message = "fragmtn: " <> fragmentId <> " Syntax tree: " <> encodeTreeToText syntaxTree,
+      timestamp = tstamp,
+      level = "info",
+      lversion = version config,
+      lenvironment = environment config
+    }
+  
+  fragment <- liftIO $ Comp.loadFragment fragmentId
+  semTree <- Comp.runComposition fragment syntaxTree
 
   pure $ FragmentHandlerResp {
     syntaxTree = syntaxTree,
-    lf = transVP syntaxTree
+    semTree = Comp. syntaxTree
   }
 
 fragmentApi :: Proxy FragmentAPI
