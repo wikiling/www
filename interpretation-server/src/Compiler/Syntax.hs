@@ -58,4 +58,4 @@ data Type
   | TyFunc Type Type
   deriving (Eq, Read, Show)
 
-type Decl = (Name, Expr)
+type Decl = (String, Expr)
