@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Move guards forward" #-}
-
 module BarkerIslands
   ( islands,
   )

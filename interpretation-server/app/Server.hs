@@ -71,7 +71,6 @@ main = do
   pushLogStrLn appLogger (toLogStr lgmsg) >> flushLogStr appLogger
 
   let ctx = AppCtx config appLogger
-
       warpSettings = Warp.defaultSettings
       portSettings = Warp.setPort port warpSettings
       settings = Warp.setTimeout 55 portSettings

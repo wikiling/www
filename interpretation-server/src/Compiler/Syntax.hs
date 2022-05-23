@@ -30,7 +30,7 @@ data Expr
   | App Expr Expr
   | Let Sym Expr
   -- TODO: predicate argument type should be
-  -- [Expr] to accommodate e.g. functions that return terms
+  -- [Expr] to accommodate e.g. functions that return symbols
   | Pred Name [Sym]
   | Neg Expr
   | Conj Expr Expr
@@ -55,6 +55,7 @@ data Type
   = TyInt
   | TyEnt
   | TyBool
+  | TyVar
   | TyFunc Type Type
   deriving (Eq, Read, Show)
 

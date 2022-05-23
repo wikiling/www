@@ -17,8 +17,9 @@ class Pretty p where
   pp = ppr 0
 
 parensIf ::  Bool -> Doc -> Doc
-parensIf True = parens
-parensIf False = id
+parensIf b = case b of
+  True  -> parens
+  False -> id
 
 commaSep = punctuate $ char ','
 wrap d1 d2 = d1 <> d2 <> d1 

@@ -10,6 +10,7 @@ import Debug.Trace (traceM)
 
 data Value
   = VInt Integer
+  | VEnt String
   | VBool Bool
   | VClosure String Syn.Expr EvalCtx
 
@@ -69,11 +70,8 @@ eval ctx expr = let
     Syn.Lam x _ e -> pure (VClosure x e ctx)
 
     Syn.App a b -> do
-      traceM "eval 1..."
       x <- eval ctx a
-      traceM "eval 2..."
       y <- eval ctx b
-      traceM "eval 3..."
       apply x y
 
 extend :: EvalCtx -> String -> Value -> EvalCtx
