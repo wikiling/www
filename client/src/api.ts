@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { toPascalCase } from 'utils/string';
 import { Fragment, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, ExampleEditValues, ConstituencyParseEditValues, ExampleCreateValues } from './types'
 
 const catalogueClient = axios.create({
@@ -59,7 +60,7 @@ const updateConstituencyParse = (constituencyParseId: ID, values: ConstituencyPa
   .then(({ data }) => data);
 
 const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpretationClient
-  .post(`fragments/${fragment.id}/`, syntaxTree)
+  .post(`fragments/${toPascalCase(fragment.slug)}/`, syntaxTree)
   .then(({ data }) => data);
 
 const fetchFragmentGrammar = (filename: string): Promise<string> => languageServerClient

@@ -16,6 +16,7 @@ data Value
 
 instance Show Value where
   show (VInt x) = show x
+  show (VEnt x) = show x
   show (VBool x) = show x
   show (VClosure n exp _) = show exp
 

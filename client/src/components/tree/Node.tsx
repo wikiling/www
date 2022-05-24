@@ -4,7 +4,6 @@ import { select } from 'd3-selection';
 import { ID } from 'types';
 import { getTextDimensions } from 'utils/document';
 import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
-import { nodeText } from './utils';
 import { NODE_RADIUS } from './config';
 
 type NodeProps = {
@@ -21,11 +20,10 @@ type NodeProps = {
 const Node = forwardRef<
   SVGGElement, NodeProps
 >(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, ref) => {
-  const { id: nodeId } = node.data;
-  const text = nodeText(node);
+  const { id: nodeId, label: nodeLabel } = node.data;
   const id = `${treeId}-${nodeId}`;
-  const { width: textWidth, height: textHeight } = getTextDimensions(text);
-  const textX = node.x - textWidth / 2, textY = node.y + textHeight / 2;
+  const { width: labelWidth, height: labelHeight } = getTextDimensions(nodeLabel);
+  const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
   const dragHandler = drag();
@@ -50,8 +48,8 @@ const Node = forwardRef<
   return (
     <g ref={ref} onClick={onClick} className={`node ${className}`} data-id={id}>
       <circle className="node-circle" cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white" strokeWidth="1"/>
-      <text x={textX} y={textY} data-id={textWidth}>
-        {text}
+      <text x={labelX} y={labelY} data-id={labelWidth}>
+        {nodeLabel}
       </text>
     </g>
   );

@@ -49,7 +49,7 @@ instance Pretty Syn.Expr where
     Syn.ELit l  -> ppr p l
     Syn.App a b -> (parensIf (p>0) (ppr (p+1) a)) <+> (ppr p b)
     Syn.Lam n t body -> parensIf (p > 0) $
-      char 'λ' <> text n <> char ':' <+> ppr p t
+      char 'λ' <> text n <> char ':' <> ppr p t
       <+> text "->"
       <+> ppr (p+1) body
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
@@ -68,6 +68,7 @@ instance Pretty Syn.Type where
   ppr _ Syn.TyInt  = text "n"
   ppr _ Syn.TyBool = text "t"
   ppr _ Syn.TyEnt  = text "e"
+  ppr _ Syn.TyEvent = text "v"
   ppr p (Syn.TyFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
     where
       isFunc Syn.TyFunc{} = True

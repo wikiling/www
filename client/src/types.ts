@@ -11,19 +11,19 @@ export type Author = {
   full_name: string
 }
 
-export type SyntaxTreeID = string;
-export type SemanticTreeID = string;
+export type TreeID = string;
 
 export type SyntaxTree = {
-  id: SyntaxTreeID
-  pos?: string
-  token?: string
+  id: TreeID
+  label: string
   children?: SyntaxTree[]
 }
 
 export type SemanticTree = {
-  id: SemanticTreeID
-  formula: string
+  id: TreeID
+  expr: string
+  type: string
+  value: string
   children?: [SemanticTree]
 }
 
@@ -52,8 +52,8 @@ export type ConstituencyParse = {
 }
 
 export type ConstituencyParseNodeEditValues = {
-  nodeId: SyntaxTreeID
-  nodeText: string
+  id: TreeID
+  label: string
 }
 
 export type ConstituencyParseEditValues = {

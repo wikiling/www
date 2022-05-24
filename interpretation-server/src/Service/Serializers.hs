@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Service.Serializers where
 
@@ -12,38 +14,38 @@ import qualified Interpreter.Fragment as F
 import qualified Interpreter.Composition as C
 import Compiler.Pretty
 
-parseTok :: Object -> Parser C.SynTree
-parseTok obj = do
-  tok <- obj .: "token"
-  pure $ C.Node tok C.Leaf C.Leaf
+parseSynNode :: Object -> Parser C.SynTree
+parseSynNode obj = do
+  label <- obj .: "label"
+  cs <- obj .:? "children"
+  (c1, c2) <- parseSynChildren cs
+  pure $ C.Node label c1 c2
 
-parsePos :: Object -> Parser C.SynTree
-parsePos obj = do
-  pos <- obj .: "pos"
-  cs <- obj .: "children"
-  (c1, c2) <- parseChildren cs
-  pure $ C.Node pos c1 c2
-
-parseChildren :: Array -> Parser (C.SynTree, C.SynTree)
-parseChildren cs = case length cs of
+parseSynChildren :: Maybe Array -> Parser (C.SynTree, C.SynTree)
+parseSynChildren Nothing = pure $ (C.Leaf, C.Leaf)
+parseSynChildren (Just cs) = case length cs of
   0 -> pure $ (C.Leaf, C.Leaf)
   1 -> pure $ (parseChild 0, C.Leaf)
   2 -> pure $ (parseChild 0, parseChild 1)
   _ -> fail "must be binary tree"
   where
+    parseChild :: Int -> C.SynTree
     parseChild i = case ((parseMaybe parseJSON $ cs!i)) of
       Nothing -> C.Leaf
       Just s  -> s
 
 instance FromJSON C.SynTree where
-  parseJSON = withObject "SyntaxTree" $ \obj ->
-    parseTok obj <|> parsePos obj
+  parseJSON = withObject "SyntaxTree" parseSynNode
 
 instance ToJSON C.SemTree where
-  toJSON t@(C.Node _ c1 c2) = object $ (node t) <> [ "children" .= (map node [c1,c2]) ]
+  toJSON t@(C.Node _ c1 c2) = object $ (serializeNode t) <> [ "children" .= (map serializeNode (filter isNode [c1,c2])) ]
     where
-      node :: C.SemTree -> [Pair]
-      node (C.Node s _ _) = case s of
+      isNode :: C.SemTree -> Bool
+      isNode s = case s of
+        C.Leaf -> False
+        _ -> True
+      serializeNode :: C.SemTree -> [Pair]
+      serializeNode (C.Node s _ _) = case s of
         Nothing -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
         Just (C.SemNode expr ty v) -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
 

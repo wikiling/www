@@ -1,7 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) 2018-2022 TypeFox GmbH (http://www.typefox.io). All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
 import * as ws from "ws";
 import * as http from "http";
 import * as url from "url";
@@ -30,7 +26,12 @@ export function launch(socket: rpc.IWebSocket) {
 
   const socketConnection = server.createConnection(reader, writer, () => socket.dispose());
   console.log(process.env)
-  const serverConnection = server.createServerProcess('haskell', 'haskell-language-server-8.10.7', ['--lsp', '--debug', '--cwd=/app/fragments'], { env: process.env });
+  const serverConnection = server.createServerProcess(
+    'haskell',
+    'haskell-language-server-8.10.7',
+    ['--lsp', '--debug', '--cwd=/app/fragments'],
+    { env: process.env }
+  );
 
   server.forward(socketConnection, serverConnection, message => {
     console.log(message);
@@ -45,12 +46,14 @@ export function launch(socket: rpc.IWebSocket) {
   });
 }
 
-
+// init/plugins
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 // start the server
 const httpServer = app.listen(3003);
+
 // routes
 app.get('/:filename', (req, res) => {
   const buffer = fs.readFileSync(path.join(fragmentDir, req.params.filename));
@@ -60,16 +63,17 @@ app.post('/:filename', (req, res) => {
   fs.writeFileSync(path.join(fragmentDir, req.params.filename), req.body.content);
   res.send('POST request to the homepage');
 });
+
 // create the web socket
 const wss = new ws.Server({
   noServer: true,
   perMessageDeflate: false
 });
+
 httpServer.on('upgrade', (request: http.IncomingMessage, socket: net.Socket, head: Buffer) => {
-  console.log(-1);
   const pathname = request.url ? url.parse(request.url).pathname : undefined;
+
   if (pathname === '/') {
-    console.log(0);
     wss.handleUpgrade(request, socket, head, webSocket => {
       const socket: rpc.IWebSocket = {
         send: content => webSocket.send(content, error => {
@@ -80,9 +84,10 @@ httpServer.on('upgrade', (request: http.IncomingMessage, socket: net.Socket, hea
         onClose: cb => webSocket.on('close', cb),
         dispose: () => webSocket.close()
       };
+    
       // launch the HLS when the web socket is opened
       if (webSocket.readyState === webSocket.OPEN) launch(socket);
       else webSocket.on('open', () => launch(socket));
     });
   }
-})
+});

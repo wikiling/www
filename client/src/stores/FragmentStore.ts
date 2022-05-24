@@ -1,6 +1,6 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, SyntaxTreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues, SyntaxTree } from 'types';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, TreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues } from 'types';
 import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample, fetchFragmentGrammar, updateFragmentGrammar } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
@@ -30,8 +30,6 @@ const TemporaryExampleFactory = (fragment_id: ID): TemporaryExample => ({
 });
 
 const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyParse): CoordinatedConstituencyParse => {
-  console.log(constituencyParse.syntax_tree);
-
   return ({
     coordinated_syntax_tree: hierarchy(constituencyParse.syntax_tree),
     ...constituencyParse
@@ -116,7 +114,7 @@ export class FragmentStore {
     return temporaryExample;
   }
 
-  findConstituencyParseNode = (constituencyParseId: ID, nodeId: SyntaxTreeID) => {
+  findConstituencyParseNode = (constituencyParseId: ID, nodeId: TreeID) => {
     const parse = this.constituencyParseMap[constituencyParseId];
     const tree = parse.coordinated_syntax_tree.copy();
     const node = tree.findById(nodeId);
@@ -128,15 +126,14 @@ export class FragmentStore {
   }
 
   updateConstituencyParseNode = (exampleId: ID, values: ConstituencyParseNodeEditValues) => {
-    const { parse, tree, node } = this.findConstituencyParseNode(exampleId, values.nodeId);
+    const { parse, tree, node } = this.findConstituencyParseNode(exampleId, values.id);
 
-    if (!!node.data.pos) node.data.pos = values.nodeText
-    else node.data.token = values.nodeText;
+    node.data.label = values.label;
 
     parse.coordinated_syntax_tree = hierarchy(tree.data);
   }
 
-  removeConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID) => {
+  removeConstituencyParseNode = (exampleId: ID, nodeId: TreeID) => {
     const { parse, tree, node } = this.findConstituencyParseNode(exampleId, nodeId);
 
     tree.detach(node);
@@ -144,7 +141,7 @@ export class FragmentStore {
     parse.coordinated_syntax_tree = hierarchy(tree.data);
   }
 
-  addConstituencyParseNode = (exampleId: ID, parentNodeId: SyntaxTreeID) => {
+  addConstituencyParseNode = (exampleId: ID, parentNodeId: TreeID) => {
     const { parse, tree, node: parent } = this.findConstituencyParseNode(exampleId, parentNodeId);
     const newNode = SyntaxTreeNodeFactory();
 
@@ -155,7 +152,7 @@ export class FragmentStore {
     return parse.coordinated_syntax_tree.findById(newCoordinatedNodeId);
   }
 
-  moveConstituencyParseNode = (exampleId: ID, nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
+  moveConstituencyParseNode = (exampleId: ID, nodeId: TreeID, targetParentId: TreeID) => {
     const { parse, tree, node: parent } = this.findConstituencyParseNode(exampleId, targetParentId);
     const child = tree.findById(nodeId);
 
@@ -177,7 +174,7 @@ export class FragmentStore {
       this.dispatchFetchFragmentGrammar(this.fragment)
     ]);
 
-    this.initialGrammar = grammar ??  "-- write your fragment here...";
+    this.initialGrammar = grammar ?? "-- write your fragment here...";
     
     if (!examples.length) return;
 
@@ -246,14 +243,7 @@ export class FragmentStore {
   dispatchInterpretConstituencyParse = (constituencyParse: CoordinatedConstituencyParse) => {
     if (!this.fragment) throw new Error("No fragment to interpret!");
 
-    const withDefaults = ({ pos = "", token = "", children, ...node }: SyntaxTree): SyntaxTree => ({
-      pos,
-      token,
-      children: children ? children.map(withDefaults) : undefined,
-      ...node
-    });
-
-    return fetchInterpretation(this.fragment, withDefaults(constituencyParse.coordinated_syntax_tree.data));
+    return fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
   }
 }
 

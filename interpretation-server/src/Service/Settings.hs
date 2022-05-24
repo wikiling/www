@@ -7,6 +7,8 @@ module Service.Settings
   )
 where
 
+import System.IO (FilePath)
+
 import Data.Text ( Text )
 import Data.Time.Clock ( UTCTime )
 import GHC.Generics ( Generic )
@@ -16,4 +18,5 @@ data SiteConfig = SiteConfig {
   , version       :: !Text
   , adminUsername :: !Text
   , adminPasswd   :: !Text
+  , fragmentDir   :: !FilePath
 } deriving (Generic, Show)

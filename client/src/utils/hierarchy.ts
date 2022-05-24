@@ -69,9 +69,11 @@ d3Node.prototype.parseString = function () {
   const { children } = this;
 
   if (this.isPreterminal()) {
-    return `(${this.data.pos} ${children[0].data.token})`;
+    console.log(0, this.data.token)
+    return `(${this.data.label} ${children[0].data.label})`;
   } else {
-    return `(${this.data.pos} ${children.map((node: IdentifiableHierarchyNode) => node.parseString()).join(' ')})`;
+    console.log(1, this.data.token)
+    return `(${this.data.label} ${children.map((node: IdentifiableHierarchyNode) => node.parseString()).join(' ')})`;
   }
 }
 

@@ -14,18 +14,18 @@ class JSONSerializableNLTKTree(nltk.ParentedTree):
 
     @property
     def id(self):
-        pos = self.treeposition()
+        id = self.treeposition()
 
-        if len(pos):
+        if len(id):
             return "".join([str(pos) for pos in self.treeposition()])
         else:
             return "-1"
 
     def json(self):
-        obj = {"pos": self.label(), "id": self.id}
+        obj = {"label": self.label(), "id": self.id}
 
         if self.is_pre_terminal:
-            obj["children"] = [{"token": child,  "id": "%s0" % self.id}
+            obj["children"] = [{"label": child,  "id": "%s0" % self.id}
                                for child in self]
         elif len(self) > 0:
             obj["children"] = [child.json() for child in self]

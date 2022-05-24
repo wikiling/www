@@ -1,6 +1,6 @@
 import "./ConstituencyParse.scss";
 import React, { useState } from 'react';
-import { CoordinatedConstituencyParse, SyntaxTreeID } from 'types';
+import { CoordinatedConstituencyParse, TreeID } from 'types';
 import Tree from './tree/Tree';
 import { EditableNodeValues } from './tree/types';
 import Button from "./Button";
@@ -48,23 +48,23 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           id={constituencyParse.id}
           key={`${constituencyParse.id}-${treeEditCount}`}
           syntaxTree={toJS(constituencyParse.coordinated_syntax_tree)}
-          onNodeAdd={(nodeId: SyntaxTreeID) => {
+          onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
             incrTreeEditCount();
             return node;
           }}
           onNodeEdit={(values: EditableNodeValues) => {
             fs.updateConstituencyParseNode(constituencyParse.id, {
-              nodeId: values.id,
-              nodeText: values.text
+              id: values.id,
+              label: values.label
             });
             incrTreeEditCount();
           }}
-          onNodeRemove={(nodeId: SyntaxTreeID) => {
+          onNodeRemove={(nodeId: TreeID) => {
             fs.removeConstituencyParseNode(constituencyParse.id, nodeId);
             incrTreeEditCount();
           }}
-          onNodeMove={(nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => {
+          onNodeMove={(nodeId: TreeID, targetParentId: TreeID) => {
             fs.moveConstituencyParseNode(constituencyParse.id, nodeId, targetParentId);
             incrTreeEditCount();
           }}

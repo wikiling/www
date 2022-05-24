@@ -3,14 +3,13 @@ import { forwardRef, useEffect, useState } from 'react'
 import { useForm } from "react-hook-form";
 import { getTextDimensions } from 'utils/document';
 import { EditableNodeValues, CoordinatedTreeNode } from "./types";
-import { nodeText } from './utils';
 
 type EditableNodeProps = {
   node: CoordinatedTreeNode
   onSubmit: (values: EditableNodeValues) => void
 }
 
-// FIXME: don't hardcode the default font size
+// FIXME: centralize the default font size
 const DEFAULT_FONT_SIZE = 16;
 const DEFAULT_EMPTY_WIDTH = 5;
 const chToPx = (ch: number) => (ch / 2) * DEFAULT_FONT_SIZE;
@@ -18,8 +17,8 @@ const chToPx = (ch: number) => (ch / 2) * DEFAULT_FONT_SIZE;
 const EditableNode = forwardRef<
   SVGGElement, EditableNodeProps
 >(({ node, onSubmit }, forwardedRef) => {
-  const fieldName = 'text';
-  const initialValue = nodeText(node);
+  const fieldName = 'label';
+  const initialValue = node.data.label;
   const initialValueDims = getTextDimensions(initialValue);
   const {
     register,
@@ -47,7 +46,7 @@ const EditableNode = forwardRef<
   const registration = register(fieldName, { onChange: handleChange });
 
   useEffect(() => {
-    setFocus('text');
+    setFocus(fieldName);
   }, [])
 
   return (

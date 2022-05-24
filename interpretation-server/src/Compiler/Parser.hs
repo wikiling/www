@@ -1,11 +1,13 @@
 module Compiler.Parser (
   parseExpr,
   parseFrag,
+  parseFragS,
+  parseDecl,
   ParseError
 ) where
 
 import System.IO (IO, FilePath)
-
+import Control.Monad (void)
 import Text.Parsec
 import Text.Parsec.Token (brackets)
 import Text.Parsec.String (Parser, parseFromFile)
@@ -27,6 +29,15 @@ seeNext n = do
   let out = take n (stateInput s)
   println out
 
+debugParse :: String -> Parser a -> Parser a
+debugParse s p = (tryParse s) *> p <* (completeParse s)
+  where
+    tryParse p = parserTrace ("parsing " ++ p ++ "...")
+    completeParse p = parserTrace ("ok, parsed " ++ p)
+
+whitespace :: Parser ()
+whitespace = void $ many $ oneOf " \n\t"
+
 -------------------------------------------------------------------------------
 -- Types
 -------------------------------------------------------------------------------
@@ -38,6 +49,7 @@ tylit :: Parser Syn.Type
 tylit = (reservedOp "Bool" >> pure Syn.TyBool)
      <|> (reservedOp "Int" >> pure Syn.TyInt)
      <|> (reservedOp "Ent" >> pure Syn.TyEnt)
+     <|> (reservedOp "V" >> pure Syn.TyEvent)
 
 parseType :: Parser Syn.Type
 parseType = Ex.buildExpressionParser tyops tyatom
@@ -49,15 +61,16 @@ parseType = Ex.buildExpressionParser tyops tyatom
 -------------------------------------------------------------------------------
 -- Expressions
 -------------------------------------------------------------------------------
+
 parseTitleIdentifier :: Parser String
 parseTitleIdentifier = lookAhead upper >> identifier
 
 parseBool :: Parser Syn.Expr
-parseBool = (reserved "True" >> pure (Syn.ELit (Syn.LBool True)))
+parseBool = debugParse "bool" (reserved "True" >> pure (Syn.ELit (Syn.LBool True)))
          <|> (reserved "False" >> pure (Syn.ELit (Syn.LBool False)))
 
 parseNumber :: Parser Syn.Expr
-parseNumber = do
+parseNumber = debugParse "number" $ do
   n <- natural
   pure (Syn.ELit (Syn.LInt (fromIntegral n)))
 
@@ -69,6 +82,7 @@ parseSVar = Syn.SVar <$> lIdentifier
 parseSConst :: Parser Syn.Sym
 parseSConst = do
   c <- parseTitleIdentifier
+  parserTrace c
   notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
   pure (Syn.SConst c)
 
@@ -76,13 +90,13 @@ parseSym :: Parser Syn.Sym
 parseSym = try parseSVar <|> parseSConst
 
 parseVar :: Parser Syn.Expr
-parseVar = parseSVar >>= pure . Syn.ESym
+parseVar = debugParse "var" $ parseSVar >>= pure . Syn.ESym
 
 parseConst :: Parser Syn.Expr
-parseConst = parseSConst >>= pure . Syn.ESym
+parseConst = debugParse "const" $ parseSConst >>= pure . Syn.ESym
 
 parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
-parseBinder = do
+parseBinder = debugParse "binder" $ do
   x <- identifier
   reservedOp ":"
   t <- parseType
@@ -91,7 +105,7 @@ parseBinder = do
   pure (x,t,e)
 
 parseLambda :: Parser Syn.Expr
-parseLambda = do
+parseLambda = debugParse "lambda" $ do
   reservedOp "\\"
   (x,t,e) <- parseBinder
   pure (Syn.Lam x t e)
@@ -102,19 +116,19 @@ parseApp = do
   pure (foldl1 Syn.App es)
 
 parseUnivQ :: Parser Syn.Expr
-parseUnivQ = do
+parseUnivQ = debugParse "univq" $ do
   reservedOp "\\forall"
   (x,t,e) <- parseBinder
   pure (Syn.UnivQ x t e)
 
 parseExisQ :: Parser Syn.Expr
-parseExisQ = do
+parseExisQ = debugParse "exisq" $ do
   reservedOp "\\exists"
   (x,t,e) <- parseBinder
   pure (Syn.ExisQ x t e)
 
 parsePred :: Parser Syn.Expr
-parsePred = do
+parsePred = debugParse "pred" $ do
   n  <- parseTitleIdentifier
   ts <- parens ((spaces *> parseSym <* spaces) `sepBy` char ',')
   pure $ Syn.Pred n ts
@@ -122,30 +136,27 @@ parsePred = do
 parseLet :: Parser Syn.Decl
 parseLet = do
   string "["
-  name <- lIdentifier
-  reservedOp "="
-  expr <- parseExpr'
+  name <- identifier
   string "]"
+  spaces
+  reservedOp "="
+  spaces
+  expr <- parseExpr'
   pure $ (name, expr)
 
-completeParse p = traceM ("ok, parsed " ++ p)
-tryParse p = traceM ("parsing " ++ p ++ "...")
-debugParse :: String -> Parser Syn.Expr -> Parser Syn.Expr
-debugParse s p = (tryParse s) *> p <* (completeParse s)
-
 factor :: Parser Syn.Expr
-factor = debugParse "app"    (parens parseExpr') <|>
-         debugParse "bool"   (parseBool) <|>
-         debugParse "number" (parseNumber) <|>
-         debugParse "const"  (parseConst) <|>
-         debugParse "var"    (parseVar) <|>
-         debugParse "lambda" (parseLambda) <|>
-         debugParse "pred"   (parsePred) <|>
-         debugParse "univq"  (parseUnivQ) <|>
-         debugParse "exisq"  (parseExisQ)
+factor = (parens parseExpr') <|>
+         (parseBool)         <|>
+         (parseNumber)       <|>
+         (try parseConst)    <|>
+         (parseVar)          <|>
+         (parseLambda)       <|>
+         (parsePred)         <|>
+         (parseUnivQ)        <|>
+         (parseExisQ)
 
 binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.Expr) -> Ex.Assoc -> Ex.Operator String () Identity Syn.Expr
-binOp name fun assoc = Ex.Infix (do{ reservedOp name; pure fun }) assoc
+binOp name fun assoc = Ex.Infix (reservedOp name >> pure fun) assoc
 
 unOp :: String -> (Syn.Expr -> Syn.Expr) -> Ex.Operator String () Identity Syn.Expr
 unOp name fun = Ex.Prefix (reservedOp name >> pure fun)
@@ -166,10 +177,10 @@ parseTerm :: Parser Syn.Expr
 parseTerm = Ex.buildExpressionParser opTable factor
 
 parseExpr' :: Parser Syn.Expr
-parseExpr' = parseApp
+parseExpr' = debugParse "app" parseApp
 
 parseFrag' :: Parser [Syn.Decl]
-parseFrag' = many parseLet
+parseFrag' = whitespace >> many parseLet
 
 -------------------------------------------------------------------------------
 -- Entrypoints
@@ -178,8 +189,14 @@ parseFrag' = many parseLet
 type ExprParse = Either ParseError Syn.Expr
 type FragParse = Either ParseError [Syn.Decl]
 
+parseDecl :: String -> Either ParseError Syn.Decl
+parseDecl input = parse (contents parseLet) "<stdin>" input
+
 parseExpr :: String -> ExprParse
 parseExpr input = parse (contents parseExpr') "<stdin>" input
 
 parseFrag :: FilePath -> IO FragParse
 parseFrag fp = parseFromFile parseFrag' fp
+
+parseFragS :: String -> FragParse
+parseFragS input = parse (contents parseFrag') "<stdin>" input

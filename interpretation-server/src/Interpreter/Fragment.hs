@@ -18,13 +18,16 @@ typeCheck (name, expr) = case Ty.checkTop [] expr of
   Right ty -> Right (name, (expr, ty))
   Left err -> Left err
 
+loadDecls :: [Syn.Decl] -> E.Either LoadError Fragment
+loadDecls decls = do
+  let (errs, tyCheckedDecls) = E.partitionEithers $ map typeCheck decls
+  if null errs
+    then Right (Map.fromList tyCheckedDecls)
+    else Left (LTyError errs)
+
 loadFragment :: FilePath -> IO (E.Either LoadError Fragment)
 loadFragment fp = do
   fragIO <- Parse.parseFrag fp
   case fragIO of
     Left parErr -> pure $ Left (LParError parErr)
-    Right decls -> do
-      let (errs, tyCheckedDecls) = E.partitionEithers $ map typeCheck decls
-      if null errs
-        then pure $ Right (Map.fromList tyCheckedDecls)
-        else pure $ Left (LTyError errs)
+    Right decls -> pure $ loadDecls decls

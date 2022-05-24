@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Server where
+module Main where
 
 import Service.App (AppCtx (..), mkApp)
 import Service.Settings (SiteConfig (..))
@@ -46,7 +46,7 @@ main :: IO ()
 main = do
   -- typically, we'd create our config from environment variables
   -- but we're going to just make one here
-  let config = SiteConfig "dev" "1.0.0" "admin" "secretPassword"
+  let config = SiteConfig "dev" "1.0.0" "admin" "secretPassword" "fragments"
 
   warpLoggerMiddleware <- jsonRequestLoggerMiddleware
   appLogger <- newStdoutLoggerSet defaultBufSize

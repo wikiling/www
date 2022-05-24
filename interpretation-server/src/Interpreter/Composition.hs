@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module Interpreter.Composition (
   Tree(..),
   SynTree,
@@ -15,6 +17,8 @@ import qualified Compiler.Syntax as Syn
 import qualified Compiler.Parser as Parse
 import qualified Interpreter.Fragment as Frag
 import qualified Interpreter.Semantics as Sem
+
+import Debug.Trace (trace, traceM)
 
 data SemNode = SemNode Syn.Expr Syn.Type Sem.Value
 type SemTree = Tree (Maybe SemNode)
@@ -42,34 +46,44 @@ leafConst n = (semTree (Syn.ESym (Syn.SConst n)) Syn.TyEnt (Sem.VEnt n)) Leaf Le
 saturatePredicativeExpr :: Syn.Expr -> String -> Syn.Expr
 saturatePredicativeExpr expr p = expr
 
+pattern FnNode tDom tRan v <- Node (Just (SemNode _ (Syn.TyFunc tDom tRan) v@(Sem.VClosure _ _ _))) _ _
+pattern ArgNode t v <- Node (Just (SemNode _ t v)) _ _
+
 functionApp :: SemTree -> SemTree -> SemTree
 functionApp b1 b2 = case b1 of
-  Node (Just (SemNode _ (Syn.TyFunc t1Dom t1Ran) v1@(Sem.VClosure _ _ _))) _ _ ->
-    case b2 of
-      Node Nothing _ _ -> Node Nothing b1 b2
-      Node (Just (SemNode _ t2 v2)) _ _ -> if t1Dom == t2
-        then let v = apply v1 v2 in (semTree (closExp v) t1Ran v) b1 b2
-        else Node Nothing b1 b2
-  Node (Just _) _ _ -> functionApp b2 b1
-  Node Nothing _ _ -> Node Nothing b1 b2
+  FnNode t1Dom t1Ran v1 -> case b2 of
+    ArgNode t2 v2 | t1Dom == t2 -> appNode v1 v2 t1Ran
+    _ -> noApp
+  ArgNode t1 v1 -> case b2 of
+    FnNode t2Dom t2Ran v2 | t2Dom == t1 -> appNode v2 v1 t2Ran
+    _ -> noApp
+  _ -> noApp
   where
+    appNode :: Sem.Value -> Sem.Value -> Syn.Type -> SemTree
+    appNode v1 v2 t = let v = apply v1 v2 in (semTree (closExp v) t v) b1 b2
+
     closExp :: Sem.Value -> Syn.Expr
     closExp (Sem.VClosure s e c) = e
 
+    noApp = Node Nothing b1 b2
+
 compose :: SynTree -> CompositionTree
-compose synTree = case synTree of
-  Node b Leaf Leaf -> do -- leaf
-    lex <- checkLexicon b
-    case lex of
-      Nothing -> pure $ leafConst b
-      Just (expr, ty) -> pure $ (semTree expr ty (Sem.runEval expr)) Leaf Leaf
-  Node b c Leaf -> preTerm b c -- one child (clobbers order of child)
-  Node b Leaf c -> preTerm b c
-  Node b c1 c2 -> do -- two children
-    s1 <- compose c1
-    s2 <- compose c2
-    pure $ functionApp s1 s2
+compose synTree = do
+  traceM (show synTree)
+  case synTree of
+    Node b Leaf Leaf -> do -- leaf
+      lex <- checkLexicon b
+      case lex of
+        Nothing -> pure $ leafConst b
+        Just (expr, ty) -> pure $ (semTree expr ty (Sem.runEval expr)) Leaf Leaf
+    Node b c Leaf -> preTerm b c -- one child
+    Node b Leaf c -> preTerm b c
+    Node b c1 c2 -> do -- two children
+      s1 <- compose c1
+      s2 <- compose c2
+      pure $ functionApp s1 s2
   where
+    -- (clobbers order of child `term`)
     preTerm :: String -> SynTree -> CompositionTree
     preTerm pre term = do
       sTerm <- compose term
@@ -78,7 +92,7 @@ compose synTree = case synTree of
           lex <- checkLexicon pre
           case lex of
             Just (expr, ty) -> pure $ (semTree (saturatePredicativeExpr expr c) t v) Leaf b
-            _ -> pure $ Node Nothing Leaf b
+            Nothing         -> pure $ Node Nothing Leaf b
         c -> pure $ Node Nothing Leaf c
 
 runComposition :: Frag.Fragment -> SynTree -> SemTree

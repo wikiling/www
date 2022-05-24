@@ -12,10 +12,10 @@ import System.Console.Haskeline
 
 process :: String -> IO ()
 process line = do
-  let res = parseExpr line
+  let res = parseDecl line
   case res of
     Left err -> print err
-    Right ex -> do
+    Right (n, ex) -> do
       let chk = checkTop [] ex
       case chk of
         Left tyerr -> print tyerr

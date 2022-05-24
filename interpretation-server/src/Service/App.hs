@@ -10,6 +10,7 @@ module Service.App
   )
 where
 
+import System.FilePath ((</>), (<.>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import qualified Data.Aeson as JSON
@@ -72,14 +73,17 @@ fragmentHandler fragmentId syntaxTree = do
       lenvironment = environment config
     }
 
-  fragment <- liftIO $ Frag.loadFragment fragmentId
+  fragIO <- liftIO $ Frag.loadFragment $ (fragmentDir config) </> fragmentId <.> "hs"
 
-  case fragment of
+  case fragIO of
     Left err -> throwError err400
-    Right fragment -> pure $ FragmentHandlerResp {
-      syntaxTree = syntaxTree,
-      semanticTree = Comp.runComposition fragment syntaxTree
-    }
+    Right frag -> do
+      let semTree = Comp.runComposition frag syntaxTree
+      liftIO $ print $ show semTree
+      pure $ FragmentHandlerResp {
+        syntaxTree = syntaxTree,
+        semanticTree = semTree
+      }
 
 fragmentApi :: Proxy FragmentAPI
 fragmentApi = Proxy

@@ -7,12 +7,6 @@ import { CoordinatedTreeNode } from './types';
 
 type ComputeLayout = (syntaxTree: CoordinatedSyntaxTree) => CoordinatedTreeNode
 
-export const discriminateNodeTextField = (node: CoordinatedTreeNode) =>
-  node.data.pos ? 'pos' : 'token';
-
-export const nodeText = (node: CoordinatedTreeNode) =>
-  node.data[discriminateNodeTextField(node)] ?? "";
-
 export const computeLayout: ComputeLayout = (syntaxTree) => {
   const createTreeLayout = tidyTreeLayout<SyntaxTree>()
     .nodeSize([
@@ -20,8 +14,8 @@ export const computeLayout: ComputeLayout = (syntaxTree) => {
       NODE_HEIGHT + NODE_SEP_Y
     ])
     .separation((a, b) => {
-      const halfWidthA = getTextDimensions(nodeText(a)).width / 2;
-      const halfWidthB = getTextDimensions(nodeText(b)).width / 2;
+      const halfWidthA = getTextDimensions(a.data.label).width / 2;
+      const halfWidthB = getTextDimensions(b.data.label).width / 2;
       const diff = NODE_WIDTH + NODE_SEP_X - (halfWidthA + halfWidthB);
 
       return diff < 0 ? 1 + (-1 * diff / NODE_WIDTH) : 1;

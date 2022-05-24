@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { CoordinatedSyntaxTree, ID, SyntaxTreeID } from 'types';
+import { CoordinatedSyntaxTree, ID, TreeID } from 'types';
 import Node from './Node';
 import Edge from './Edge';
 import { EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
@@ -17,10 +17,10 @@ import classNames from 'classnames';
 type TreeProps = {
   id: ID
   syntaxTree: CoordinatedSyntaxTree
-  onNodeAdd: (node: SyntaxTreeID) => CoordinatedTreeNode | undefined
+  onNodeAdd: (node: TreeID) => CoordinatedTreeNode | undefined
   onNodeEdit: (values: EditableNodeValues) => void
-  onNodeRemove: (nodeId: SyntaxTreeID) => void
-  onNodeMove: (nodeId: SyntaxTreeID, targetParentId: SyntaxTreeID) => void
+  onNodeRemove: (nodeId: TreeID) => void
+  onNodeMove: (nodeId: TreeID, targetParentId: TreeID) => void
 };
 
 type MenuCoordinates = {
@@ -154,7 +154,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     setPotentialParentNode(ppn ?? null);
   };
 
-  const handleNodeDragEnd = (nodeId: SyntaxTreeID) => {
+  const handleNodeDragEnd = (nodeId: TreeID) => {
     setDragNode(null);
 
     if (potentialParentNode) onNodeMove(nodeId, potentialParentNode.data.id);

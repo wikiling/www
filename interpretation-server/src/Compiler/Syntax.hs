@@ -54,8 +54,9 @@ data Expr
 data Type
   = TyInt
   | TyEnt
+  | TyEvent
   | TyBool
-  | TyVar
+  | TyTyVar
   | TyFunc Type Type
   deriving (Eq, Read, Show)
 
