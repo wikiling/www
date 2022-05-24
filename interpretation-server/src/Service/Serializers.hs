@@ -1,34 +1,30 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Service.Serializers where
 
 import Control.Applicative ((<|>))
-import qualified Data.Aeson as JSON
-import Data.Aeson.Types (Parser, parseMaybe)
+import Data.Aeson.Types (Pair, Parser, parseMaybe)
 import Data.Aeson
-import GHC.Generics (Generic)
 import qualified Data.ByteString.Lazy as BS
-import Data.Vector ((!), Vector)
+import Data.Vector ((!))
 
 import qualified Interpreter.Fragment as F
 import qualified Interpreter.Composition as C
 import Compiler.Pretty
 
-parseTok :: JSON.Object -> Parser C.SynTree
+parseTok :: Object -> Parser C.SynTree
 parseTok obj = do
   tok <- obj .: "token"
   pure $ C.Node tok C.Leaf C.Leaf
 
-parsePos :: JSON.Object -> Parser C.SynTree
+parsePos :: Object -> Parser C.SynTree
 parsePos obj = do
   pos <- obj .: "pos"
   cs <- obj .: "children"
   (c1, c2) <- parseChildren cs
   pure $ C.Node pos c1 c2
 
-parseChildren :: JSON.Array -> Parser (C.SynTree, C.SynTree)
+parseChildren :: Array -> Parser (C.SynTree, C.SynTree)
 parseChildren cs = case length cs of
   0 -> pure $ (C.Leaf, C.Leaf)
   1 -> pure $ (parseChild 0, C.Leaf)
@@ -37,17 +33,19 @@ parseChildren cs = case length cs of
   where
     parseChild i = case ((parseMaybe parseJSON $ cs!i)) of
       Nothing -> C.Leaf
-      Just s -> s
+      Just s  -> s
 
-instance JSON.FromJSON C.SynTree where
-  parseJSON = JSON.withObject "SyntaxTree" $ \obj ->
-    parseTok obj <|>
-    parsePos obj
+instance FromJSON C.SynTree where
+  parseJSON = withObject "SyntaxTree" $ \obj ->
+    parseTok obj <|> parsePos obj
 
-{-
-instance JSON.ToJSON C.SemTree where
-  toJSON Node 
-  toJSON t = case t of
-    C.Leaf -> null
-    C.Node b c1 c2 -> show b (toJSON c1) (toJSON c2)
--}
+instance ToJSON C.SemTree where
+  toJSON t@(C.Node _ c1 c2) = object $ (node t) <> [ "children" .= (map node [c1,c2]) ]
+    where
+      node :: C.SemTree -> [Pair]
+      node (C.Node s _ _) = case s of
+        Nothing -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
+        Just (C.SemNode expr ty v) -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
+
+instance ToJSON C.SynTree where
+  toEncoding = genericToEncoding defaultOptions

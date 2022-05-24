@@ -2,6 +2,7 @@ module Interpreter.Composition (
   Tree(..),
   SynTree,
   SemTree,
+  SemNode(..),
   runComposition
 ) where
 
@@ -62,8 +63,8 @@ compose synTree = case synTree of
     case lex of
       Nothing -> pure $ leafConst b
       Just (expr, ty) -> pure $ (semTree expr ty (Sem.runEval expr)) Leaf Leaf
-  Node b c Leaf -> preTerm b c -- one child (clobbers order
-  Node b Leaf c -> preTerm b c -- of child)
+  Node b c Leaf -> preTerm b c -- one child (clobbers order of child)
+  Node b Leaf c -> preTerm b c
   Node b c1 c2 -> do -- two children
     s1 <- compose c1
     s2 <- compose c2
