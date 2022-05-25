@@ -1,4 +1,4 @@
-module Interpreter.Semantics where
+module Interpreter.Evaluation where
 
 import Compiler.Pretty
 import qualified Compiler.Syntax as Syn
@@ -20,7 +20,7 @@ instance Show Value where
   show (VBool x) = show x
   show (VClosure n exp _) = show exp
 
-type Evaluate t = Identity t
+type Evaluation t = Identity t
 type EvalCtx = Map.Map String Value
 
 eval :: EvalCtx -> Syn.Expr -> Identity Value
@@ -37,8 +37,8 @@ eval ctx expr = let
     Syn.ELit (Syn.LInt x) -> pure $ VInt (fromIntegral x)
     Syn.ELit (Syn.LBool x) -> pure $ VBool x
 
-    Syn.ESym (Syn.SVar x) -> pure $ ctx Map.! x
-    Syn.ESym (Syn.SConst x) -> pure $ ctx Map.! x
+    Syn.ESym (Syn.SVar x) -> traceM x >> pure $ ctx Map.! x
+    Syn.ESym (Syn.SConst x) -> traceM x >> pure $ ctx Map.! x
 
     Syn.Add a b -> evalArith (+) a b
     Syn.Mul a b -> evalArith (*) a b
@@ -68,22 +68,29 @@ eval ctx expr = let
     -- Syn.ExisQ n _ e ->
     -- Syn.IotaQ n _ e ->
 
-    Syn.Lam x _ e -> pure (VClosure x e ctx)
+    Syn.Lam x _ e -> do
+      traceM "??"
+      pure $ VClosure x e ctx
 
     Syn.App a b -> do
+      traceM "??"
       x <- eval ctx a
       y <- eval ctx b
+      traceM $ show y
       apply x y
 
 extend :: EvalCtx -> String -> Value -> EvalCtx
 extend ctx v t = Map.insert v t ctx
 
-apply :: Value -> Value -> Evaluate Value
+apply :: Value -> Value -> Evaluation Value
 apply (VClosure n body ctx) arg = eval (extend ctx n arg) body
-apply _ _  = error "Tried to apply closure"
+apply _ _  = error "Tried to apply non fn"
 
 emptyCtx :: EvalCtx
 emptyCtx = Map.empty
 
+runEvalIn :: Syn.Expr -> EvalCtx -> Value
+runEvalIn x ctx = runIdentity (eval ctx x)
+
 runEval :: Syn.Expr -> Value
-runEval x = runIdentity (eval emptyCtx x)
+runEval x = runEvalIn x emptyCtx

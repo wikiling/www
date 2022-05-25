@@ -77,6 +77,9 @@ instance Pretty Syn.Type where
 instance Show Syn.Expr where
   show = show . ppr 0
 
+instance Show Syn.Type where
+  show = show . ppr 0
+
 instance Show Ty.TypeError where
   show (Ty.Mismatch a b) =
     "Expecting " ++ (pptype b) ++ " but got " ++ (pptype a)

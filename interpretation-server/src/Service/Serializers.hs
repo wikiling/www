@@ -30,7 +30,7 @@ parseSynChildren (Just cs) = case length cs of
   _ -> fail "must be binary tree"
   where
     parseChild :: Int -> C.SynTree
-    parseChild i = case ((parseMaybe parseJSON $ cs!i)) of
+    parseChild i = case ((parseMaybe parseJSON $ cs!i) :: Maybe C.SynTree) of
       Nothing -> C.Leaf
       Just s  -> s
 
@@ -38,14 +38,14 @@ instance FromJSON C.SynTree where
   parseJSON = withObject "SyntaxTree" parseSynNode
 
 instance ToJSON C.SemTree where
-  toJSON t@(C.Node _ c1 c2) = object $ (serializeNode t) <> [ "children" .= (map serializeNode (filter isNode [c1,c2])) ]
+  toJSON (C.Node s c1 c2) = object $ (serializeSemNode s) <> [ "children" .= (map toJSON (filter isNode [c1,c2])) ]
     where
       isNode :: C.SemTree -> Bool
       isNode s = case s of
         C.Leaf -> False
         _ -> True
-      serializeNode :: C.SemTree -> [Pair]
-      serializeNode (C.Node s _ _) = case s of
+      serializeSemNode :: Maybe C.SemNode -> [Pair]
+      serializeSemNode s = case s of
         Nothing -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
         Just (C.SemNode expr ty v) -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
 

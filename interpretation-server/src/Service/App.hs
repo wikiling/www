@@ -79,7 +79,7 @@ fragmentHandler fragmentId syntaxTree = do
     Left err -> throwError err400
     Right frag -> do
       let semTree = Comp.runComposition frag syntaxTree
-      liftIO $ print $ show semTree
+      liftIO $ Comp.printTree semTree
       pure $ FragmentHandlerResp {
         syntaxTree = syntaxTree,
         semanticTree = semTree

@@ -31,8 +31,8 @@ library
       FOL.AristotelianInfEngine
       FOL.KB
       Interpreter.Composition
+      Interpreter.Evaluation
       Interpreter.Fragment
-      Interpreter.Semantics
       Service.App
       Service.Logger
       Service.Serializers

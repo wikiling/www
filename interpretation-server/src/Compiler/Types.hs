@@ -90,9 +90,8 @@ check expr = case expr of
     case t1 of
       (Syn.TyInt)  | t2 == Syn.TyInt  -> pure Syn.TyInt
       (Syn.TyBool) | t2 == Syn.TyBool -> pure Syn.TyBool
-      _                           -> throwError $ Mismatch t1 t2
+      _ -> throwError $ Mismatch t1 t2
 
-  -- TODO: if t is TyFunc check that its domain matches the type of e
   Syn.Lam n t e -> do
     bodyT <- inCtx (n,t) (check e)
     pure (Syn.TyFunc t bodyT)

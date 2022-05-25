@@ -58,6 +58,6 @@ data Type
   | TyBool
   | TyTyVar
   | TyFunc Type Type
-  deriving (Eq, Read, Show)
+  deriving (Eq, Read)
 
 type Decl = (String, Expr)
