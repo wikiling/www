@@ -2,11 +2,11 @@ import Field from 'components/forms/Field';
 import { forwardRef, useEffect, useState } from 'react'
 import { useForm } from "react-hook-form";
 import { getTextDimensions } from 'utils/document';
-import { EditableNodeValues, CoordinatedTreeNode } from "./types";
+import { EditableSyntaxNodeValues, CoordinatedTreeNode } from "./types";
 
-type EditableNodeProps = {
+type EditableSyntaxNodeProps = {
   node: CoordinatedTreeNode
-  onSubmit: (values: EditableNodeValues) => void
+  onSubmit: (values: EditableSyntaxNodeValues) => void
 }
 
 // FIXME: centralize the default font size
@@ -14,8 +14,8 @@ const DEFAULT_FONT_SIZE = 16;
 const DEFAULT_EMPTY_WIDTH = 5;
 const chToPx = (ch: number) => (ch / 2) * DEFAULT_FONT_SIZE;
 
-const EditableNode = forwardRef<
-  SVGGElement, EditableNodeProps
+const EditableSyntaxNode = forwardRef<
+  SVGGElement, EditableSyntaxNodeProps
 >(({ node, onSubmit }, forwardedRef) => {
   const fieldName = 'label';
   const initialValue = node.data.label;
@@ -24,7 +24,7 @@ const EditableNode = forwardRef<
     register,
     handleSubmit,
     setFocus
-  } = useForm<EditableNodeValues>({
+  } = useForm<EditableSyntaxNodeValues>({
     defaultValues: {
       [fieldName]: initialValue,
       id: node.data.id
@@ -69,4 +69,4 @@ const EditableNode = forwardRef<
   );
 });
 
-export default EditableNode
+export default EditableSyntaxNode

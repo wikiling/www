@@ -47,22 +47,24 @@ instance Pretty Syn.Expr where
   ppr p e = case e of
     Syn.ESym t -> ppr p t
     Syn.ELit l  -> ppr p l
-    Syn.App a b -> (parensIf (p>0) (ppr (p+1) a)) <+> (ppr p b)
+    Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
     Syn.Lam n t body -> parensIf (p > 0) $
       char 'λ' <> text n <> char ':' <> ppr p t
-      <+> text "->"
-      <+> ppr (p+1) body
+      <+> text "→"
+      <+> ppr (p + 1) body
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
-    Syn.Neg e -> char '¬' <> (ppr p e)  
-    Syn.Conj e1 e2 -> conjSep p [e1,e2]
-    Syn.Disj e1 e2 -> disjSep p [e1,e2]
-    Syn.Impl e1 e2 -> implSep p [e1,e2]
-    -- Syn.UnivQ n t body ->
-    -- Syn.ExisQ n t body ->
-    Syn.Add e1 e2 -> addSep p [e1,e2]
-    Syn.Mul e1 e2 -> mulSep p [e1,e2]
-    Syn.Sub e1 e2 -> subSep p [e1,e2]
-    Syn.Div e1 e2 -> divSep p [e1,e2]
+    Syn.EUnOp op -> case op of
+      Syn.Neg e -> char '¬' <> (ppr p e)  
+    Syn.EBinOp op -> case op of
+      Syn.Conj e1 e2 -> conjSep p [e1,e2]
+      Syn.Disj e1 e2 -> disjSep p [e1,e2]
+      Syn.Impl e1 e2 -> implSep p [e1,e2]
+      -- Syn.UnivQ n t body ->
+      -- Syn.ExisQ n t body ->
+      Syn.Add e1 e2 -> addSep p [e1,e2]
+      Syn.Mul e1 e2 -> mulSep p [e1,e2]
+      Syn.Sub e1 e2 -> subSep p [e1,e2]
+      Syn.Div e1 e2 -> divSep p [e1,e2]
 
 instance Pretty Syn.Type where
   ppr _ Syn.TyInt  = text "n"

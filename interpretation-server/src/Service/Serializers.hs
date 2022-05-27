@@ -14,40 +14,44 @@ import qualified Interpreter.Fragment as F
 import qualified Interpreter.Composition as C
 import Compiler.Pretty
 
-parseSynNode :: Object -> Parser C.SynTree
-parseSynNode obj = do
+parseConstituencyNode :: Object -> Parser C.ConstituencyTree
+parseConstituencyNode obj = do
   label <- obj .: "label"
+  pos <- obj .: "id"
   cs <- obj .:? "children"
-  (c1, c2) <- parseSynChildren cs
-  pure $ C.Node label c1 c2
+  (c1, c2) <- parseConstituencyChildren cs
+  pure $ C.Node (C.CNodeLabel label pos) c1 c2
 
-parseSynChildren :: Maybe Array -> Parser (C.SynTree, C.SynTree)
-parseSynChildren Nothing = pure $ (C.Leaf, C.Leaf)
-parseSynChildren (Just cs) = case length cs of
+parseConstituencyChildren :: Maybe Array -> Parser (C.ConstituencyTree, C.ConstituencyTree)
+parseConstituencyChildren Nothing = pure $ (C.Leaf, C.Leaf)
+parseConstituencyChildren (Just cs) = case length cs of
   0 -> pure $ (C.Leaf, C.Leaf)
   1 -> pure $ (parseChild 0, C.Leaf)
   2 -> pure $ (parseChild 0, parseChild 1)
   _ -> fail "must be binary tree"
   where
-    parseChild :: Int -> C.SynTree
-    parseChild i = case ((parseMaybe parseJSON $ cs!i) :: Maybe C.SynTree) of
+    parseChild :: Int -> C.ConstituencyTree
+    parseChild i = case ((parseMaybe parseJSON $ cs!i) :: Maybe C.ConstituencyTree) of
       Nothing -> C.Leaf
       Just s  -> s
 
-instance FromJSON C.SynTree where
-  parseJSON = withObject "SyntaxTree" parseSynNode
+instance FromJSON C.ConstituencyTree where
+  parseJSON = withObject "SyntaxTree" parseConstituencyNode
 
-instance ToJSON C.SemTree where
-  toJSON (C.Node s c1 c2) = object $ (serializeSemNode s) <> [ "children" .= (map toJSON (filter isNode [c1,c2])) ]
+instance ToJSON C.SemanticTree where
+  toJSON (C.Node s c1 c2) = object $ (serializeSemNodeLabel s) <> [ "children" .= (map toJSON (filter isNode [c1,c2])) ]
     where
-      isNode :: C.SemTree -> Bool
+      isNode :: C.SemanticTree -> Bool
       isNode s = case s of
         C.Leaf -> False
         _ -> True
-      serializeSemNode :: Maybe C.SemNode -> [Pair]
-      serializeSemNode s = case s of
-        Nothing -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
-        Just (C.SemNode expr ty v) -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
+      serializeSemNodeLabel :: C.SemanticNodeLabel -> [Pair]
+      serializeSemNodeLabel s = case s of
+        C.EmptySemNode pos -> [ "expr" .= Null, "type" .= Null, "value" .= Null, "id" .= pos ]
+        C.EvaluatedSemNode expr ty v pos -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v, "id" .= pos ]
 
-instance ToJSON C.SynTree where
+instance ToJSON C.ConstituencyNodeLabel where
+  toEncoding = genericToEncoding defaultOptions
+
+instance ToJSON C.ConstituencyTree where
   toEncoding = genericToEncoding defaultOptions

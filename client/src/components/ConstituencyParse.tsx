@@ -1,14 +1,15 @@
 import "./ConstituencyParse.scss";
 import React, { useState } from 'react';
 import { CoordinatedConstituencyParse, TreeID } from 'types';
-import Tree from './tree/Tree';
-import { EditableNodeValues } from './tree/types';
+import SyntaxTree from './trees/SyntaxTree';
+import { EditableSyntaxNodeValues } from './trees/types';
 import Button from "./Button";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
 import { toJS } from "mobx";
 import Menu from "./Menu";
 import useLoadWhile from "hooks/useLoadWhile";
+import useConstituencyParseOps from "hooks/useConstituencyParseOps";
 
 type ConstituencyParseProps = {
   constituencyParse: CoordinatedConstituencyParse
@@ -17,43 +18,30 @@ type ConstituencyParseProps = {
 
 const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse, onRemove }) => {
   const { fragmentStore: fs } = useStores();
-  const [treeEditCount, setTreeEditCount] = useState<number>(0);
-  const incrTreeEditCount = () => setTreeEditCount(prev => prev + 1);
-  const { isLoading, loadWhile } = useLoadWhile();
+  const {
+    handleInterpret,
+    handleRemove,
+    handleSave,
 
-  const handleInterpret = () => loadWhile(
-    () => fs.dispatchInterpretConstituencyParse(constituencyParse)
-  );
-
-  const handleRemove = () => loadWhile(
-    async () => {
-      await fs.dispatchDeleteConstituencyParse(constituencyParse.id);
-      onRemove();
-    }
-  );
-
-  const handleSave = () => loadWhile(
-    async () => {
-      await fs.dispatchUpdateConstituencyParse(constituencyParse.id, {
-        parse_string: constituencyParse.coordinated_syntax_tree.parseString()
-      });
-      setTreeEditCount(0);
-    }
-  );
+    treeEditCount,
+    incrTreeEditCount,
+    isLoading,
+  } = useConstituencyParseOps(constituencyParse);
 
   return (
     <div className="constituency-parse">
       <div className="constituency-parse-tree">
-        <Tree
+        <SyntaxTree
           id={constituencyParse.id}
           key={`${constituencyParse.id}-${treeEditCount}`}
-          syntaxTree={toJS(constituencyParse.coordinated_syntax_tree)}
+          tree={toJS(constituencyParse.coordinated_syntax_tree)}
+          nodeLabel={(node) => node.data.label}
           onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
             incrTreeEditCount();
             return node;
           }}
-          onNodeEdit={(values: EditableNodeValues) => {
+          onNodeEdit={(values: EditableSyntaxNodeValues) => {
             fs.updateConstituencyParseNode(constituencyParse.id, {
               id: values.id,
               label: values.label
@@ -73,7 +61,7 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
 
       <Menu isLoading={isLoading}>
         <Button mode="menu" onClick={handleInterpret}>interpret</Button>
-        <Button mode="menu" onClick={handleRemove}>remove</Button>
+        <Button mode="menu" onClick={() => handleRemove(onRemove)}>remove</Button>
         <Button mode="menu" onClick={handleSave}>save</Button>
       </Menu>
     </div>

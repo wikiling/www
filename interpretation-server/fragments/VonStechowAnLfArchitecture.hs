@@ -1,3 +1,3 @@
 
-[V] = \y:Ent . \x:Ent . \e:V . Stab(e,y,x)
-[NP] = Noun
+[V] = \y:e . \x:e . \e:v . V(e,y,x)
+[NP] = NP

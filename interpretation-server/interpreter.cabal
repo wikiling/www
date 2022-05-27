@@ -59,6 +59,7 @@ library
     , http-client
     , http-types
     , lucid >=2.9.11 && <2.12
+    , monad-gen
     , monad-memo
     , mtl
     , parsec
@@ -101,6 +102,7 @@ executable interpreter-exe
     , http-types
     , interpreter
     , lucid >=2.9.11 && <2.12
+    , monad-gen
     , monad-memo
     , mtl
     , parsec
@@ -150,6 +152,7 @@ test-suite interpreter-test
     , http-types
     , interpreter
     , lucid >=2.9.11 && <2.12
+    , monad-gen
     , monad-memo
     , mtl
     , parsec

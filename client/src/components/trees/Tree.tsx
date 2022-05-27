@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { CoordinatedSyntaxTree, ID, TreeID } from 'types';
-import Node from './Node';
+import { ID, TreeID } from 'types';
+import Node from './SyntaxNode';
 import Edge from './Edge';
-import { EditableNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode } from './types';
+import { EditableSyntaxNodeValues, NodeDragEvent, CoordinatedTreeLink, CoordinatedTreeNode, CoordinatedTree } from './types';
 import Menu from './TreeMenu';
-import EditableNode from './EditableNode';
+import EditableSyntaxNode from './EditableSyntaxNode';
 import { useClickAway } from 'react-use';
 import { SubjectPosition } from 'd3-drag';
 import { NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
@@ -14,13 +14,16 @@ import { computeLayout, translateTree } from './utils';
 import { cloneDeep } from 'lodash';
 import classNames from 'classnames';
 
-type TreeProps = {
+export type TreeProps = {
   id: ID
-  syntaxTree: CoordinatedSyntaxTree
+  tree: CoordinatedTree,
   onNodeAdd: (node: TreeID) => CoordinatedTreeNode | undefined
-  onNodeEdit: (values: EditableNodeValues) => void
+  onNodeEdit: (values: EditableSyntaxNodeValues) => void
   onNodeRemove: (nodeId: TreeID) => void
   onNodeMove: (nodeId: TreeID, targetParentId: TreeID) => void
+  nodeLabel: (node: CoordinatedTree) => string
+  nodeComponent: (props: React.ComponentProps<typeof Node>) => JSX.Element
+  editableNodeComponent: (props: React.ComponentProps<typeof EditableSyntaxNode>) => JSX.Element
 };
 
 type MenuCoordinates = {
@@ -40,11 +43,11 @@ const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
 
 const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
 
-const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove }) => {
+const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeComponent, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove, nodeLabel }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const editNodeRef = useRef<SVGGElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const height = (syntaxTree.height + 1) * (NODE_HEIGHT + NODE_SEP_Y); 
+  const height = (tree.height + 1) * (NODE_HEIGHT + NODE_SEP_Y); 
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates>(defaultMenuCoordinates);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
@@ -55,7 +58,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   const resize = () => {
-    const newCoordinatedRootNode = computeLayout(syntaxTree);
+    const newCoordinatedRootNode = computeLayout({ tree, getLabel: nodeLabel });
     const groupTranslateX = rootRef.current ? (
       rootRef.current.getBoundingClientRect().width / 2
     ) : 0;
@@ -91,7 +94,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
 
   const handleMenuActionSuccess = closeMenu;
 
-  const handleEditableNodeSubmit = (values: EditableNodeValues) => {
+  const handleEditableNodeSubmit = (values: EditableSyntaxNodeValues) => {
     onNodeEdit(values);
     setEditNode(null);
   };
@@ -107,14 +110,14 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     setMenuNode(node);
 
     const left = (
-      rootWidth / 2 +           // coordinate origin is center of top edge
-      node.x +                  // orient to node
-      buffer + NODE_WIDTH / 2   // account for width of node and apply a buffer
+      rootWidth / 2 +           // coordinate origin is center of top edge.
+      node.x +                  // orient to node.
+      buffer + NODE_WIDTH / 2   // account for width of node and apply a buffer.
     );
 
     const top = (
-      node.y -                                    // orient to node
-      menuDims.offsetHeight / 2 + NODE_HEIGHT / 2 // center menu against node
+      node.y -                                    // orient to node.
+      menuDims.offsetHeight / 2 + NODE_HEIGHT / 2 // center menu against node.
     );
 
     setMenuCoordinates({
@@ -130,7 +133,7 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     // this would make sense to assign on d3's drag start event,
     // but d3's drag start event doesn't guarantee a *drag end* event,
     // so it would be possible then to have an orphaned drag node.
-    // there doesn't appear to be a downside to just doing this here.
+    // simply observing the proceed event seems fine.
     setDragNode(node);
   
     // calculate new tree coordinates
@@ -167,15 +170,14 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
     return link.target.data.id !== dragNode?.data.id;
   }
 
+  useEffect(resize, []);
+  useClickAway(menuRef, closeMenu);
   useClickAway(
     // clickaway expects an HTMLElement, but works fine with our
     // svgforeignobject
     editNodeRef as unknown as React.RefObject<HTMLElement | null>,
     () => setEditNode(null)
   );
-  useClickAway(menuRef, closeMenu);
-
-  useEffect(resize, []);
 
   return (
     <div className="tree" ref={rootRef}>
@@ -191,21 +193,23 @@ const Tree: React.FC<TreeProps> = ({ id, syntaxTree, onNodeAdd, onNodeEdit, onNo
             const nodeId = node.data.id;
 
             return nodeId === editNode?.data.id
-              ? <EditableNode
-                  node={node}
-                  onSubmit={handleEditableNodeSubmit}
-                  key={`${id}-${nodeId}-editable`}
-                  ref={editNodeRef}/>
-              : <Node
-                  treeId={id}
-                  node={node}
-                  width={NODE_WIDTH}
-                  height={NODE_HEIGHT}
-                  className={classNames({ "node--highlit": nodeId === potentialParentNode?.data.id })}
-                  onClick={(e) => handleNodeClick(node, e)}
-                  onDragProceed={(e) => handleNodeDragProceed(node, e)}
-                  onDragEnd={() => handleNodeDragEnd(nodeId)}
-                  key={`${id}-${nodeId}`}/>
+              ? editableNodeComponent({
+                  node: node,
+                  onSubmit: handleEditableNodeSubmit,
+                  key: `${id}-${nodeId}-editable`,
+                  ref: editNodeRef
+              })
+              : nodeComponent({
+                  treeId: id,
+                  node: node,
+                  width: NODE_WIDTH,
+                  height: NODE_HEIGHT,
+                  className: classNames({ "node--highlit": nodeId === potentialParentNode?.data.id }),
+                  onClick: (e) => handleNodeClick(node, e),
+                  onDragProceed: (e) => handleNodeDragProceed(node, e),
+                  onDragEnd: () => handleNodeDragEnd(nodeId),
+                  key: `${id}-${nodeId}`,
+              })
             })}
         </g>
       </svg>

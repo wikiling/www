@@ -46,10 +46,10 @@ tyatom :: Parser Syn.Type
 tyatom = tylit <|> (parens parseType)
 
 tylit :: Parser Syn.Type
-tylit = (reservedOp "Bool" >> pure Syn.TyBool)
-     <|> (reservedOp "Int" >> pure Syn.TyInt)
-     <|> (reservedOp "Ent" >> pure Syn.TyEnt)
-     <|> (reservedOp "V" >> pure Syn.TyEvent)
+tylit = (reservedOp "t" >> pure Syn.TyBool)
+     <|> (reservedOp "n" >> pure Syn.TyInt)
+     <|> (reservedOp "e" >> pure Syn.TyEnt)
+     <|> (reservedOp "v" >> pure Syn.TyEvent)
 
 parseType :: Parser Syn.Type
 parseType = Ex.buildExpressionParser tyops tyatom
@@ -130,7 +130,7 @@ parseExisQ = debugParse "exisq" $ do
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
   n  <- parseTitleIdentifier
-  ts <- parens ((spaces *> parseSym <* spaces) `sepBy` char ',')
+  ts <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
   pure $ Syn.Pred n ts
 
 parseLet :: Parser Syn.Decl
@@ -155,11 +155,11 @@ factor = (parens parseExpr') <|>
          (parseUnivQ)        <|>
          (parseExisQ)
 
-binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.Expr) -> Ex.Assoc -> Ex.Operator String () Identity Syn.Expr
-binOp name fun assoc = Ex.Infix (reservedOp name >> pure fun) assoc
+binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Ex.Assoc -> Ex.Operator String () Identity Syn.Expr
+binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp $ fun e0 e1)) assoc
 
-unOp :: String -> (Syn.Expr -> Syn.Expr) -> Ex.Operator String () Identity Syn.Expr
-unOp name fun = Ex.Prefix (reservedOp name >> pure fun)
+unOp :: String -> (Syn.Expr -> Syn.UnOp) -> Ex.Operator String () Identity Syn.Expr
+unOp name fun = Ex.Prefix (reservedOp name >> (pure $ \e -> Syn.EUnOp $ fun e))
 
 opTable :: Ex.OperatorTable String () Identity Syn.Expr
 opTable = [ [ binOp "*" Syn.Mul Ex.AssocLeft

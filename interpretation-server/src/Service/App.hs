@@ -40,26 +40,24 @@ import Service.Serializers
 import qualified Interpreter.Fragment as Frag
 import qualified Interpreter.Composition as Comp
 
-type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] Comp.SynTree :> Post '[JSON] FragmentHandlerResp
+type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] Comp.ConstituencyTree :> Post '[JSON] FragmentHandlerResp
 
 data AppCtx = AppCtx
   { _getConfig :: SiteConfig,
     _getLogger :: LoggerSet
   }
 
-encodeTreeToText :: Comp.SynTree -> Text
+encodeTreeToText :: Comp.ConstituencyTree -> Text
 encodeTreeToText = toStrict . toLazyText . JSONText.encodeToTextBuilder . JSON.toJSON
 
 data FragmentHandlerResp = FragmentHandlerResp
-  { syntaxTree :: !Comp.SynTree,
-    semanticTree :: !Comp.SemTree
-  }
+  { semanticTree :: !Comp.SemanticTree }
   deriving (Show, Generic)
 
 instance JSON.ToJSON FragmentHandlerResp where
   toEncoding = JSON.genericToEncoding JSON.defaultOptions
 
-fragmentHandler :: String -> Comp.SynTree -> AppM FragmentHandlerResp
+fragmentHandler :: String -> Comp.ConstituencyTree -> AppM FragmentHandlerResp
 fragmentHandler fragmentId syntaxTree = do
   logset <- asks _getLogger
   tstamp <- liftIO getCurrentTime
@@ -77,13 +75,7 @@ fragmentHandler fragmentId syntaxTree = do
 
   case fragIO of
     Left err -> throwError err400
-    Right frag -> do
-      let semTree = Comp.runComposition frag syntaxTree
-      liftIO $ Comp.printTree semTree
-      pure $ FragmentHandlerResp {
-        syntaxTree = syntaxTree,
-        semanticTree = semTree
-      }
+    Right frag -> pure $ FragmentHandlerResp { semanticTree = Comp.runComposition frag syntaxTree }
 
 fragmentApi :: Proxy FragmentAPI
 fragmentApi = Proxy

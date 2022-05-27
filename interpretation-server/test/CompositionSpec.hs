@@ -1,22 +1,25 @@
 module Interpreter.CompositionSpec where
 
 import Control.Monad (void)
-import Test.Hspec
+-- import Test.Hspec
 import Interpreter.Composition
 import Interpreter.Fragment
 import Compiler.Syntax
 import Compiler.Parser
 
-leaf n = Node n Leaf Leaf
+node :: String -> String -> ConstituencyTree -> ConstituencyTree -> ConstituencyTree
+node s pos c1 c2 = Node (CNodeLabel s pos) c1 c2
+leaf n pos = node n pos Leaf Leaf
 
 main :: IO ()
 main = do
-  let synTree = Node "VP" (Node "NP" (leaf "Brutus") Leaf) (Node "V'" (Node "V" (leaf "stab") Leaf) (Node "NP" (leaf "Caesar") Leaf))
-  let fragE = parseFragS "[V] = \\y:Ent . \\x:Ent . \\e:V . Stab(e,y,x) \n [NP] = Noun"
+  let constituencyTree = (node "VP" "-1" (node "NP" "0" (leaf "Brutus" "00") Leaf) (node "V'" "1" (node "V" "10" (leaf "stab" "100") Leaf) (node "NP" "11" (leaf "Caesar" "110") Leaf)))
+
+  let fragE = parseFragS "[V] = \\y:e . \\x:e . \\e:v . V(e,y,x) \n [NP] = NP"
 
   case fragE of
     Right decls -> case loadDecls decls of
-      Right frag -> printTree $ runComposition frag synTree
+      Right frag -> printTree $ runComposition frag constituencyTree
 {-
        ┌Just Noun e "Brutus"┐
        │                    └Just Brutus e "Brutus"

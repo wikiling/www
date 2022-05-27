@@ -11,6 +11,7 @@ import Menu from "./Menu";
 import useLoadWhile from "hooks/useLoadWhile";
 import ExampleForm, { ExampleFormContext } from "./ExampleForm";
 import classNames from "classnames";
+import LogicalForm from "./LogicalForm";
 
 type ExampleProps = {
   example: ExampleT
@@ -73,15 +74,21 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
         </Menu>
       </div>
 
-      <div className="example-body">
-        {isExpanded && constituencyParses.map((constituencyParse) =>
-          <ConstituencyParse
-            key={constituencyParse.id}
-            constituencyParse={constituencyParse}
-            onRemove={() => handleConstituencyParseRemove(constituencyParse)}
-          />
+      {isExpanded && <div className="example-body">
+        {constituencyParses.map((constituencyParse) =>
+          fs.semanticTreeMap[constituencyParse.id]
+            ? <LogicalForm
+                key={constituencyParse.id}
+                semanticTree={fs.semanticTreeMap[constituencyParse.id]}
+                constituencyParse={constituencyParse}
+              />
+            : <ConstituencyParse
+                key={constituencyParse.id}
+                constituencyParse={constituencyParse}
+                onRemove={() => handleConstituencyParseRemove(constituencyParse)}
+              />
         )}
-      </div>
+      </div>}
     </div>
   )
 };

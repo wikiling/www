@@ -1,6 +1,6 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
-import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, TreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues } from 'types';
+import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, TreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues, CoordinatedSemanticTree, SemanticTree } from 'types';
 import { fetchFragment, fetchInterpretation, fetchExamples, fetchConstituencyParses, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample, fetchFragmentGrammar, updateFragmentGrammar } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
@@ -10,6 +10,7 @@ import { toPascalCase } from 'utils/string';
 type ExampleMap = {[key: ID]: Example}
 type TemporaryExampleMap = {[key: UUID]: TemporaryExample}
 type ConstituencyParseMap = {[key: ID]: CoordinatedConstituencyParse}
+type SemanticTreeMap = {[key: ID]: CoordinatedSemanticTree}
 
 const { values } = Object;
 
@@ -36,6 +37,8 @@ const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyPars
   });
 }
 
+const CoordinatedSemanticTreeFactory = (semanticTree: SemanticTree): CoordinatedSemanticTree => hierarchy(semanticTree);
+
 const labelTmpl = (inner: number) => `(${inner})`;
 
 const getNextLabel = (example: Example | TemporaryExample | null) => {
@@ -61,9 +64,9 @@ export class FragmentStore {
   initialGrammar?: string
 
   exampleMap: ExampleMap = {}
-  constituencyParseMap: ConstituencyParseMap = {}
-
   temporaryExampleMap: TemporaryExampleMap = {}
+  constituencyParseMap: ConstituencyParseMap = {}
+  semanticTreeMap: SemanticTreeMap = {}
 
   constructor() {
     makeAutoObservable(this);
@@ -240,10 +243,14 @@ export class FragmentStore {
     return this.constituencyParseMap[updatedConstituencyParse.id];
   }
 
-  dispatchInterpretConstituencyParse = (constituencyParse: CoordinatedConstituencyParse) => {
+  dispatchInterpretConstituencyParse = async (constituencyParse: CoordinatedConstituencyParse) => {
     if (!this.fragment) throw new Error("No fragment to interpret!");
 
-    return fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
+    const semanticTree = await fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
+
+    this.semanticTreeMap[constituencyParse.id] = CoordinatedSemanticTreeFactory(semanticTree);
+
+    return this.semanticTreeMap[constituencyParse.id];
   }
 }
 

@@ -61,7 +61,7 @@ const updateConstituencyParse = (constituencyParseId: ID, values: ConstituencyPa
 
 const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpretationClient
   .post(`fragments/${toPascalCase(fragment.slug)}/`, syntaxTree)
-  .then(({ data }) => data);
+  .then(({ data: { semanticTree } }) => semanticTree);
 
 const fetchFragmentGrammar = (filename: string): Promise<string> => languageServerClient
   .get(filename)

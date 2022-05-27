@@ -6,7 +6,7 @@ import { getTextDimensions } from 'utils/document';
 import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
 import { NODE_RADIUS } from './config';
 
-type NodeProps = {
+type SyntaxNodeProps = {
   treeId: ID
   node: CoordinatedTreeNode
   className?: string
@@ -17,8 +17,8 @@ type NodeProps = {
   onDragEnd: NodeDragHandler
 }
 
-const Node = forwardRef<
-  SVGGElement, NodeProps
+const SyntaxNode = forwardRef<
+  SVGGElement, SyntaxNodeProps
 >(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, ref) => {
   const { id: nodeId, label: nodeLabel } = node.data;
   const id = `${treeId}-${nodeId}`;
@@ -55,4 +55,4 @@ const Node = forwardRef<
   );
 });
 
-export default Node
+export default SyntaxNode

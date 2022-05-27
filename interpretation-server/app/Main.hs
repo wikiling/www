@@ -61,7 +61,7 @@ main = do
 
   let lgmsg =
         LogMessage
-          { message = "My app starting up!",
+          { message = "Interpeter starting up!",
             timestamp = tstamp,
             level = "info",
             lversion = version config,

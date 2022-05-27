@@ -28,6 +28,7 @@ export type SemanticTree = {
 }
 
 export type CoordinatedSyntaxTree = HierarchyNode<SyntaxTree>
+export type CoordinatedSemanticTree = HierarchyNode<SemanticTree>
 
 export type ExampleBase = {
   fragment_id: ID

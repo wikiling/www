@@ -21,6 +21,7 @@ import { fragmentGrammarFilename, fragmentGrammarURI } from "stores/FragmentStor
 const getMonacoModel = (fragment: Fragment) => monaco.editor.getModel(
   monaco.Uri.parse(fragmentGrammarURI(fragment))
 );
+
 const createMonacoModel = (fragment: Fragment, initialValue: string) => monaco.editor.createModel(
   initialValue,
   "haskell",
@@ -70,9 +71,7 @@ const FragmentDetailRoute: React.FC = () => {
                 enabled: false
               }
             }}
-            // theme="vs-dark"
-            // onChange={::this.onChange}
-            // editorDidMount={::this.editorDidMount}
+            // onChange={this.onChange}
           />}
         </div>
         <div className="fragment-detail-route-examples">
