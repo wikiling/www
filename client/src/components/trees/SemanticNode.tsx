@@ -1,10 +1,7 @@
-import React, { forwardRef, useState, useEffect } from 'react';
-import { drag } from 'd3-drag';
-import { select } from 'd3-selection';
-import { ID, SemanticTree, TreeID } from 'types';
+import React, { forwardRef } from 'react';
+import { SemanticTree, TreeID } from 'types';
 import { getTextDimensions } from 'utils/document';
-import { NodeDragHandler, CoordinatedTreeNode, NodeDragEvent } from './types';
-import { NODE_RADIUS } from './config';
+import { NODE_HEIGHT } from './config';
 import { HierarchyPointNode } from 'd3-hierarchy';
 
 export type CoordinatedSemanticTreeNode = HierarchyPointNode<SemanticTree>
@@ -20,17 +17,36 @@ export type SemanticNodeProps = {
 const SemanticNode = forwardRef<
   SVGGElement, SemanticNodeProps
 >(({ treeId, node, className = "" }, ref) => {
-  const { id: nodeId, value: nodeLabel } = node.data;
+  const { id: nodeId, value: nodeValue, constituencyLabel: nodeConstituencyLabel } = node.data;
   const id = `${treeId}-${nodeId}`;
-  const { width: labelWidth, height: labelHeight } = getTextDimensions(nodeLabel);
-  const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
+
+  const {
+    width: constituencyLabelWidth,
+    height: constituencyLabelHeight
+  } = getTextDimensions(nodeConstituencyLabel);
+
+  const constituencyLabelX = node.x - constituencyLabelWidth / 2,
+        constituencyLabelY = node.y - constituencyLabelHeight * 0.75;
+
+  const { width: valueWidth, height: valueHeight } = getTextDimensions(nodeValue);
+  const valueX = node.x - valueWidth / 2,
+        valueY = node.y + valueHeight / 2;
 
   return (
     <g ref={ref} className={`node ${className}`} data-id={id}>
-      <circle className="node-circle" cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white" strokeWidth="1"/>
-      <text x={labelX} y={labelY} data-id={labelWidth}>
-        {nodeLabel}
-      </text>
+      {nodeValue === nodeConstituencyLabel
+        ? <text x={valueX} y={valueY - valueHeight}>
+            {nodeValue}
+          </text>
+        : <>
+            <text x={constituencyLabelX} y={constituencyLabelY}>
+              {nodeConstituencyLabel}
+            </text>
+            <text x={valueX} y={valueY} font-weight="500">
+              {nodeValue}
+            </text>
+          </>
+      }
     </g>
   );
 });

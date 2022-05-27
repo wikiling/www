@@ -47,8 +47,12 @@ instance ToJSON C.SemanticTree where
         _ -> True
       serializeSemNodeLabel :: C.SemanticNodeLabel -> [Pair]
       serializeSemNodeLabel s = case s of
-        C.EmptySemNode pos -> [ "expr" .= Null, "type" .= Null, "value" .= Null, "id" .= pos ]
-        C.EvaluatedSemNode expr ty v pos -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v, "id" .= pos ]
+        C.EmptySemNode cnl -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
+                              <> serializeConstituencyNodeLabel cnl
+        C.EvaluatedSemNode expr ty v cnl -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
+                                            <> serializeConstituencyNodeLabel cnl
+      serializeConstituencyNodeLabel :: C.ConstituencyNodeLabel -> [Pair]
+      serializeConstituencyNodeLabel (C.CNodeLabel l pos) = ["constituencyLabel" .= l, "id" .= pos ]
 
 instance ToJSON C.ConstituencyNodeLabel where
   toEncoding = genericToEncoding defaultOptions

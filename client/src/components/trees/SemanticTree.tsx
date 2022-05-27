@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import './Tree.scss';
 import { CoordinatedSemanticTree, ID, SemanticTree as SemanticTreeT } from 'types';
 import Edge from './Edge';
-import { CoordinatedTreeNode } from './types';
 
 import { NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
@@ -17,17 +16,18 @@ export type TreeProps = {
   tree: CoordinatedSemanticTree,
 };
 
-const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
+const SEM_NODE_HEIGHT = NODE_HEIGHT * 1.5;
+const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 40)`;
 
 const SemanticTree: React.FC<TreeProps> = ({ id, tree  }) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const height = (tree.height + 1) * (NODE_HEIGHT + NODE_SEP_Y); 
+  const height = (tree.height + 1) * (SEM_NODE_HEIGHT + NODE_SEP_Y); 
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedSemanticTreeNode | null>(null);
 
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   const resize = () => {
-    const newCoordinatedRootNode = computeLayout({ tree, getLabel: (node) => node.data.expr });
+    const newCoordinatedRootNode = computeLayout({ tree, getLabel: (node) => node.data.expr, nodeHeight: SEM_NODE_HEIGHT });
     const groupTranslateX = rootRef.current ? (
       rootRef.current.getBoundingClientRect().width / 2
     ) : 0;

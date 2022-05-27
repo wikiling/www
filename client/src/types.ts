@@ -24,6 +24,7 @@ export type SemanticTree = {
   expr: string
   type: string
   value: string
+  constituencyLabel: string
   children?: [SemanticTree]
 }
 

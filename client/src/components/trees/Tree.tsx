@@ -41,7 +41,7 @@ const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
   Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
 );
 
-const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 10)`;
+const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 40)`;
 
 const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeComponent, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove, nodeLabel }) => {
   const rootRef = useRef<HTMLDivElement>(null);

@@ -5,15 +5,22 @@ import { NODE_HEIGHT, NODE_SEP_X, NODE_SEP_Y, NODE_WIDTH } from './config';
 import { CoordinatedTreeNode } from './types';
 
 type ComputeLayoutProps<TreeData extends IdentifiableNodeDatum> = {
-  tree: HierarchyNode<TreeData>,
+  tree: HierarchyNode<TreeData>
   getLabel: (tree: HierarchyNode<TreeData>) => string
+  nodeHeight?: number
+  nodeWidth?: number
 }
 
-export const computeLayout = <TreeData extends IdentifiableNodeDatum>({ tree, getLabel }: ComputeLayoutProps<TreeData>): HierarchyPointNode<TreeData> => {
+export const computeLayout = <TreeData extends IdentifiableNodeDatum>({
+  tree,
+  getLabel,
+  nodeHeight = NODE_HEIGHT,
+  nodeWidth = NODE_WIDTH
+}: ComputeLayoutProps<TreeData>): HierarchyPointNode<TreeData> => {
   const createTreeLayout = tidyTreeLayout<TreeData>()
     .nodeSize([
-      NODE_WIDTH + NODE_SEP_X,
-      NODE_HEIGHT + NODE_SEP_Y
+      nodeWidth + NODE_SEP_X,
+      nodeHeight + NODE_SEP_Y
     ])
     .separation((a, b) => {
       const halfWidthA = getTextDimensions(getLabel(a)).width / 2;

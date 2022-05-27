@@ -26,11 +26,14 @@ import Debug.Trace (trace, traceM)
 
 type Pos = String
 
-data SemanticNodeLabel = EvaluatedSemNode Syn.Expr Syn.Type Sem.Value Pos | EmptySemNode Pos
 data ConstituencyNodeLabel = CNodeLabel String Pos deriving (Show, Generic)
 
-type SemanticTree = Tree SemanticNodeLabel
+data SemanticNodeLabel
+  = EvaluatedSemNode Syn.Expr Syn.Type Sem.Value ConstituencyNodeLabel
+  | EmptySemNode ConstituencyNodeLabel
+
 type ConstituencyTree = Tree ConstituencyNodeLabel
+type SemanticTree = Tree SemanticNodeLabel
 
 type FragmentCtx = Reader Frag.Fragment
 type CompositionTree = FragmentCtx SemanticTree
@@ -42,11 +45,11 @@ instance Show SemanticNodeLabel where
 checkLexicon :: Syn.Name -> FragmentCtx (Maybe Frag.LexicalEntry)
 checkLexicon name = asks (Map.lookup name)
 
-semNode :: Syn.Expr -> Syn.Type -> Sem.Value -> Pos -> (SemanticTree -> SemanticTree -> SemanticTree)
-semNode e t v p = Node (EvaluatedSemNode e t v p)
+semNode :: Syn.Expr -> Syn.Type -> Sem.Value -> ConstituencyNodeLabel -> (SemanticTree -> SemanticTree -> SemanticTree)
+semNode e t v cnl = Node (EvaluatedSemNode e t v cnl)
 
-leafConstNode :: String -> Pos -> SemanticTree
-leafConstNode n p = (semNode (Syn.ESym (Syn.SConst n)) Syn.TyEnt (Sem.VEnt n) p) Leaf Leaf
+leafConstNode :: ConstituencyNodeLabel -> SemanticTree
+leafConstNode cnl@(CNodeLabel n _) = (semNode (Syn.ESym (Syn.SConst n)) Syn.TyEnt (Sem.VEnt n) cnl) Leaf Leaf
 
 saturatePredicativeExpr :: Syn.Expr -> String -> Syn.Expr
 saturatePredicativeExpr expr p = expr
@@ -55,7 +58,7 @@ pattern FnNode tDom tRan e <- Node (EvaluatedSemNode e (Syn.TyFunc tDom tRan) _ 
 pattern ArgNode t e <- Node (EvaluatedSemNode e t _ _) _ _
 
 functionApp :: ConstituencyNodeLabel -> SemanticTree -> SemanticTree -> SemanticTree
-functionApp (CNodeLabel _ pos) b1 b2 = case b1 of
+functionApp cnl b1 b2 = case b1 of
   FnNode t1Dom t1Ran e1 -> case b2 of
     ArgNode t2 e2 | t1Dom == t2 -> appNode e1 e2 t1Ran
     _ -> noAppNode
@@ -66,37 +69,36 @@ functionApp (CNodeLabel _ pos) b1 b2 = case b1 of
   where
     appNode :: Syn.Expr -> Syn.Expr -> Syn.Type -> SemanticTree
     appNode e1 e2 t = let e = (Syn.App e1 e2) in
-      semNode e t (Sem.runEval e) pos b1 b2
+      semNode e t (Sem.runEval e) cnl b1 b2
 
-    noAppNode = Node (EmptySemNode pos) b1 b2
+    noAppNode = Node (EmptySemNode cnl) b1 b2
 
 compose :: ConstituencyTree -> CompositionTree
-compose synTree = do
-  case synTree of
-    Node (CNodeLabel b pos) Leaf Leaf -> do   -- terminal
-      lex <- checkLexicon b
-      case lex of
-        Nothing -> pure $ leafConstNode b pos
-        Just (expr, ty) -> pure $ (semNode expr ty (Sem.runEval expr) pos) Leaf Leaf
-    Node b c Leaf -> preTerm b c              -- one child
-    Node b Leaf c -> preTerm b c
-    Node b c1 c2 -> do                        -- two children
-      s1 <- compose c1
-      s2 <- compose c2
-      pure $ functionApp b s1 s2
+compose (Node cnl@(CNodeLabel label _) c1 c2) = case (c1,c2) of
+  (Leaf, Leaf) -> do             -- terminal
+    lex <- checkLexicon label
+    case lex of
+      Nothing -> pure $ leafConstNode cnl
+      Just (expr, ty) -> pure $ (semNode expr ty (Sem.runEval expr) cnl) Leaf Leaf
+  (_, Leaf) -> preTerm cnl c1    -- one child
+  (Leaf, _) -> preTerm cnl c2
+  _ -> do                        -- two children
+    s1 <- compose c1
+    s2 <- compose c2
+    pure $ functionApp cnl s1 s2
   where
     -- (clobbers order of child `terminal`)
     preTerm :: ConstituencyNodeLabel -> ConstituencyTree -> CompositionTree
-    preTerm (CNodeLabel pre pos) terminal = do
+    preTerm cnl@(CNodeLabel pre _) terminal = do
       terminalNode <- compose terminal
       case terminalNode of
         Node (EvaluatedSemNode (Syn.ESym (Syn.SConst c)) t v _) Leaf Leaf -> do
           lex <- checkLexicon pre
           case lex of
             Just (expr, ty) -> let expr' = Syn.rename pre c expr in
-              pure $ (semNode (expr') ty (Sem.runEval expr') pos) Leaf terminalNode
-            Nothing         -> pure $ Node (EmptySemNode pos) Leaf terminalNode
-        _ -> pure $ Node (EmptySemNode pos) Leaf terminalNode
+              pure $ (semNode (expr') ty (Sem.runEval expr') cnl) Leaf terminalNode
+            Nothing         -> pure $ Node (EmptySemNode cnl) Leaf terminalNode
+        _ -> pure $ Node (EmptySemNode cnl) Leaf terminalNode
 
 runComposition :: Frag.Fragment -> ConstituencyTree -> SemanticTree
 runComposition frag synTree = runReader (compose synTree) frag

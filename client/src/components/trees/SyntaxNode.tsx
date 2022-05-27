@@ -23,7 +23,7 @@ const SyntaxNode = forwardRef<
   const { id: nodeId, label: nodeLabel } = node.data;
   const id = `${treeId}-${nodeId}`;
   const { width: labelWidth, height: labelHeight } = getTextDimensions(nodeLabel);
-  const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
+  const labelX = node.x - labelWidth / 2, labelY = node.y;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
   const dragHandler = drag();
@@ -47,7 +47,6 @@ const SyntaxNode = forwardRef<
 
   return (
     <g ref={ref} onClick={onClick} className={`node ${className}`} data-id={id}>
-      <circle className="node-circle" cx={node.x} cy={node.y} r={NODE_RADIUS} fill="white" strokeWidth="1"/>
       <text x={labelX} y={labelY} data-id={labelWidth}>
         {nodeLabel}
       </text>
