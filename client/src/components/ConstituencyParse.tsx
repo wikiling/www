@@ -2,13 +2,12 @@ import "./ConstituencyParse.scss";
 import React, { useState } from 'react';
 import { CoordinatedConstituencyParse, TreeID } from 'types';
 import SyntaxTree from './trees/SyntaxTree';
-import { EditableSyntaxNodeValues } from './trees/types';
+import { CoordinatedTreeNode, EditableSyntaxNodeValues } from './trees/types';
 import Button from "./Button";
 import { useStores } from "hooks";
 import { observer } from "mobx-react-lite";
 import { toJS } from "mobx";
 import Menu from "./Menu";
-import useLoadWhile from "hooks/useLoadWhile";
 import useConstituencyParseOps from "hooks/useConstituencyParseOps";
 
 type ConstituencyParseProps = {
@@ -18,6 +17,7 @@ type ConstituencyParseProps = {
 
 const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse, onRemove }) => {
   const { fragmentStore: fs } = useStores();
+  const [initialEditNode, setInitialEditNode] = useState<CoordinatedTreeNode | null>(null);
   const {
     handleInterpret,
     handleRemove,
@@ -38,14 +38,15 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           nodeLabel={(node) => node.data.label}
           onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
+            node && setInitialEditNode(node);
             incrTreeEditCount();
-            return node;
           }}
           onNodeEdit={(values: EditableSyntaxNodeValues) => {
             fs.updateConstituencyParseNode(constituencyParse.id, {
               id: values.id,
               label: values.label
             });
+            setInitialEditNode(null);
             incrTreeEditCount();
           }}
           onNodeRemove={(nodeId: TreeID) => {
@@ -56,6 +57,7 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
             fs.moveConstituencyParseNode(constituencyParse.id, nodeId, targetParentId);
             incrTreeEditCount();
           }}
+          initialEditNode={initialEditNode}
         />
       </div>
 

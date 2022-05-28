@@ -8,7 +8,7 @@ type EdgeProps = {
 
 const Edge: React.FC<EdgeProps> = ({ link }) => {
   const { source, target } = link;
-  console.log(target.data.id)
+
   return (
     <line
       className="edge"

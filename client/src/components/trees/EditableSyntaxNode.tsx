@@ -34,7 +34,7 @@ const EditableSyntaxNode = forwardRef<
   const [width, setWidth] = useState<number>(initialValue.length === 0 ? DEFAULT_EMPTY_WIDTH : initialValue.length); // ch
   const [height] = useState<number>(1.25 * initialValueDims.height); // px
   const [x, setX] = useState<number>(node.x - width / 2);
-  const [y] = useState<number>(node.y - initialValueDims.height / 2);
+  const [y] = useState<number>(node.y);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const length = e.target.value.length;
@@ -51,7 +51,6 @@ const EditableSyntaxNode = forwardRef<
 
   return (
     <g ref={forwardedRef} className="node node-editable">
-      <rect x={x} y={y} width={`${width}ch`} height={height} fill="white"/>
       <foreignObject
         width={`${width}ch`}
         height={height}

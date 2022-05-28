@@ -19,7 +19,7 @@ export const fragmentGrammarURI = (fragment: Fragment) => `file:///app/fragments
 
 const SyntaxTreeNodeFactory = () => ({
   id: "",
-  text: ""
+  label: ""
 });
 
 const TemporaryExampleFactory = (fragment_id: ID): TemporaryExample => ({

@@ -42,7 +42,7 @@ const SemanticNode = forwardRef<
             <text x={constituencyLabelX} y={constituencyLabelY}>
               {nodeConstituencyLabel}
             </text>
-            <text x={valueX} y={valueY} font-weight="500">
+            <text x={valueX} y={valueY} fontWeight="500">
               {nodeValue}
             </text>
           </>

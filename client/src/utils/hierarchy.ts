@@ -59,22 +59,13 @@ d3Node.prototype.width = function () {
   return last.x - first.x;
 }
 
-d3Node.prototype.isPreterminal = function () {
-  const { children } = this;
-
-  return children?.length === 1 && !children[0].children;
-}
-
 d3Node.prototype.parseString = function () {
   const { children } = this;
 
-  if (this.isPreterminal()) {
-    console.log(0, this.data.token)
-    return `(${this.data.label} ${children[0].data.label})`;
-  } else {
-    console.log(1, this.data.token)
+  if (children?.length)
     return `(${this.data.label} ${children.map((node: IdentifiableHierarchyNode) => node.parseString()).join(' ')})`;
-  }
+
+  return `(${this.data.label})`;
 }
 
 export { hierarchy, mintNewChildId };

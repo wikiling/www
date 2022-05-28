@@ -1,0 +1,14 @@
+$header-height: 50px;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+
+  .header {
+    flex-basis: #{$header-height};
+  }
+  &-body, &-body .SplitPane {
+    height: calc(100vh - ($header-height + 1px));
+  }
+}

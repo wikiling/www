@@ -17,13 +17,14 @@ import classNames from 'classnames';
 export type TreeProps = {
   id: ID
   tree: CoordinatedTree,
-  onNodeAdd: (node: TreeID) => CoordinatedTreeNode | undefined
+  onNodeAdd: (node: TreeID) => void
   onNodeEdit: (values: EditableSyntaxNodeValues) => void
   onNodeRemove: (nodeId: TreeID) => void
   onNodeMove: (nodeId: TreeID, targetParentId: TreeID) => void
   nodeLabel: (node: CoordinatedTree) => string
   nodeComponent: (props: React.ComponentProps<typeof Node>) => JSX.Element
   editableNodeComponent: (props: React.ComponentProps<typeof EditableSyntaxNode>) => JSX.Element
+  initialEditNode?: CoordinatedTreeNode | null
 };
 
 type MenuCoordinates = {
@@ -41,9 +42,11 @@ const isWithinAdoptionDistance = (a: SubjectPosition, b: SubjectPosition) => (
   Math.abs(a.y - b.y) < DRAG_DROP_ADOPTION_MIN_DISTANCE 
 );
 
-const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 40)`;
+const PADDING_TOP = 40;
 
-const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeComponent, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove, nodeLabel }) => {
+const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, ${PADDING_TOP})`;
+
+const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeComponent, onNodeAdd, onNodeEdit, onNodeRemove, onNodeMove, nodeLabel, initialEditNode }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const editNodeRef = useRef<SVGGElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,7 +54,7 @@ const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeCompon
   const [menuCoordinates, setMenuCoordinates] = useState<MenuCoordinates>(defaultMenuCoordinates);
   const [coordinatedRootNode, setCoordinatedRootNode] = useState<CoordinatedTreeNode | null>(null);
   const [menuNode, setMenuNode] = useState<CoordinatedTreeNode | null>(null);
-  const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(null);
+  const [editNode, setEditNode] = useState<CoordinatedTreeNode | null>(initialEditNode ?? null);
   const [dragNode, setDragNode] = useState<CoordinatedTreeNode | null>(null);
   const [potentialParentNode, setPotentialParentNode] = useState<CoordinatedTreeNode | null>(null);
  
@@ -116,8 +119,9 @@ const Tree: React.FC<TreeProps> = ({ id, tree, nodeComponent, editableNodeCompon
     );
 
     const top = (
-      node.y -                                    // orient to node.
-      menuDims.offsetHeight / 2 + NODE_HEIGHT / 2 // center menu against node.
+      node.y                                        // orient to node.
+      - menuDims.offsetHeight / 2 + NODE_HEIGHT / 2 // center menu against node.
+      + PADDING_TOP / 2
     );
 
     setMenuCoordinates({
