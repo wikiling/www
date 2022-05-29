@@ -36,8 +36,8 @@ eval expr = let
     Syn.ELit (Syn.LInt x) -> pure $ VInt (fromIntegral x)
     Syn.ELit (Syn.LBool x) -> pure $ VBool x
 
-    Syn.ESym (Syn.SVar x) -> error ("Unbound variable: " ++ show x)
-    Syn.ESym (Syn.SConst x) -> pure $ VEnt x
+    Syn.ESym (Syn.SVar x) _   -> error ("Unbound variable: " ++ show x)
+    Syn.ESym (Syn.SConst x) _ -> pure $ VEnt x
 
     Syn.EUnOp op -> case op of
       Syn.Neg e -> negate e where

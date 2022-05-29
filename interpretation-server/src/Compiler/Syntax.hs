@@ -8,6 +8,7 @@ module Compiler.Syntax (
   UnOp(..),
   BinOp(..),
   Type(..),
+  TyVar(..),
   Decl,
   rename,
   substitute,
@@ -19,14 +20,11 @@ module Compiler.Syntax (
 
 type Name = String
 
--- | Ground terms; those without free variables.
 data Lit
   = LInt Int
   | LBool Bool
   deriving (Show, Eq, Ord)
 
--- | Symbols. Variables are bound in an evaluation context,
---   constants in a semantic model.
 data Sym
   = SVar Name
   | SConst Name
@@ -34,7 +32,7 @@ data Sym
 
 data Expr
   = ELit Lit
-  | ESym Sym
+  | ESym Sym Type
   | Lam Name Type Expr
   | App Expr Expr
   | Let Sym Expr
@@ -85,8 +83,8 @@ type Decl = (String, Expr)
 -- rename n to n' in e
 rename :: Name -> Name -> Expr -> Expr
 rename n n' e = case e of
-  ESym (SVar v)   | n == v -> ESym (SVar n')
-  ESym (SConst c) | n == c -> ESym (SConst n')
+  ESym (SVar v) t   | n == v -> ESym (SVar n') t
+  ESym (SConst c) t | n == c -> ESym (SConst n') t
   Pred name args  -> Pred (if n == name then n' else name) (map rn args)
   EUnOp op        -> EUnOp $ renameUnOp op
   EBinOp op       -> EBinOp $ renameBinOp op
@@ -111,11 +109,12 @@ rename n n' e = case e of
 -- sub a for every match(n) in e
 substitute' :: Expr -> (Name -> Bool) -> Expr -> Expr
 substitute' a match e = case e of
-  ESym (SVar n) | match n -> a
-  Pred name args          -> Pred name (map sub args)
-  EUnOp op                -> EUnOp $ subUnOp op
-  EBinOp op               -> EBinOp $ subBinOp op
-  Lam arg ty body         -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
+  ESym (SVar n) _ | match n -> a
+  Pred name args            -> Pred name (map sub args)
+  EUnOp op                  -> EUnOp $ subUnOp op
+  EBinOp op                 -> EBinOp $ subBinOp op
+  Lam arg ty body           -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
+  App e0 e1                 -> App (sub e0) (sub e1)
   _ -> e
   where
     sub = substitute' a match

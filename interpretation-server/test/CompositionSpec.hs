@@ -18,7 +18,7 @@ main = do
   let aspP = (node "AspP" "1" (leaf "" "10") (node "AspP'" "11" asp vp))
   let s = node "S" "-1" (leaf "bindt" "0") aspP
 
-  let fragE = parseFragS "[V] = \\y:e . \\x:e . \\e:v . V(e,y,x) \n [NP] = NP \n [PF] = \\t:i . \\P:v->t . exists e:v . T(e) & P(e)"
+  let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V(e,y,x) \n [NP] = NP \n [PF] = \\t:<i> . \\P:<v,t> . exists e:<v> . T(e) & P(e) \n [t] = T:i"
 
   case fragE of
     Left e -> print e

@@ -49,7 +49,9 @@ semNode :: Syn.Expr -> Syn.Type -> Sem.Value -> ConstituencyNodeLabel -> (Semant
 semNode e t v cnl = Node (EvaluatedSemNode e t v cnl)
 
 leafConstNode :: ConstituencyNodeLabel -> SemanticTree
-leafConstNode cnl@(CNodeLabel n _) = (semNode (Syn.ESym (Syn.SConst n)) (Syn.TyCon "c") (Sem.VEnt n) cnl) Leaf Leaf
+leafConstNode cnl@(CNodeLabel n _) = (semNode (Syn.ESym (Syn.SConst n) t) t (Sem.VEnt n) cnl) Leaf Leaf
+  where
+    t = (Syn.TyVar $ Syn.TV "a")
 
 saturatePredicativeExpr :: Syn.Expr -> String -> Syn.Expr
 saturatePredicativeExpr expr p = expr
@@ -92,7 +94,7 @@ compose (Node cnl@(CNodeLabel label _) c1 c2) = case (c1,c2) of
     preTerm cnl@(CNodeLabel pre _) terminal = do
       terminalNode <- compose terminal
       case terminalNode of
-        Node (EvaluatedSemNode (Syn.ESym (Syn.SConst c)) t v _) Leaf Leaf -> do
+        Node (EvaluatedSemNode (Syn.ESym (Syn.SConst c) _) _ _ _) Leaf Leaf -> do
           lex <- checkLexicon pre
           case lex of
             Just (expr, ty) -> let expr' = Syn.rename pre c expr in

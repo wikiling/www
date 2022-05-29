@@ -10,6 +10,9 @@ import Prelude hiding ((<>))
 import Data.List (intersperse)
 import Text.PrettyPrint
 
+angles :: Doc -> Doc
+angles p = char '<' <> p <> char '>'
+
 class Pretty p where
   ppr :: Int -> p -> Doc
 
@@ -45,7 +48,7 @@ instance Pretty Syn.Sym where
 
 instance Pretty Syn.Expr where
   ppr p e = case e of
-    Syn.ESym t -> ppr p t
+    Syn.ESym s _ -> ppr p s
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
     Syn.Lam n t body -> pBinder (char 'λ') n t body
@@ -70,7 +73,8 @@ instance Pretty Syn.Expr where
 
 instance Pretty Syn.Type where
   ppr _ (Syn.TyCon t) = text t
-  ppr p (Syn.TyFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "→" <+> ppr p b
+  ppr _ (Syn.TyVar (Syn.TV t)) = text t
+  ppr p (Syn.TyFunc a b) = angles ((ppr p a) <> text "," <> ppr p b)
     where
       isFunc Syn.TyFunc{} = True
       isFunc _ = False

@@ -10,19 +10,6 @@ import Interpreter.Evaluation
 import Control.Monad.Trans
 import System.Console.Haskeline
 
-
-
-processDecl :: String ->  IO ()
-processDecl line = do
-  let decl = parseDecl line
-  case decl of
-    Left err -> print err
-    Right (n, ex) -> do
-      let chk = checkTop [] ex
-      case chk of
-        Left tyerr -> print tyerr
-        Right _    -> print $ runEvalIn ex emptyCtx
-
 process :: String ->  IO ()
 process line = do
   let expr = parseExpr line
@@ -34,7 +21,7 @@ process line = do
         Left tyerr -> print tyerr
         Right ty    -> do
           print $ show ex
-          print $ runEvalIn ex emptyCtx
+          print $ runEval ex
 
 
 main :: IO ()

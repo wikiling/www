@@ -63,7 +63,7 @@ check expr = case expr of
   Syn.ELit Syn.LInt{} -> pure Syn.tyInt
   Syn.ELit Syn.LBool{} -> pure Syn.tyBool
 
-  Syn.ESym t -> checkTerm t
+  Syn.ESym _ t -> pure $ t
   Syn.EUnOp op -> case op of
     Syn.Neg e -> do
       t <- check e
