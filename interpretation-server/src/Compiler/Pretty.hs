@@ -25,8 +25,8 @@ commaSep = punctuate $ char ','
 wrap d1 d2 = d1 <> d2 <> d1 
 
 binarySep c p = hsep . (intersperse $ (char c)) . (map $ ppr p)
-conjSep p = binarySep '∧' p
-disjSep p = binarySep '∨' p
+conjSep p = binarySep '&' p
+disjSep p = binarySep '|' p
 implSep p = binarySep '→' p
 addSep p = binarySep '+' p
 subSep p = binarySep '-' p
@@ -48,10 +48,7 @@ instance Pretty Syn.Expr where
     Syn.ESym t -> ppr p t
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
-    Syn.Lam n t body -> parensIf (p > 0) $
-      char 'λ' <> text n <> char ':' <> ppr p t
-      <+> text "→"
-      <+> ppr (p + 1) body
+    Syn.Lam n t body -> pBinder (char 'λ') n t body
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
     Syn.EUnOp op -> case op of
       Syn.Neg e -> char '¬' <> (ppr p e)  
@@ -59,19 +56,21 @@ instance Pretty Syn.Expr where
       Syn.Conj e1 e2 -> conjSep p [e1,e2]
       Syn.Disj e1 e2 -> disjSep p [e1,e2]
       Syn.Impl e1 e2 -> implSep p [e1,e2]
-      -- Syn.UnivQ n t body ->
-      -- Syn.ExisQ n t body ->
       Syn.Add e1 e2 -> addSep p [e1,e2]
       Syn.Mul e1 e2 -> mulSep p [e1,e2]
       Syn.Sub e1 e2 -> subSep p [e1,e2]
       Syn.Div e1 e2 -> divSep p [e1,e2]
+    Syn.UnivQ n t body -> pBinder (char '∀') n t body
+    Syn.ExisQ n t body -> pBinder (char '∃') n t body
+    where
+      pBinder sym n t body = parensIf (p > 0) $
+        sym <> text n <> char ':' <> ppr p t
+        <+> text "→"
+        <+> ppr (p + 1) body
 
 instance Pretty Syn.Type where
-  ppr _ Syn.TyInt  = text "n"
-  ppr _ Syn.TyBool = text "t"
-  ppr _ Syn.TyEnt  = text "e"
-  ppr _ Syn.TyEvent = text "v"
-  ppr p (Syn.TyFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "->" <+> ppr p b
+  ppr _ (Syn.TyCon t) = text t
+  ppr p (Syn.TyFunc a b) = (parensIf (isFunc a) (ppr p a)) <+> text "→" <+> ppr p b
     where
       isFunc Syn.TyFunc{} = True
       isFunc _ = False

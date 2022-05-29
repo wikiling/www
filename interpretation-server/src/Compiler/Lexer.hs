@@ -6,14 +6,36 @@ import qualified Text.Parsec.Token as Tok
 import qualified Text.ParserCombinators.Parsec.Char as CTok
 import Text.Parsec.Language (haskellStyle)
 
-lexer :: Tok.TokenParser ()
-lexer = Tok.makeTokenParser style
-  where ops = ["->", "\\", "="]
-        names = ["True", "False"]
-        style = haskellStyle {Tok.reservedOpNames = ops,
-                              Tok.reservedNames = names,
-                              Tok.commentLine = "#"}
+reservedNames :: [String]
+reservedNames = [
+    "exists",
+    "forall"
+  ]
 
+reservedOps :: [String]
+reservedOps = [
+    "->",
+    "\\",
+    "+",
+    "*",
+    "-",
+    "="
+  ]
+
+lexer :: Tok.TokenParser ()
+lexer = Tok.makeTokenParser $ Tok.LanguageDef
+  { Tok.commentStart    = "{-"
+  , Tok.commentEnd      = "-}"
+  , Tok.commentLine     = "--"
+  , Tok.nestedComments  = True
+  , Tok.identStart      = letter
+  , Tok.identLetter     = alphaNum <|> oneOf "_'"
+  , Tok.opStart         = oneOf ":!#$%&*+./<=>?@\\^|-~"
+  , Tok.opLetter        = oneOf ":!#$%&*+./<=>?@\\^|-~"
+  , Tok.reservedNames   = reservedNames
+  , Tok.reservedOpNames = reservedOps
+  , Tok.caseSensitive   = True
+  }
 reserved :: String -> Parser ()
 reserved = Tok.reserved lexer
 

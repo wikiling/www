@@ -46,10 +46,9 @@ tyatom :: Parser Syn.Type
 tyatom = tylit <|> (parens parseType)
 
 tylit :: Parser Syn.Type
-tylit = (reservedOp "t" >> pure Syn.TyBool)
-     <|> (reservedOp "n" >> pure Syn.TyInt)
-     <|> (reservedOp "e" >> pure Syn.TyEnt)
-     <|> (reservedOp "v" >> pure Syn.TyEvent)
+tylit = (reservedOp "t" >> pure Syn.tyBool)
+     <|> (reservedOp "n" >> pure Syn.tyInt)
+     <|> (identifier >>= \t -> pure $ Syn.TyCon t)
 
 parseType :: Parser Syn.Type
 parseType = Ex.buildExpressionParser tyops tyatom
@@ -97,7 +96,9 @@ parseConst = debugParse "const" $ parseSConst >>= pure . Syn.ESym
 
 parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
 parseBinder = debugParse "binder" $ do
+  parserTrace "1"
   x <- identifier
+  parserTrace "2"
   reservedOp ":"
   t <- parseType
   reservedOp "."
@@ -117,19 +118,23 @@ parseApp = do
 
 parseUnivQ :: Parser Syn.Expr
 parseUnivQ = debugParse "univq" $ do
-  reservedOp "\\forall"
+  reservedOp "forall"
+  whitespace
   (x,t,e) <- parseBinder
   pure (Syn.UnivQ x t e)
 
 parseExisQ :: Parser Syn.Expr
 parseExisQ = debugParse "exisq" $ do
-  reservedOp "\\exists"
+  parserTrace "0"
+  reservedOp "exists"
+  parserTrace "0.5"
+  whitespace
   (x,t,e) <- parseBinder
   pure (Syn.ExisQ x t e)
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
-  n  <- parseTitleIdentifier
+  n  <- identifier
   ts <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
   pure $ Syn.Pred n ts
 

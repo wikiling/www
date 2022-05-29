@@ -12,6 +12,9 @@ type Fragment = Map.Map String LexicalEntry
 
 data LoadError = LParError Parse.ParseError
                | LTyError [Ty.TypeError]
+instance Show LoadError where
+  show (LParError e) = show e
+  show (LTyError e) = show e
 
 typeCheck :: Syn.Decl -> E.Either Ty.TypeError (String, LexicalEntry)
 typeCheck (name, expr) = case Ty.checkTop [] expr of

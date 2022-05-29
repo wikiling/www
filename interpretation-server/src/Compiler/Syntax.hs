@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module Compiler.Syntax (
   Name,
   Lit(..),
@@ -8,7 +10,11 @@ module Compiler.Syntax (
   Type(..),
   Decl,
   rename,
-  substitute
+  substitute,
+  tyInt,
+  tyBool,
+  pattern TyIntP,
+  pattern TyBoolP
 ) where
 
 type Name = String
@@ -58,13 +64,21 @@ data BinOp
   | Sub Expr Expr
   | Div Expr Expr
 
+newtype TyVar = TV String
+  deriving (Show, Eq, Ord)
+
 data Type
-  = TyInt
-  | TyEnt
-  | TyEvent
-  | TyBool
+  = TyVar TyVar
+  | TyCon String
   | TyFunc Type Type
-  deriving (Eq, Read)
+  deriving (Eq, Ord)
+
+tyInt, tyBool :: Type
+tyInt  = TyCon "n"
+tyBool = TyCon "t"
+
+pattern TyIntP = TyCon "n"
+pattern TyBoolP = TyCon "t"
 
 type Decl = (String, Expr)
 

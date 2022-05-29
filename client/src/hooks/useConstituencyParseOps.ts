@@ -22,7 +22,6 @@ const useConstituencyParseOps = (constituencyParse: CoordinatedConstituencyParse
 
   const handleSave = () => loadWhile(
     async () => {
-      console.log(constituencyParse.coordinated_syntax_tree.parseString())
       await fs.dispatchUpdateConstituencyParse(constituencyParse.id, {
         parse_string: constituencyParse.coordinated_syntax_tree.parseString()
       });
