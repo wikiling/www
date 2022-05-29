@@ -65,21 +65,28 @@ eval expr = let
       Syn.Impl e0 e1 -> imply e0 e1 where
         imply e0 e1 = pure $ VBool $ not (and [(guardBool e0),(not $ guardBool e1)])
 
+    -- No model theory yet, so all predicates are true.
+    Syn.Pred n ns -> pure $ VBool True
     -- Syn.UnivQ n _ e ->
     -- Syn.ExisQ n _ e ->
     -- Syn.IotaQ n _ e ->
-  
-    -- No model theory yet, so all predicates are true.
-    Syn.Pred n ns -> pure $ VBool True
 
     l@(Syn.Lam _ _ _) -> pure $ VFunc l
 
     -- cbn beta reduction. let's make this cbv once the Value type is more stable
+    -- (λt:i → (λP:<v,t> → (∃e:v → T(e) & P(e)))) T <<v,t>,t> λP:<v,t> → (∃e:v → T(e) & P(e))
+    -- ((λy:e → (λx:e → (λe:v → stab(e, y, x)))) Caesar) Brutus <v,t> λe:v → stab(e, Caesar, Brutus)
+    -- ((\t:<i> . (\P:<v,t> . (exists e:<v> . Time(e) & P(e)))) T:i) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
+    -- (\P:<v,t> . (exists e:<v> . Time(e) & P(e))) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
+    -- (exists f:<v> . Time(f) & (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)
+    --
+    -- exists f:<v> . Time(f) & ((((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)
+    -- need evaluation of quantifiers!
     Syn.App e0 e1 -> case e0 of
       a@(Syn.App _ _) -> do
         lhs <- eval a
         case lhs of
-          VFunc (Syn.Lam param _ body) ->  eval $ Syn.substitute e1 param body
+          VFunc (Syn.Lam param _ body) -> eval $ Syn.substitute e1 param body
           nf -> error ("Tried to apply non fn: " ++ show nf ++ " to " ++ show e1)
       Syn.Lam param _ body -> eval $ Syn.substitute e1 param body
       _ -> error ("Tried to apply non fn: " ++ show e0 ++ " to " ++ show e1)

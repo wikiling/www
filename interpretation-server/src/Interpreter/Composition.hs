@@ -51,7 +51,7 @@ semNode e t v cnl = Node (EvaluatedSemNode e t v cnl)
 leafConstNode :: ConstituencyNodeLabel -> SemanticTree
 leafConstNode cnl@(CNodeLabel n _) = (semNode (Syn.ESym (Syn.SConst n) t) t (Sem.VEnt n) cnl) Leaf Leaf
   where
-    t = (Syn.TyVar $ Syn.TV "a")
+    t = (Syn.TyVar $ Syn.TV "A")
 
 saturatePredicativeExpr :: Syn.Expr -> String -> Syn.Expr
 saturatePredicativeExpr expr p = expr
