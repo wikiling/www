@@ -51,7 +51,7 @@ instance Pretty Syn.Expr where
     Syn.ESym s _ -> ppr p s
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
-    Syn.Lam n t body -> pBinder (char 'λ') n t body
+    Syn.Lam n t body -> pLam (char 'λ') n t body
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
     Syn.EUnOp op -> case op of
       Syn.Neg e -> char '¬' <> (ppr p e)  
@@ -63,10 +63,15 @@ instance Pretty Syn.Expr where
       Syn.Mul e1 e2 -> mulSep p [e1,e2]
       Syn.Sub e1 e2 -> subSep p [e1,e2]
       Syn.Div e1 e2 -> divSep p [e1,e2]
-    Syn.UnivQ n t body -> pBinder (char '∀') n t body
-    Syn.ExisQ n t body -> pBinder (char '∃') n t body
+    Syn.UnivQ e0 e1 -> pQuant (char '∀') e0 e1
+    Syn.ExisQ e0 e1 -> pQuant (char '∃') e0 e1
     where
-      pBinder sym n t body = parensIf (p > 0) $
+      pQuant sym e0 e1 = parensIf (p > 0) $
+        sym
+        <> ppr p e0
+        <+> text "→"
+        <+> ppr (p + 1) e1
+      pLam sym n t body = parensIf (p > 0) $
         sym <> text n <> char ':' <> ppr p t
         <+> text "→"
         <+> ppr (p + 1) body

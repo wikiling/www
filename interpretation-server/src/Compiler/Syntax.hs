@@ -39,10 +39,9 @@ data Expr
   | EBinOp BinOp
   | EUnOp UnOp
   | Pred Name [Expr]
-  -- TODO: Name/Type should be Expr to allow arbitrary restriction
-  | UnivQ Name Type Expr
-  | ExisQ Name Type Expr
-  | IotaQ Name Type Expr
+  | UnivQ Expr Expr
+  | ExisQ Expr Expr
+  | IotaQ Expr Expr
   | Set [Expr]
   | SetUnion [Expr] [Expr]
   | SetInter [Expr] [Expr]
@@ -89,6 +88,9 @@ rename n n' e = case e of
   EUnOp op        -> EUnOp $ renameUnOp op
   EBinOp op       -> EBinOp $ renameBinOp op
   Lam arg ty e'   -> Lam arg ty (rn e')
+  UnivQ e0 e1     -> UnivQ e0 (rn e1)
+  ExisQ e0 e1     -> ExisQ e0 (rn e1)
+  IotaQ e0 e1     -> IotaQ e0 (rn e1)
   App e0 e1       -> App (rn e0) (rn e1)
   _               -> e
   where
@@ -114,6 +116,9 @@ substitute' a match e = case e of
   EUnOp op                  -> EUnOp $ subUnOp op
   EBinOp op                 -> EBinOp $ subBinOp op
   Lam arg ty body           -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
+  UnivQ e0 e1               -> subQuant UnivQ e0 e1
+  ExisQ e0 e1               -> subQuant ExisQ e0 e1
+  IotaQ e0 e1               -> subQuant IotaQ e0 e1
   App e0 e1                 -> App (sub e0) (sub e1)
   _ -> e
   where
@@ -129,6 +134,8 @@ substitute' a match e = case e of
       Mul e0 e1 -> Mul (sub e0) (sub e1)
       Sub e0 e1 -> Sub (sub e0) (sub e1)
       Div e0 e1 -> Div (sub e0) (sub e1)
+    subQuant q e0 e1 = case e0 of
+      (ESym (SVar s) _) -> q e0 (substitute' a (\n -> match n && n /= s) e1)
 
 substitute :: Expr -> Name -> Expr -> Expr
 substitute a n e = substitute' a (\n' -> n == n') e

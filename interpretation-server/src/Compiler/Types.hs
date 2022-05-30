@@ -46,17 +46,13 @@ checkBinaryOp t e1 e2 = do
       else throwError $  Mismatch t2 t
     else throwError $  Mismatch t1 t
 
-checkQuant :: Syn.Name -> Syn.Type -> Syn.Expr -> Check Syn.Type 
-checkQuant n t e = do
-    bodyT <- inCtx (n,t) (check e)
+checkQuant :: Syn.Expr -> Syn.Expr -> Check Syn.Type 
+checkQuant e0 e1 = case e0 of
+  (Syn.ESym (Syn.SVar n) t) -> do
+    bodyT <- inCtx (n,t) (check e1)
     if bodyT == Syn.tyBool
       then pure Syn.tyBool
       else throwError $ Mismatch bodyT Syn.tyBool
-
-checkTerm :: Syn.Sym -> Check Syn.Type
-checkTerm t = case t of
-  Syn.SVar v   -> lookupVar v
-  Syn.SConst c -> pure $ Syn.TyCon "e"
 
 check :: Syn.Expr -> Check Syn.Type
 check expr = case expr of
@@ -69,7 +65,7 @@ check expr = case expr of
       t <- check e
       case t of
         Syn.TyBoolP -> pure Syn.tyBool
-        _          -> throwError $ Mismatch t Syn.tyBool
+        _           -> throwError $ Mismatch t Syn.tyBool
 
   Syn.EBinOp op -> case op of
     Syn.Add e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
@@ -89,8 +85,8 @@ check expr = case expr of
 
   Syn.Pred n ns -> mapM_ check ns >> pure Syn.tyBool
 
-  Syn.UnivQ n t e -> checkQuant n t e
-  Syn.ExisQ n t e -> checkQuant n t e
+  Syn.UnivQ e0 e1 -> checkQuant e0 e1
+  Syn.ExisQ e0 e1 -> checkQuant e0 e1
 
   Syn.Lam n t e -> do
     bodyT <- inCtx (n,t) (check e)

@@ -12,8 +12,8 @@ import Debug.Trace (traceM)
 
 data Value
   = VInt Integer
-  | VFormula Syn.Expr
   | VBool Bool
+  | VFormula Syn.Expr
   | VFunc Syn.Expr
 
 instance Show Value where
@@ -23,10 +23,7 @@ instance Show Value where
   show (VFunc exp) = show exp
 
 type Evaluation = Identity Value
-
-pattern SubForm e = Identity (VFormula e)
-
-type EvalCtx = Map.Map String Value
+type EvalCtx = Map.Map Syn.Name Value
 
 eval :: EvalCtx -> Syn.Expr -> Evaluation
 eval ctx expr = let
@@ -35,33 +32,33 @@ eval ctx expr = let
     Identity (VBool b) -> b
   guardInt e = case eval ctx e of
     Identity (VInt i) -> fromIntegral i
-
-  subf e = case eval ctx e of
-    SubForm e' -> e'
-
-  subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Syn.Expr -> Syn.Expr -> Evaluation
-  subformulae2 f e0 e1 = pure $ VFormula $ Syn.EBinOp $ f (subf e0) (subf e1)
-
-  subformulae :: ([Syn.Expr] -> Syn.Expr) -> [Syn.Expr] -> Evaluation
-  subformulae f es = pure $ VFormula $ f (map subf es)
+  guardForm ctx' e = case eval ctx' e of
+    Identity (VFormula e') -> e'
 
   subformula :: (Syn.Expr -> Syn.UnOp) -> Syn.Expr -> Evaluation
-  subformula f e = pure $ VFormula $ Syn.EUnOp $ f $ subf e
+  subformula f e = pure $ VFormula $ Syn.EUnOp $ f $ guardForm ctx e
 
-  qFormula f e = pure $ VFormula $ f $ subf e
+  subformulae :: ([Syn.Expr] -> Syn.Expr) -> [Syn.Expr] -> Evaluation
+  subformulae f es = pure $ VFormula $ f (map guardForm es)
 
-  evalArith op e0 e1 = pure $ (VFormula . Syn.ELit . Syn.LInt) (op (guardInt e0) (guardInt e1))
+  subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Syn.Expr -> Syn.Expr -> Evaluation
+  subformulae2 f e0 e1 = pure $ VFormula $ Syn.EBinOp $ f (guardForm ctx e0) (guardForm ctx e1)
+
+  qFormula f e0 e1 = case e0 of
+    s@(Syn.ESym (Syn.SVar n) t) ->
+      pure $ VFormula $ f n t $ guardForm (Map.insert n (VFormula s) ctx) e1
+
+  arithFormula op e0 e1 = pure $ (VFormula . Syn.ELit . Syn.LInt) (op (guardInt e0) (guardInt e1))
 
   in case expr of
-
     l@(Syn.ELit (Syn.LInt _)) -> pure $ VFormula l
-  
     l@(Syn.ELit (Syn.LBool _)) -> pure $ VFormula l
 
-    -- if we've hit a variable then it has passed through beta reduction,
-    -- in which case it must be bound by a quantifier
-    Syn.ESym (Syn.SVar x) _   -> case Map.lookup x ctx of
-      Nothing -> error ("Unbound variable: " ++ show x)
+    -- if we've hit a variable then it has passed through
+    -- type checking and beta reduction, in which case it
+    -- must be bound by a quantifier
+    Syn.ESym (Syn.SVar s) _ -> case Map.lookup s ctx of
+      Nothing -> error ("Unbound variable: " ++ show s)
       Just v -> pure v
 
     c@(Syn.ESym (Syn.SConst _) _) -> pure $ VFormula c
@@ -75,10 +72,10 @@ eval ctx expr = let
     Syn.EUnOp (Syn.Neg e) -> subformula Syn.Neg e
 
     Syn.EBinOp op -> case op of
-      Syn.Add a b -> evalArith (+) a b
-      Syn.Mul a b -> evalArith (*) a b
-      Syn.Sub a b -> evalArith (-) a b
-      Syn.Div a b -> evalArith (div) a b
+      Syn.Add a b -> arithFormula (+) a b
+      Syn.Mul a b -> arithFormula (*) a b
+      Syn.Sub a b -> arithFormula (-) a b
+      Syn.Div a b -> arithFormula (div) a b
 
       {-
       Syn.Eq a b -> do
@@ -102,17 +99,16 @@ eval ctx expr = let
       Syn.Disj e0 e1 -> subformulae2 Syn.Disj e0 e1
       Syn.Impl e0 e1 -> subformulae2 Syn.Impl e0 e1
 
-    -- No model theory yet, so all predicates are true.
     Syn.Pred n es -> subformulae (Syn.Pred n) es
-    Syn.UnivQ n t e -> qFormula (Syn.UnivQ n t) e
-    Syn.ExisQ n t e -> qFormula (Syn.ExisQ n t) e
-    Syn.IotaQ n t e -> qFormula (Syn.IotaQ n t) e
+    Syn.UnivQ e0 e1 -> qFormula Syn.UnivQ e0 e1
+    Syn.ExisQ e0 e1 -> qFormula Syn.ExisQ e0 e1
+    Syn.IotaQ e0 e1 -> qFormula Syn.IotaQ e0 e1
 
     l@(Syn.Lam _ _ _) -> pure $ VFunc l
 
     -- cbn beta reduction. let's make this cbv once the Value type is more stable
     -- (λt:i → (λP:<v,t> → (∃e:v → T(e) & P(e)))) T <<v,t>,t> λP:<v,t> → (∃e:v → T(e) & P(e))
-    -- ((λy:e → (λx:e → (λe:v → stab(e, y, x)))) Caesar) Brutus <v,t> λe:v → stab(e, Caesar, Brutus)
+    -- ((λy:e → (λx:e → (λe:v → stab(e, y, x)))) Caesar) Brutus <v,t> λe:v → stab(e, Caesar,  jkxccBrutus)
     -- ((\t:<i> . (\P:<v,t> . (exists e:<v> . Time(e) & P(e)))) T:i) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
     -- (\P:<v,t> . (exists e:<v> . Time(e) & P(e))) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
     -- (exists f:<v> . Time(f) & (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)

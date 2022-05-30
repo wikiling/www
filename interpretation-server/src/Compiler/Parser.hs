@@ -111,15 +111,14 @@ parseApp = do
 parseUnivQ :: Parser Syn.Expr
 parseUnivQ = debugParse "univq" $ do
   reservedOp "forall"
-  whitespace
-  (x,t,e) <- parseBinder
-  pure (Syn.UnivQ x t e)
+  (n,t,e) <- parseBinder
+  pure (Syn.UnivQ (Syn.ESym (Syn.SVar n) t) e)
 
 parseExisQ :: Parser Syn.Expr
 parseExisQ = debugParse "exisq" $ do
   reservedOp "exists"
-  (x,t,e) <- parseBinder
-  pure (Syn.ExisQ x t e)
+  (n,t,e) <- parseBinder
+  pure (Syn.ExisQ (Syn.ESym (Syn.SVar n) t) e)
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
