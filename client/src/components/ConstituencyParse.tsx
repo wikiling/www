@@ -38,7 +38,7 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           nodeLabel={(node) => node.data.label}
           onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
-            node && setInitialEditNode(node);
+            node && setInitialEditNode(node); // smells
             incrTreeEditCount();
           }}
           onNodeEdit={(values: EditableSyntaxNodeValues) => {
@@ -46,7 +46,7 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
               id: values.id,
               label: values.label
             });
-            setInitialEditNode(null);
+            setInitialEditNode(null); // smells
             incrTreeEditCount();
           }}
           onNodeRemove={(nodeId: TreeID) => {

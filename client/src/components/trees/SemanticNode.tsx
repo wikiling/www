@@ -45,6 +45,9 @@ const SemanticNode = forwardRef<
             <text x={valueX} y={valueY} fontWeight="500">
               {nodeValue}
             </text>
+            <text x={valueX} y={valueY + 20} fontWeight="500">
+              {node.data.type}
+            </text>
           </>
       }
     </g>

@@ -27,7 +27,7 @@ main = do
       print decls
       case loadDecls decls of
         Left e -> print e
-        Right frag -> printTree $ runComposition frag vp
+        Right frag -> printTree $ runComposition frag s
       
 {-
        ┌Just Noun e "Brutus"┐
