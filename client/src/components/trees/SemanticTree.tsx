@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
 import { CoordinatedSemanticTree, ID, SemanticTree as SemanticTreeT } from 'types';
-import Edge from './Edge';
+import SemanticEdge from './SemanticEdge';
 
-import { NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
+import { SEM_NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
 import { useEffect } from 'react';
 import { computeLayout } from './utils';
 import SemanticNode from './SemanticNode';
@@ -16,7 +16,6 @@ export type TreeProps = {
   tree: CoordinatedSemanticTree,
 };
 
-const SEM_NODE_HEIGHT = NODE_HEIGHT * 1.5;
 const groupTransformTmpl = (translateX: number = 0) => `translate(${translateX}, 40)`;
 
 const SemanticTree: React.FC<TreeProps> = ({ id, tree  }) => {
@@ -45,7 +44,7 @@ const SemanticTree: React.FC<TreeProps> = ({ id, tree  }) => {
       <svg width="100%" height={height} data-id={id}>
       <g transform={groupTransform}>
           {coordinatedRootNode?.links()
-            .map(link => <Edge
+            .map(link => <SemanticEdge
               link={link}
               key={`${id}-${link.source.data.id}-${link.target.data.id}`}/>
           )}
@@ -54,7 +53,7 @@ const SemanticTree: React.FC<TreeProps> = ({ id, tree  }) => {
               treeId={node.data.id}
               node={node}
               width={NODE_WIDTH}
-              height={NODE_HEIGHT}
+              height={SEM_NODE_HEIGHT}
               key={`Sem-${id}-${node.data.id}`}
             />
           )}

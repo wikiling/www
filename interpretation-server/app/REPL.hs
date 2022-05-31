@@ -16,6 +16,7 @@ process line = do
   case expr of
     Left err -> print err
     Right ex -> do
+      print ex
       let chk = checkTop [] ex
       case chk of
         Left tyerr -> print tyerr

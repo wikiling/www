@@ -1,20 +1,20 @@
 import { SubjectPosition } from 'd3-drag';
 import { HierarchyNode, HierarchyPointNode, IdentifiableNodeDatum, tree as tidyTreeLayout } from 'd3-hierarchy';
 import { getTextDimensions } from 'utils/document';
-import { NODE_HEIGHT, NODE_SEP_X, NODE_SEP_Y, NODE_WIDTH } from './config';
+import { NODE_SEP_X, NODE_SEP_Y, NODE_WIDTH } from './config';
 import { CoordinatedTreeNode } from './types';
 
 type ComputeLayoutProps<TreeData extends IdentifiableNodeDatum> = {
   tree: HierarchyNode<TreeData>
   getLabel: (tree: HierarchyNode<TreeData>) => string
-  nodeHeight?: number
+  nodeHeight: number
   nodeWidth?: number
 }
 
 export const computeLayout = <TreeData extends IdentifiableNodeDatum>({
   tree,
   getLabel,
-  nodeHeight = NODE_HEIGHT,
+  nodeHeight,
   nodeWidth = NODE_WIDTH
 }: ComputeLayoutProps<TreeData>): HierarchyPointNode<TreeData> => {
   const createTreeLayout = tidyTreeLayout<TreeData>()

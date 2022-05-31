@@ -39,14 +39,14 @@ eval ctx expr = let
   subformula f e = pure $ VFormula $ Syn.EUnOp $ f $ guardForm ctx e
 
   subformulae :: ([Syn.Expr] -> Syn.Expr) -> [Syn.Expr] -> Evaluation
-  subformulae f es = pure $ VFormula $ f (map guardForm es)
+  subformulae f es = pure $ VFormula $ f (map (guardForm ctx) es)
 
   subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Syn.Expr -> Syn.Expr -> Evaluation
   subformulae2 f e0 e1 = pure $ VFormula $ Syn.EBinOp $ f (guardForm ctx e0) (guardForm ctx e1)
 
   qFormula f e0 e1 = case e0 of
     s@(Syn.ESym (Syn.SVar n) t) ->
-      pure $ VFormula $ f n t $ guardForm (Map.insert n (VFormula s) ctx) e1
+      pure $ VFormula $ f s $ guardForm (Map.insert n (VFormula s) ctx) e1
 
   arithFormula op e0 e1 = pure $ (VFormula . Syn.ELit . Syn.LInt) (op (guardInt e0) (guardInt e1))
 
@@ -110,7 +110,7 @@ eval ctx expr = let
     -- (λt:i → (λP:<v,t> → (∃e:v → T(e) & P(e)))) T <<v,t>,t> λP:<v,t> → (∃e:v → T(e) & P(e))
     -- ((λy:e → (λx:e → (λe:v → stab(e, y, x)))) Caesar) Brutus <v,t> λe:v → stab(e, Caesar,  jkxccBrutus)
     -- ((\t:<i> . (\P:<v,t> . (exists e:<v> . Time(e) & P(e)))) T:i) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
-    -- (\P:<v,t> . (exists e:<v> . Time(e) & P(e))) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
+    -- (\p:<v,t> . (exists e:<v> . Time(e) & p(e))) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
     -- (exists f:<v> . Time(f) & (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)
     --
     -- exists f:<v> . Time(f) & ((((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)

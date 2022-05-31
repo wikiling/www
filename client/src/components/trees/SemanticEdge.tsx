@@ -1,5 +1,5 @@
 import React from 'react';
-import { NODE_HEIGHT } from './config';
+import { NODE_LINE_HEIGHT, SEM_NODE_HEIGHT } from './config';
 import { CoordinatedTreeLink } from './types';
 
 type EdgeProps = {
@@ -13,9 +13,9 @@ const Edge: React.FC<EdgeProps> = ({ link }) => {
     <line
       className="edge"
       x1={source.x}
-      y1={source.y + NODE_HEIGHT / 2}
+      y1={source.y + NODE_LINE_HEIGHT * 1.5}
       x2={target.x}
-      y2={target.y - NODE_HEIGHT}
+      y2={target.y - NODE_LINE_HEIGHT * 1.5 }
       stroke="black"
     />
   )

@@ -126,6 +126,9 @@ parsePred = debugParse "pred" $ do
   ts <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
   pure $ Syn.Pred n ts
 
+parseSet :: Parser Syn.Expr
+parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkset)
+
 parseLet :: Parser Syn.Decl
 parseLet = do
   string "["
@@ -146,7 +149,8 @@ factor = (parens parseExpr') <|>
          (parseExisQ)        <|>
          (parseVar)          <|>
          (parseLambda)       <|>
-         (parsePred)
+         (parsePred)         <|>
+         (parseSet)    
 
 binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
 binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp $ fun e0 e1)) assoc

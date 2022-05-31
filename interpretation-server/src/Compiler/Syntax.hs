@@ -15,8 +15,11 @@ module Compiler.Syntax (
   tyInt,
   tyBool,
   pattern TyIntP,
-  pattern TyBoolP
+  pattern TyBoolP,
+  mkSet
 ) where
+
+import qualified Data.Set as Set
 
 type Name = String
 
@@ -38,16 +41,22 @@ data Expr
   | Let Sym Expr
   | EBinOp BinOp
   | EUnOp UnOp
-  | Pred Name [Expr]
+  | Pred Name SetExpr
   | UnivQ Expr Expr
   | ExisQ Expr Expr
   | IotaQ Expr Expr
-  | Set [Expr]
-  | SetUnion [Expr] [Expr]
-  | SetInter [Expr] [Expr]
-  | SetDiff [Expr] [Expr]
-  | SetCompl [Expr] [Expr]
-  | SetMem Expr [Expr]
+  | ESet SetExpr
+  | SetUnion SetExpr SetExpr
+  | SetInter SetExpr SetExpr
+  | SetDiff SetExpr SetExpr
+  | SetCompl SetExpr SetExpr
+  | SetSubS SetExpr SetExpr
+  | SetMem Expr SetExpr
+
+data SetExpr = Set.Set Expr
+
+mkSet :: [Expr] -> Expr
+mkSet exprs = Set.ESet $ Set.fromList exprs
 
 data UnOp = Neg Expr
 

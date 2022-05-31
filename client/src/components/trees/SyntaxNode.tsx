@@ -23,7 +23,7 @@ const SyntaxNode = forwardRef<
   const { id: nodeId, label: nodeLabel } = node.data;
   const id = `${treeId}-${nodeId}`;
   const { width: labelWidth, height: labelHeight } = getTextDimensions(nodeLabel);
-  const labelX = node.x - labelWidth / 2, labelY = node.y;
+  const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
   const dragHandler = drag();

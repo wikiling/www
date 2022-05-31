@@ -62,6 +62,9 @@ parens = Tok.parens lexer
 angles :: Parser a -> Parser a
 angles = Tok.angles lexer
 
+brackets :: Parser a -> Parser a
+brackets = Tok.brackets lexer
+
 contents :: Parser a -> Parser a
 contents p = do
   Tok.whiteSpace lexer
