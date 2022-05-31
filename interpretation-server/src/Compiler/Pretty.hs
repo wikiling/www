@@ -27,15 +27,6 @@ parensIf b = case b of
 commaSep = punctuate $ char ','
 wrap d1 d2 = d1 <> d2 <> d1 
 
-binarySep c p = hsep . (intersperse $ (char c)) . (map $ ppr p)
-conjSep p = binarySep '&' p
-disjSep p = binarySep '|' p
-implSep p = binarySep '→' p
-addSep p = binarySep '+' p
-subSep p = binarySep '-' p
-mulSep p = binarySep '*' p
-divSep p = binarySep '/' p
-
 instance Pretty Syn.Lit where
   ppr _ l = case l of
     Syn.LInt i  -> text (show i)
@@ -48,21 +39,27 @@ instance Pretty Syn.Sym where
 
 instance Pretty Syn.Expr where
   ppr p e = case e of
-    Syn.ESym s _ -> ppr p s
+    Syn.ESym s t -> ppr p s <> text ":" <> ppr 0 t
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
     Syn.Lam n t body -> pLam (char 'λ') n t body
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
     Syn.EUnOp op -> case op of
-      Syn.Neg e -> char '¬' <> (ppr p e)  
+      Syn.Neg e -> char '¬' <> (ppr p e)
+      Syn.SetCompl e -> (ppr p e) <> char '∁'
     Syn.EBinOp op -> case op of
-      Syn.Conj e1 e2 -> conjSep p [e1,e2]
-      Syn.Disj e1 e2 -> disjSep p [e1,e2]
-      Syn.Impl e1 e2 -> implSep p [e1,e2]
-      Syn.Add e1 e2 -> addSep p [e1,e2]
-      Syn.Mul e1 e2 -> mulSep p [e1,e2]
-      Syn.Sub e1 e2 -> subSep p [e1,e2]
-      Syn.Div e1 e2 -> divSep p [e1,e2]
+      Syn.Conj e0 e1 -> infixSep '&' [e0,e1]
+      Syn.Disj e0 e1 -> infixSep '|' [e0,e1]
+      Syn.Impl e0 e1 -> infixSep '→' [e0,e1]
+      Syn.Add e0 e1 -> infixSep '+' [e0,e1]
+      Syn.Mul e0 e1 -> infixSep '*' [e0,e1]
+      Syn.Sub e0 e1 -> infixSep '-' [e0,e1]
+      Syn.Div e0 e1 -> infixSep '/' [e0,e1]
+      Syn.SetUnion e0 e1 -> infixSep '∪' [e0,e1]
+      Syn.SetInter e0 e1 -> infixSep '∩' [e0,e1]
+      Syn.SetDiff e0 e1 -> infixSep '∖' [e0,e1]
+      Syn.SetSubS e0 e1 -> infixSep '⊆' [e0,e1]
+      Syn.SetMem e0 e1 -> infixSep '∈' [e0,e1]
     Syn.UnivQ e0 e1 -> pQuant (char '∀') e0 e1
     Syn.ExisQ e0 e1 -> pQuant (char '∃') e0 e1
     where
@@ -75,6 +72,7 @@ instance Pretty Syn.Expr where
         sym <> text n <> char ':' <> ppr p t
         <+> text "→"
         <+> ppr (p + 1) body
+      infixSep c = hsep . (intersperse $ (char c)) . (map $ ppr p)
 
 instance Pretty Syn.Type where
   ppr _ (Syn.TyCon t) = text t
@@ -84,17 +82,23 @@ instance Pretty Syn.Type where
       isFunc Syn.TyFunc{} = True
       isFunc _ = False
 
+instance Pretty Syn.Decl where
+  ppr p (Syn.Let (n,e)) = (text n) <+> (text "=") <+> ppr p e
+
 instance Show Syn.Expr where
   show = show . ppr 0
 
 instance Show Syn.Type where
   show = show . ppr 0
 
+instance Show Syn.Decl where
+  show = show . ppr 0
+
 instance Show Ty.TypeError where
   show (Ty.Mismatch a b) =
     "Expecting " ++ (pptype b) ++ " but got " ++ (pptype a)
-  show (Ty.NotFunction a) =
-    "Tried to apply to non-function type: " ++ (pptype a)
+  show (Ty.NotFunction e0 e1) =
+    "Tried to apply non-function type: " ++ (ppexpr e0) ++ " to " ++ ppexpr e1
   show (Ty.NotInScope a) =
     "Variable " ++ a ++ " is not in scope"
 

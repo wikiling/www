@@ -9,7 +9,8 @@ module Compiler.Syntax (
   BinOp(..),
   Type(..),
   TyVar(..),
-  Decl,
+  Decl(..),
+  SetExpr,
   rename,
   substitute,
   tyInt,
@@ -31,34 +32,32 @@ data Lit
 data Sym
   = SVar Name
   | SConst Name
-  deriving (Eq, Show)
+  deriving (Show, Eq, Ord)
 
 data Expr
   = ELit Lit
   | ESym Sym Type
   | Lam Name Type Expr
   | App Expr Expr
-  | Let Sym Expr
+  -- | Let Sym Expr
   | EBinOp BinOp
   | EUnOp UnOp
-  | Pred Name SetExpr
+  | Pred Name [Expr]
   | UnivQ Expr Expr
   | ExisQ Expr Expr
   | IotaQ Expr Expr
   | ESet SetExpr
-  | SetUnion SetExpr SetExpr
-  | SetInter SetExpr SetExpr
-  | SetDiff SetExpr SetExpr
-  | SetCompl SetExpr SetExpr
-  | SetSubS SetExpr SetExpr
-  | SetMem Expr SetExpr
+  deriving (Eq, Ord)
 
-data SetExpr = Set.Set Expr
+type SetExpr = Set.Set Expr
 
 mkSet :: [Expr] -> Expr
-mkSet exprs = Set.ESet $ Set.fromList exprs
+mkSet exprs = ESet $ Set.fromList exprs
 
-data UnOp = Neg Expr
+data UnOp
+  = Neg Expr
+  | SetCompl Expr
+  deriving (Eq, Ord)
 
 data BinOp
   = Eq Expr Expr
@@ -69,6 +68,12 @@ data BinOp
   | Mul Expr Expr
   | Sub Expr Expr
   | Div Expr Expr
+  | SetUnion Expr Expr
+  | SetInter Expr Expr
+  | SetDiff Expr Expr
+  | SetSubS Expr Expr
+  | SetMem Expr Expr
+  deriving (Eq, Ord)
 
 newtype TyVar = TV String
   deriving (Show, Eq, Ord)
@@ -86,7 +91,7 @@ tyBool = TyCon "t"
 pattern TyIntP = TyCon "n"
 pattern TyBoolP = TyCon "t"
 
-type Decl = (String, Expr)
+data Decl = Let (Name, Expr)
 
 -- rename n to n' in e
 rename :: Name -> Name -> Expr -> Expr

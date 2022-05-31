@@ -99,6 +99,12 @@ eval ctx expr = let
       Syn.Disj e0 e1 -> subformulae2 Syn.Disj e0 e1
       Syn.Impl e0 e1 -> subformulae2 Syn.Impl e0 e1
 
+      Syn.SetUnion e0 e1 -> subformulae2 Syn.SetUnion e0 e1
+      Syn.SetInter e0 e1 -> subformulae2 Syn.SetInter e0 e1
+      Syn.SetDiff e0 e1 -> subformulae2 Syn.SetDiff e0 e1
+      Syn.SetSubS e0 e1 -> subformulae2 Syn.SetSubS e0 e1
+      Syn.SetMem e0 e1 -> subformulae2 Syn.SetMem e0 e1
+
     Syn.Pred n es -> subformulae (Syn.Pred n) es
     Syn.UnivQ e0 e1 -> qFormula Syn.UnivQ e0 e1
     Syn.ExisQ e0 e1 -> qFormula Syn.ExisQ e0 e1

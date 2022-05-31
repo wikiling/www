@@ -17,9 +17,10 @@ instance Show LoadError where
   show (LTyError e) = show e
 
 typeCheck :: Syn.Decl -> E.Either Ty.TypeError (String, LexicalEntry)
-typeCheck (name, expr) = case Ty.checkTop [] expr of
-  Right ty -> Right (name, (expr, ty))
-  Left err -> Left err
+typeCheck decl = case decl of
+  Syn.Let (name, expr) -> case Ty.checkTop [] expr of
+    Right ty -> Right (name, (expr, ty))
+    Left err -> Left err
 
 loadDecls :: [Syn.Decl] -> E.Either LoadError Fragment
 loadDecls decls = do

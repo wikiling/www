@@ -24,6 +24,19 @@ process line = do
           print $ show ex
           print $ runEval ex
 
+processDecl :: String ->  IO ()
+processDecl line = do
+  let decl = parseDecl line
+  case decl of
+    Left err -> print err
+    Right d@(Let (name, ex)) -> do
+      print d
+      let chk = checkTop [] ex
+      case chk of
+        Left tyerr -> print tyerr
+        Right ty    -> do
+          print $ show ex
+          print $ runEval ex
 
 main :: IO ()
 main = runInputT defaultSettings loop
@@ -32,5 +45,5 @@ main = runInputT defaultSettings loop
     mInput <- getInputLine "λ> "
     case mInput of
       Nothing -> outputStrLn "Goodbye."
-      Just input | length input > 0 -> (liftIO $ process input) >> loop
+      Just input | length input > 0 -> (liftIO $ processDecl input) >> loop
                  | otherwise        -> loop

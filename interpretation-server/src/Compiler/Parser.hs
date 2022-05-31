@@ -127,7 +127,13 @@ parsePred = debugParse "pred" $ do
   pure $ Syn.Pred n ts
 
 parseSet :: Parser Syn.Expr
-parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkset)
+parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkSet)
+
+parseTypedef :: Parser Syn.Decl
+parseTypedef = do
+  n <- titularIdentifier
+  t <- parseTypeAssignment
+  pure $ Syn.Let (n, Syn.ESym (Syn.SConst n) t)
 
 parseLet :: Parser Syn.Decl
 parseLet = do
@@ -138,7 +144,9 @@ parseLet = do
   reservedOp "="
   spaces
   expr <- parseExpr'
-  pure $ (name, expr)
+  pure $ Syn.Let (name, expr)
+
+parseDecl' = parseTypedef <|> parseLet
 
 factor :: Parser Syn.Expr
 factor = (parens parseExpr') <|>
@@ -149,8 +157,7 @@ factor = (parens parseExpr') <|>
          (parseExisQ)        <|>
          (parseVar)          <|>
          (parseLambda)       <|>
-         (parsePred)         <|>
-         (parseSet)    
+         (parsePred)
 
 binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
 binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp $ fun e0 e1)) assoc
@@ -168,6 +175,12 @@ opTable = [ [ binOp "*" Syn.Mul Ex.AssocLeft
           , [ binOp "&" Syn.Conj Ex.AssocLeft
             , binOp "|" Syn.Disj Ex.AssocLeft ]
           , [binOp "=>" Syn.Impl Ex.AssocRight]
+          , [unOp "compl" Syn.SetCompl]
+          , [ binOp "subs" Syn.SetSubS Ex.AssocRight
+            , binOp "union" Syn.SetUnion Ex.AssocRight
+            , binOp "inter" Syn.SetInter Ex.AssocRight
+            , binOp "diff" Syn.SetDiff Ex.AssocRight
+            , binOp "elem" Syn.SetMem Ex.AssocRight ]
           ]
 
 parseTerm :: Parser Syn.Expr
@@ -177,7 +190,7 @@ parseExpr' :: Parser Syn.Expr
 parseExpr' = debugParse "app" parseApp
 
 parseFrag' :: Parser [Syn.Decl]
-parseFrag' = whitespace >> many parseLet
+parseFrag' = whitespace >> many parseDecl'
 
 -------------------------------------------------------------------------------
 -- Entrypoints
@@ -192,7 +205,7 @@ parseFromFile p fname
          return (runP p Map.empty fname input)
 
 parseDecl :: String -> Either ParseError Syn.Decl
-parseDecl input = runP (contents parseLet) Map.empty "<stdin>" input
+parseDecl input = runP (contents parseDecl') Map.empty "<stdin>" input
 
 parseExpr :: String -> ExprParse
 parseExpr input = runP (contents parseExpr') Map.empty "<stdin>" input

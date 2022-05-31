@@ -4,6 +4,7 @@ module Compiler.Types (
   TypeError(..)
 ) where
 
+import qualified Data.Set as Set
 import qualified Compiler.Syntax as Syn
 
 import Control.Monad.Except
@@ -18,8 +19,9 @@ extend xt ctx = xt : ctx
 
 data TypeError
   = Mismatch Syn.Type Syn.Type
-  | NotFunction Syn.Type
+  | NotFunction Syn.Expr Syn.Expr
   | NotInScope Syn.Name
+  | HeterogenousSet Syn.SetExpr
 
 type Check = ExceptT TypeError (Reader Ctx)
 
@@ -66,7 +68,8 @@ check expr = case expr of
       case t of
         Syn.TyBoolP -> pure Syn.tyBool
         _           -> throwError $ Mismatch t Syn.tyBool
-
+    Syn.SetCompl e -> check e
+  
   Syn.EBinOp op -> case op of
     Syn.Add e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
     Syn.Sub e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
@@ -82,6 +85,11 @@ check expr = case expr of
         (Syn.TyIntP)  | t2 == Syn.tyInt  -> pure Syn.tyInt
         (Syn.TyBoolP) | t2 == Syn.tyBool -> pure Syn.tyBool
         _ -> throwError $ Mismatch t1 t2
+    Syn.SetUnion e0 e1 -> checkSetEs e0 e1
+    Syn.SetInter e0 e1 -> checkSetEs e0 e1
+    Syn.SetDiff e0 e1 -> checkSetEs e0 e1
+    Syn.SetSubS e0 e1 -> checkSetEs e0 e1 >> pure Syn.tyBool
+    Syn.SetMem e0 e1 -> checkSetEs e0 e1 >> pure Syn.tyBool
 
   Syn.Pred n ns -> mapM_ check ns >> pure Syn.tyBool
 
@@ -92,13 +100,28 @@ check expr = case expr of
     bodyT <- inCtx (n,t) (check e)
     pure (Syn.TyFunc t bodyT)
 
-  Syn.App e1 e2 -> do
+  Syn.App e0 e1 -> do
+    t0 <- check e0
     t1 <- check e1
-    t2 <- check e2
-    case t1 of
-      (Syn.TyFunc a b) | a == t2   -> pure b
-                     | otherwise -> throwError $ Mismatch t2 a
-      t -> throwError $ NotFunction t
+    case t0 of
+      (Syn.TyFunc a b) | a == t1   -> pure b
+                       | otherwise -> throwError $ Mismatch t1 a
+      t -> throwError $ NotFunction e0 e1
+  
+  Syn.ESet es -> do
+    ts <- mapM check (Set.elems es)
+    let init = head ts
+    if (and $ map (== init) (tail ts))
+      then pure init
+      else throwError $ HeterogenousSet es
+
+  where 
+    checkSetEs e0 e1 = do
+      t1 <- check e0
+      t2 <- check e1
+      if t1 == t2
+        then pure t1
+        else throwError $ Mismatch t1 t2
 
 runCheck :: Ctx -> Check a -> Either TypeError a
 runCheck ctx = flip runReader ctx . runExceptT

@@ -1,11 +1,11 @@
 
-[V] = \y:<e> . \x:<e> . \e:<v> . V(e,y,x)
-[NP] = NP:e
+V = \y:<e> . \x:<e> . \e:<v> . V(e,y,x)
+NP = NP:e
 
--- let Runtime: <e,i>
+Runtime: <e,i>
 
-[PF] = \t:<i> . \p:<v,t> . exists e:v . Runtime(e) & (p e)
+PF = \t:<i> . \p:<v,t> . exists e:v . Runtime(e) & (p e)
 
-[t] = T:i
+t = T:i
 
 -- [tClosure] = \t:i 

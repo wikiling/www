@@ -54,9 +54,6 @@ leafConstNode cnl@(CNodeLabel n _) = (semNode c t (Sem.VFormula c) cnl) Leaf Lea
     t = (Syn.TyVar $ Syn.TV "A")
     c = (Syn.ESym (Syn.SConst n) t)
 
-saturatePredicativeExpr :: Syn.Expr -> String -> Syn.Expr
-saturatePredicativeExpr expr p = expr
-
 pattern FnNode tDom tRan e <- Node (EvaluatedSemNode e (Syn.TyFunc tDom tRan) _ _) _ _
 pattern ArgNode t e <- Node (EvaluatedSemNode e t _ _) _ _
 
