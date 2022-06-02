@@ -1,7 +1,8 @@
 module Compiler.Types (
   check,
-  checkTop,
-  TypeError(..)
+  checkExpr,
+  TypeError(..),
+  Ctx
 ) where
 
 import qualified Data.Set as Set
@@ -35,9 +36,6 @@ lookupVar n = do
     Just e  -> pure e
     Nothing -> throwError $ NotInScope n
 
-lookupVars :: [Syn.Name] -> [Check Syn.Type]
-lookupVars ns = lookupVar <$> ns
-
 checkBinaryOp :: Syn.Type -> Syn.Expr -> Syn.Expr -> Check Syn.Type
 checkBinaryOp t e1 e2 = do
   t1 <- check e1
@@ -61,7 +59,9 @@ check expr = case expr of
   Syn.ELit Syn.LInt{} -> pure Syn.tyInt
   Syn.ELit Syn.LBool{} -> pure Syn.tyBool
 
-  Syn.ESym _ t -> pure $ t
+  Syn.ESym (Syn.SConst n) -> lookupVar n
+  Syn.ESym (Syn.SVar n) -> lookupVar n
+
   Syn.EUnOp op -> case op of
     Syn.Neg e -> do
       t <- check e
@@ -126,5 +126,5 @@ check expr = case expr of
 runCheck :: Ctx -> Check a -> Either TypeError a
 runCheck ctx = flip runReader ctx . runExceptT
 
-checkTop :: Ctx -> Syn.Expr -> Either TypeError Syn.Type
-checkTop ctx x = runCheck ctx $ (check x)
+checkExpr :: Ctx -> Syn.Expr -> Either TypeError Syn.Type
+checkExpr ctx x = runCheck ctx $ (check x)

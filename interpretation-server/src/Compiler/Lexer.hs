@@ -9,11 +9,15 @@ import Text.Parsec.Language (haskellStyle)
 import qualified Compiler.Syntax as Syn
 
 -------------------------------------------------------------------------------
--- State
+-- State def
 -------------------------------------------------------------------------------
 
 type SymTypeState = Map.Map String Syn.Type
 type Parser = Parsec String SymTypeState
+
+-------------------------------------------------------------------------------
+-- Lex
+-------------------------------------------------------------------------------
 
 reservedNames :: [String]
 reservedNames = [

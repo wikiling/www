@@ -39,7 +39,7 @@ instance Pretty Syn.Sym where
 
 instance Pretty Syn.Expr where
   ppr p e = case e of
-    Syn.ESym s t -> ppr p s <> text ":" <> ppr 0 t
+    Syn.ESym s -> ppr p s
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
     Syn.Lam n t body -> pLam (char 'λ') n t body
@@ -84,6 +84,7 @@ instance Pretty Syn.Type where
 
 instance Pretty Syn.Decl where
   ppr p (Syn.Let (n,e)) = (text n) <+> (text "=") <+> ppr p e
+  ppr p (Syn.Let (n,e,t)) = (text n) <+> (text "=") <+> ppr p e <> ":" <+> pptype t
 
 instance Show Syn.Expr where
   show = show . ppr 0

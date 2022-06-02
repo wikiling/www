@@ -76,17 +76,13 @@ lIdentifier = (lookAhead lower) >> identifier
 
 parseVar :: Parser Syn.Expr
 parseVar = debugParse "var" $ do
-  x <- lIdentifier
-  s <- getState
-  t <- parseTypeAssignment <|> (pure $ s Map.! x)
-  pure $ Syn.ESym (Syn.SVar x) t
+  i <- lIdentifier
+  pure $ Syn.ESym (Syn.SVar i)
 
 parseConst :: Parser Syn.Expr
 parseConst = debugParse "const" $ do
   c <- titularIdentifier
-  t <- parseTypeAssignment <|> (pure $ Syn.TyVar (Syn.TV "A"))
-  notFollowedBy $ char '(' -- brittle not to derive this constraint from `parsePred` conditions
-  pure $ Syn.ESym (Syn.SConst c) t
+  pure $ Syn.ESym (Syn.SConst c)
 
 parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
 parseBinder = debugParse "binder" $ do
@@ -100,8 +96,8 @@ parseBinder = debugParse "binder" $ do
 parseLambda :: Parser Syn.Expr
 parseLambda = debugParse "lambda" $ do
   reservedOp "\\"
-  (x,t,e) <- parseBinder
-  pure (Syn.Lam x t e)
+  (n,t,e) <- parseBinder
+  pure (Syn.Lam n t e)
 
 parseApp :: Parser Syn.Expr
 parseApp = do
@@ -112,19 +108,19 @@ parseUnivQ :: Parser Syn.Expr
 parseUnivQ = debugParse "univq" $ do
   reservedOp "forall"
   (n,t,e) <- parseBinder
-  pure (Syn.UnivQ (Syn.ESym (Syn.SVar n) t) e)
+  pure (Syn.UnivQ n t e)
 
 parseExisQ :: Parser Syn.Expr
 parseExisQ = debugParse "exisq" $ do
   reservedOp "exists"
   (n,t,e) <- parseBinder
-  pure (Syn.ExisQ (Syn.ESym (Syn.SVar n) t) e)
+  pure (Syn.ExisQ n t e)
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
-  n  <- identifier
-  ts <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
-  pure $ Syn.Pred n ts
+  n  <- titularIdentifier
+  args <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
+  pure $ Syn.Pred n args
 
 parseSet :: Parser Syn.Expr
 parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkSet)
@@ -133,7 +129,7 @@ parseTypedef :: Parser Syn.Decl
 parseTypedef = do
   n <- titularIdentifier
   t <- parseTypeAssignment
-  pure $ Syn.Let (n, Syn.ESym (Syn.SConst n) t)
+  pure $ Syn.Typedef (n, Syn.ESym (Syn.SConst n), t)
 
 parseLet :: Parser Syn.Decl
 parseLet = do
@@ -156,8 +152,8 @@ factor = (parens parseExpr') <|>
          (parseUnivQ)        <|>
          (parseExisQ)        <|>
          (parseVar)          <|>
-         (parseLambda)       <|>
-         (parsePred)
+         (parseLambda)
+         -- (parsePred)
 
 binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
 binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp $ fun e0 e1)) assoc
@@ -190,7 +186,7 @@ parseExpr' :: Parser Syn.Expr
 parseExpr' = debugParse "app" parseApp
 
 parseFrag' :: Parser [Syn.Decl]
-parseFrag' = whitespace >> many parseDecl'
+parseFrag' = whitespace >> parseDecl' `sepBy` (spaces >> char ';' >> spaces)
 
 -------------------------------------------------------------------------------
 -- Entrypoints

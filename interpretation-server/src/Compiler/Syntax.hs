@@ -36,16 +36,16 @@ data Sym
 
 data Expr
   = ELit Lit
-  | ESym Sym Type
+  | ESym Sym
   | Lam Name Type Expr
   | App Expr Expr
   -- | Let Sym Expr
   | EBinOp BinOp
   | EUnOp UnOp
   | Pred Name [Expr]
-  | UnivQ Expr Expr
-  | ExisQ Expr Expr
-  | IotaQ Expr Expr
+  | UnivQ Name Type Expr
+  | ExisQ Name Type Expr
+  | IotaQ Name Type Expr
   | ESet SetExpr
   deriving (Eq, Ord)
 
@@ -91,20 +91,20 @@ tyBool = TyCon "t"
 pattern TyIntP = TyCon "n"
 pattern TyBoolP = TyCon "t"
 
-data Decl = Let (Name, Expr)
+data Decl = Let (Name, Expr) | Typedef (Name, Expr, Type)
 
 -- rename n to n' in e
 rename :: Name -> Name -> Expr -> Expr
 rename n n' e = case e of
-  ESym (SVar v) t   | n == v -> ESym (SVar n') t
-  ESym (SConst c) t | n == c -> ESym (SConst n') t
+  ESym (SVar v)   | n == v -> ESym (SVar n')
+  ESym (SConst c) | n == c -> ESym (SConst n')
   Pred name args  -> Pred (if n == name then n' else name) (map rn args)
-  EUnOp op        -> EUnOp $ renameUnOp op
+  EUnOp op        -> EUnOp $ renameUnOp ops
   EBinOp op       -> EBinOp $ renameBinOp op
   Lam arg ty e'   -> Lam arg ty (rn e')
-  UnivQ e0 e1     -> UnivQ e0 (rn e1)
-  ExisQ e0 e1     -> ExisQ e0 (rn e1)
-  IotaQ e0 e1     -> IotaQ e0 (rn e1)
+  UnivQ n t e1     -> UnivQ n t (rn e1)
+  ExisQ n t e1     -> ExisQ n t (rn e1)
+  IotaQ n t e1     -> IotaQ n t (rn e1)
   App e0 e1       -> App (rn e0) (rn e1)
   _               -> e
   where
@@ -125,15 +125,15 @@ rename n n' e = case e of
 -- sub a for every match(n) in e
 substitute' :: Expr -> (Name -> Bool) -> Expr -> Expr
 substitute' a match e = case e of
-  ESym (SVar n) _ | match n -> a
-  Pred name args            -> Pred name (map sub args)
-  EUnOp op                  -> EUnOp $ subUnOp op
-  EBinOp op                 -> EBinOp $ subBinOp op
-  Lam arg ty body           -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
-  UnivQ e0 e1               -> subQuant UnivQ e0 e1
-  ExisQ e0 e1               -> subQuant ExisQ e0 e1
-  IotaQ e0 e1               -> subQuant IotaQ e0 e1
-  App e0 e1                 -> App (sub e0) (sub e1)
+  ESym (SVar n) | match n -> a
+  Pred name args          -> Pred name (map sub args)
+  EUnOp op                -> EUnOp $ subUnOp op
+  EBinOp op               -> EBinOp $ subBinOp op
+  Lam arg ty body         -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
+  UnivQ n t e1             -> subQuant UnivQ n t e1
+  ExisQ n t e1             -> subQuant ExisQ n t e1
+  IotaQ n t e1             -> subQuant IotaQ n t e1
+  App e0 e1               -> App (sub e0) (sub e1)
   _ -> e
   where
     sub = substitute' a match
@@ -148,8 +148,8 @@ substitute' a match e = case e of
       Mul e0 e1 -> Mul (sub e0) (sub e1)
       Sub e0 e1 -> Sub (sub e0) (sub e1)
       Div e0 e1 -> Div (sub e0) (sub e1)
-    subQuant q e0 e1 = case e0 of
-      (ESym (SVar s) _) -> q e0 (substitute' a (\n -> match n && n /= s) e1)
+    subQuant q n t e1 = case e0 of
+      ESym (SVar s) -> q n t (substitute' a (\n -> match n && n /= s) e1)
 
 substitute :: Expr -> Name -> Expr -> Expr
 substitute a n e = substitute' a (\n' -> n == n') e

@@ -25,6 +25,8 @@ instance Show Value where
 type Evaluation = Identity Value
 type EvalCtx = Map.Map Syn.Name Value
 
+pattern Const n <- Syn.ESym (Syn.SConst n)
+
 eval :: EvalCtx -> Syn.Expr -> Evaluation
 eval ctx expr = let
 
@@ -57,11 +59,11 @@ eval ctx expr = let
     -- if we've hit a variable then it has passed through
     -- type checking and beta reduction, in which case it
     -- must be bound by a quantifier
-    Syn.ESym (Syn.SVar s) _ -> case Map.lookup s ctx of
+    Syn.ESym (Syn.SVar s) -> case Map.lookup s ctx of
       Nothing -> error ("Unbound variable: " ++ show s)
       Just v -> pure v
 
-    c@(Syn.ESym (Syn.SConst _) _) -> pure $ VFormula c
+    c@(Const _) -> pure $ VFormula c
 
     {-
     Syn.EUnOp op -> case op of
@@ -113,22 +115,22 @@ eval ctx expr = let
     l@(Syn.Lam _ _ _) -> pure $ VFunc l
 
     -- cbn beta reduction. let's make this cbv once the Value type is more stable
-    -- (λt:i → (λP:<v,t> → (∃e:v → T(e) & P(e)))) T <<v,t>,t> λP:<v,t> → (∃e:v → T(e) & P(e))
-    -- ((λy:e → (λx:e → (λe:v → stab(e, y, x)))) Caesar) Brutus <v,t> λe:v → stab(e, Caesar,  jkxccBrutus)
-    -- ((\t:<i> . (\P:<v,t> . (exists e:<v> . Time(e) & P(e)))) T:i) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
-    -- (\p:<v,t> . (exists e:<v> . Time(e) & p(e))) (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e)
-    -- (exists f:<v> . Time(f) & (((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)
-    --
-    -- exists f:<v> . Time(f) & ((((\y:<e> . (\x:<e> . (\e:<v> . Stab(e,y,x)))) Caesar:e) Brutus:e) f)
-    -- need evaluation of quantifiers!
-    Syn.App e0 e1 -> case e0 of
-      a@(Syn.App _ _) -> do
-        lhs <- eval ctx a
-        case lhs of
-          VFunc (Syn.Lam param _ body) -> eval ctx $ Syn.substitute e1 param body
-          nf -> error ("Tried to apply non fn: " ++ show nf ++ " to " ++ show e1)
-      Syn.Lam param _ body -> eval ctx $ Syn.substitute e1 param body
-      _ -> error ("Tried to apply non fn: " ++ show e0 ++ " to " ++ show e1)
+    Syn.App e0 e1 -> let
+      nf e = error ("Tried to apply non fn: " ++ show e ++ " to " ++ show e1)
+      betaReduce arg body = eval ctx $ Syn.substitute e1 arg body
+      mkVFormPredicate c args = case eval ctx e1 of
+        Identity (VFormula (Syn.ESym s t)) -> VFormula $ Syn.Pred c (args ++ [Syn.ESym s t])
+        e -> error ("Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ c)
+      in case e0 of
+        a@(Syn.App _ _) -> do
+          lhs <- eval ctx a
+          case lhs of
+            VFunc (Syn.Lam n _ body) -> betaReduce n body
+            VFormula (Syn.Pred n args) -> pure $ mkVFormPredicate n args
+            e -> nf e
+        Syn.Lam n _ body -> betaReduce n body
+        Const c -> pure $ mkVFormPredicate c []
+        e -> nf e
 
 runEval :: Syn.Expr -> Value
 runEval x = runIdentity (eval Map.empty x)

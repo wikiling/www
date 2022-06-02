@@ -17,7 +17,7 @@ process line = do
     Left err -> print err
     Right ex -> do
       print ex
-      let chk = checkTop [] ex
+      let chk = checkExpr [] ex
       case chk of
         Left tyerr -> print tyerr
         Right ty    -> do
@@ -31,7 +31,7 @@ processDecl line = do
     Left err -> print err
     Right d@(Let (name, ex)) -> do
       print d
-      let chk = checkTop [] ex
+      let chk = checkExpr [] ex
       case chk of
         Left tyerr -> print tyerr
         Right ty    -> do
@@ -45,5 +45,5 @@ main = runInputT defaultSettings loop
     mInput <- getInputLine "λ> "
     case mInput of
       Nothing -> outputStrLn "Goodbye."
-      Just input | length input > 0 -> (liftIO $ processDecl input) >> loop
+      Just input | length input > 0 -> (liftIO $ process input) >> loop
                  | otherwise        -> loop
