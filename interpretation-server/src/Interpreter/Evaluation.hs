@@ -46,9 +46,7 @@ eval ctx expr = let
   subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Syn.Expr -> Syn.Expr -> Evaluation
   subformulae2 f e0 e1 = pure $ VFormula $ Syn.EBinOp $ f (guardForm ctx e0) (guardForm ctx e1)
 
-  qFormula f e0 e1 = case e0 of
-    s@(Syn.ESym (Syn.SVar n) t) ->
-      pure $ VFormula $ f s $ guardForm (Map.insert n (VFormula s) ctx) e1
+  qFormula f n t e = pure $ VFormula $ f n t $ guardForm (Map.insert n (VFormula $ Syn.ESym $ Syn.SVar n) ctx) e
 
   arithFormula op e0 e1 = pure $ (VFormula . Syn.ELit . Syn.LInt) (op (guardInt e0) (guardInt e1))
 
@@ -56,7 +54,7 @@ eval ctx expr = let
     l@(Syn.ELit (Syn.LInt _)) -> pure $ VFormula l
     l@(Syn.ELit (Syn.LBool _)) -> pure $ VFormula l
 
-    -- if we've hit a variable then it has passed through
+    -- if we've hit a variable then it has escaped
     -- type checking and beta reduction, in which case it
     -- must be bound by a quantifier
     Syn.ESym (Syn.SVar s) -> case Map.lookup s ctx of
@@ -108,9 +106,9 @@ eval ctx expr = let
       Syn.SetMem e0 e1 -> subformulae2 Syn.SetMem e0 e1
 
     Syn.Pred n es -> subformulae (Syn.Pred n) es
-    Syn.UnivQ e0 e1 -> qFormula Syn.UnivQ e0 e1
-    Syn.ExisQ e0 e1 -> qFormula Syn.ExisQ e0 e1
-    Syn.IotaQ e0 e1 -> qFormula Syn.IotaQ e0 e1
+    Syn.UnivQ n t e -> qFormula Syn.UnivQ n t e
+    Syn.ExisQ n t e -> qFormula Syn.ExisQ n t e
+    Syn.IotaQ n t e -> qFormula Syn.IotaQ n t e
 
     l@(Syn.Lam _ _ _) -> pure $ VFunc l
 
@@ -119,7 +117,7 @@ eval ctx expr = let
       nf e = error ("Tried to apply non fn: " ++ show e ++ " to " ++ show e1)
       betaReduce arg body = eval ctx $ Syn.substitute e1 arg body
       mkVFormPredicate c args = case eval ctx e1 of
-        Identity (VFormula (Syn.ESym s t)) -> VFormula $ Syn.Pred c (args ++ [Syn.ESym s t])
+        Identity (VFormula (Syn.ESym s)) -> VFormula $ Syn.Pred c (args ++ [Syn.ESym s])
         e -> error ("Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ c)
       in case e0 of
         a@(Syn.App _ _) -> do

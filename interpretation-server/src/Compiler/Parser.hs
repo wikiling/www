@@ -126,13 +126,13 @@ parseSet :: Parser Syn.Expr
 parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkSet)
 
 parseTypedef :: Parser Syn.Decl
-parseTypedef = do
+parseTypedef = debugParse "typedef" $ do
   n <- titularIdentifier
   t <- parseTypeAssignment
   pure $ Syn.Typedef (n, Syn.ESym (Syn.SConst n), t)
 
 parseLet :: Parser Syn.Decl
-parseLet = do
+parseLet = debugParse "let" $ do
   string "["
   name <- identifier
   string "]"

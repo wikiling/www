@@ -99,7 +99,7 @@ rename n n' e = case e of
   ESym (SVar v)   | n == v -> ESym (SVar n')
   ESym (SConst c) | n == c -> ESym (SConst n')
   Pred name args  -> Pred (if n == name then n' else name) (map rn args)
-  EUnOp op        -> EUnOp $ renameUnOp ops
+  EUnOp op        -> EUnOp $ renameUnOp op
   EBinOp op       -> EBinOp $ renameBinOp op
   Lam arg ty e'   -> Lam arg ty (rn e')
   UnivQ n t e1     -> UnivQ n t (rn e1)
@@ -148,8 +148,7 @@ substitute' a match e = case e of
       Mul e0 e1 -> Mul (sub e0) (sub e1)
       Sub e0 e1 -> Sub (sub e0) (sub e1)
       Div e0 e1 -> Div (sub e0) (sub e1)
-    subQuant q n t e1 = case e0 of
-      ESym (SVar s) -> q n t (substitute' a (\n -> match n && n /= s) e1)
+    subQuant q n' t e1 = q n' t (substitute' a (\n'' -> match n'' && n'' /= n') e1)
 
 substitute :: Expr -> Name -> Expr -> Expr
 substitute a n e = substitute' a (\n' -> n == n') e

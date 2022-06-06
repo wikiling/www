@@ -42,7 +42,7 @@ instance Pretty Syn.Expr where
     Syn.ESym s -> ppr p s
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
-    Syn.Lam n t body -> pLam (char 'λ') n t body
+    Syn.Lam n t e -> pBinder (char 'λ') n t e
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
     Syn.EUnOp op -> case op of
       Syn.Neg e -> char '¬' <> (ppr p e)
@@ -60,15 +60,10 @@ instance Pretty Syn.Expr where
       Syn.SetDiff e0 e1 -> infixSep '∖' [e0,e1]
       Syn.SetSubS e0 e1 -> infixSep '⊆' [e0,e1]
       Syn.SetMem e0 e1 -> infixSep '∈' [e0,e1]
-    Syn.UnivQ e0 e1 -> pQuant (char '∀') e0 e1
-    Syn.ExisQ e0 e1 -> pQuant (char '∃') e0 e1
+    Syn.UnivQ n t e -> pBinder (char '∀') n t e
+    Syn.ExisQ n t e -> pBinder (char '∃') n t e
     where
-      pQuant sym e0 e1 = parensIf (p > 0) $
-        sym
-        <> ppr p e0
-        <+> text "→"
-        <+> ppr (p + 1) e1
-      pLam sym n t body = parensIf (p > 0) $
+      pBinder sym n t body = parensIf (p > 0) $
         sym <> text n <> char ':' <> ppr p t
         <+> text "→"
         <+> ppr (p + 1) body
@@ -84,7 +79,7 @@ instance Pretty Syn.Type where
 
 instance Pretty Syn.Decl where
   ppr p (Syn.Let (n,e)) = (text n) <+> (text "=") <+> ppr p e
-  ppr p (Syn.Let (n,e,t)) = (text n) <+> (text "=") <+> ppr p e <> ":" <+> pptype t
+  ppr p (Syn.Typedef (n,e,t)) = (text n) <+> (text "=") <+> ppr p e <> text ":" <+> ppr p t
 
 instance Show Syn.Expr where
   show = show . ppr 0
