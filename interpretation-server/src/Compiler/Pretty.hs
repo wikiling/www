@@ -32,14 +32,10 @@ instance Pretty Syn.Lit where
     Syn.LInt i  -> text (show i)
     Syn.LBool b -> text (show b)
 
-instance Pretty Syn.Sym where
-  ppr _ t = case t of
-    Syn.SVar v   -> text v
-    Syn.SConst c -> text c
-
 instance Pretty Syn.Expr where
   ppr p e = case e of
-    Syn.ESym s -> ppr p s
+    Syn.EVar s -> text s
+    Syn.EConst c t -> text c <> text ":" <> ppr p t
     Syn.ELit l  -> ppr p l
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
     Syn.Lam n t e -> pBinder (char 'λ') n t e
@@ -78,8 +74,8 @@ instance Pretty Syn.Type where
       isFunc _ = False
 
 instance Pretty Syn.Decl where
-  ppr p (Syn.Let (n,e)) = (text n) <+> (text "=") <+> ppr p e
-  ppr p (Syn.Typedef (n,e,t)) = (text n) <+> (text "=") <+> ppr p e <> text ":" <+> ppr p t
+  ppr p (Syn.Let n e) = (text n) <+> (text "=") <+> ppr p e
+  ppr p (Syn.Typedef n t) = (text n) <> text ":" <+> ppr p t
 
 instance Show Syn.Expr where
   show = show . ppr 0

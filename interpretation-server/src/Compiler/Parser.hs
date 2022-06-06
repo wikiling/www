@@ -77,12 +77,14 @@ lIdentifier = (lookAhead lower) >> identifier
 parseVar :: Parser Syn.Expr
 parseVar = debugParse "var" $ do
   i <- lIdentifier
-  pure $ Syn.ESym (Syn.SVar i)
+  pure $ Syn.EVar i
 
 parseConst :: Parser Syn.Expr
 parseConst = debugParse "const" $ do
   c <- titularIdentifier
-  pure $ Syn.ESym (Syn.SConst c)
+  s <- getState
+  t <- parseTypeAssignment <|> (pure $ s Map.! c)
+  pure $ Syn.EConst c t
 
 parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
 parseBinder = debugParse "binder" $ do
@@ -118,7 +120,7 @@ parseExisQ = debugParse "exisq" $ do
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
-  n  <- titularIdentifier
+  n <- titularIdentifier
   args <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
   pure $ Syn.Pred n args
 
@@ -129,7 +131,8 @@ parseTypedef :: Parser Syn.Decl
 parseTypedef = debugParse "typedef" $ do
   n <- titularIdentifier
   t <- parseTypeAssignment
-  pure $ Syn.Typedef (n, Syn.ESym (Syn.SConst n), t)
+  modifyState (Map.insert n t)
+  pure $ Syn.Typedef n t
 
 parseLet :: Parser Syn.Decl
 parseLet = debugParse "let" $ do
@@ -140,7 +143,7 @@ parseLet = debugParse "let" $ do
   reservedOp "="
   spaces
   expr <- parseExpr'
-  pure $ Syn.Let (name, expr)
+  pure $ Syn.Let name expr
 
 parseDecl' = parseTypedef <|> parseLet
 

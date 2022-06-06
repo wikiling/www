@@ -25,8 +25,6 @@ instance Show Value where
 type Evaluation = Identity Value
 type EvalCtx = Map.Map Syn.Name Value
 
-pattern Const n <- Syn.ESym (Syn.SConst n)
-
 eval :: EvalCtx -> Syn.Expr -> Evaluation
 eval ctx expr = let
 
@@ -46,7 +44,7 @@ eval ctx expr = let
   subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Syn.Expr -> Syn.Expr -> Evaluation
   subformulae2 f e0 e1 = pure $ VFormula $ Syn.EBinOp $ f (guardForm ctx e0) (guardForm ctx e1)
 
-  qFormula f n t e = pure $ VFormula $ f n t $ guardForm (Map.insert n (VFormula $ Syn.ESym $ Syn.SVar n) ctx) e
+  qFormula f n t e = pure $ VFormula $ f n t $ guardForm (Map.insert n (VFormula $ Syn.EVar n) ctx) e
 
   arithFormula op e0 e1 = pure $ (VFormula . Syn.ELit . Syn.LInt) (op (guardInt e0) (guardInt e1))
 
@@ -57,11 +55,11 @@ eval ctx expr = let
     -- if we've hit a variable then it has escaped
     -- type checking and beta reduction, in which case it
     -- must be bound by a quantifier
-    Syn.ESym (Syn.SVar s) -> case Map.lookup s ctx of
-      Nothing -> error ("Unbound variable: " ++ show s)
+    Syn.EVar n -> case Map.lookup n ctx of
+      Nothing -> error ("Unbound variable: " ++ show n)
       Just v -> pure v
 
-    c@(Const _) -> pure $ VFormula c
+    c@(Syn.EConst _ _) -> pure $ VFormula c
 
     {-
     Syn.EUnOp op -> case op of
@@ -117,7 +115,8 @@ eval ctx expr = let
       nf e = error ("Tried to apply non fn: " ++ show e ++ " to " ++ show e1)
       betaReduce arg body = eval ctx $ Syn.substitute e1 arg body
       mkVFormPredicate c args = case eval ctx e1 of
-        Identity (VFormula (Syn.ESym s)) -> VFormula $ Syn.Pred c (args ++ [Syn.ESym s])
+        Identity (VFormula (Syn.EVar s)) -> VFormula $ Syn.Pred c (args ++ [Syn.EVar s])
+        Identity (VFormula (Syn.EConst s t)) -> VFormula $ Syn.Pred c (args ++ [Syn.EConst s t])
         e -> error ("Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ c)
       in case e0 of
         a@(Syn.App _ _) -> do
@@ -127,7 +126,7 @@ eval ctx expr = let
             VFormula (Syn.Pred n args) -> pure $ mkVFormPredicate n args
             e -> nf e
         Syn.Lam n _ body -> betaReduce n body
-        Const c -> pure $ mkVFormPredicate c []
+        Syn.EConst c _ -> pure $ mkVFormPredicate c []
         e -> nf e
 
 runEval :: Syn.Expr -> Value

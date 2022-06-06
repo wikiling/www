@@ -58,8 +58,8 @@ check expr = case expr of
   Syn.ELit Syn.LInt{} -> pure Syn.tyInt
   Syn.ELit Syn.LBool{} -> pure Syn.tyBool
 
-  Syn.ESym (Syn.SConst n) -> lookupVar n
-  Syn.ESym (Syn.SVar n) -> lookupVar n
+  Syn.EConst n t -> pure t
+  Syn.EVar n -> lookupVar n
 
   Syn.EUnOp op -> case op of
     Syn.Neg e -> do

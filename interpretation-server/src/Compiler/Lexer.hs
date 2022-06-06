@@ -12,7 +12,7 @@ import qualified Compiler.Syntax as Syn
 -- State def
 -------------------------------------------------------------------------------
 
-type SymTypeState = Map.Map String Syn.Type
+type SymTypeState = Map.Map Syn.Name Syn.Type
 type Parser = Parsec String SymTypeState
 
 -------------------------------------------------------------------------------

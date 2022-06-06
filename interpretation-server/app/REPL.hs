@@ -29,7 +29,7 @@ processDecl line = do
   let decl = parseDecl line
   case decl of
     Left err -> print err
-    Right d@(Let (name, ex)) -> do
+    Right d@(Let name ex) -> do
       print d
       let chk = checkExpr [] ex
       case chk of
@@ -45,5 +45,5 @@ main = runInputT defaultSettings loop
     mInput <- getInputLine "λ> "
     case mInput of
       Nothing -> outputStrLn "Goodbye."
-      Just input | length input > 0 -> (liftIO $ process input) >> loop
+      Just input | length input > 0 -> (liftIO $ processDecl input) >> loop
                  | otherwise        -> loop

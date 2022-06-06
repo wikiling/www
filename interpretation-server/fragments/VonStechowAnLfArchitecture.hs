@@ -1,11 +1,10 @@
 
-[V] = \y:<e> . \x:<e> . \e:<v> . V(e)(y)(x);
+
+[V] = \y:<e> . \x:<e> . \e:<v> . V:<v,<e,<e,t>>>(e)(y)(x);
 [NP] = NP:<e>;
 
-Runtime:<e,i>;
+Runtime:<v,i>;
 
-[PF] = \t:<i> . \p:<v,t> . exists e:<v> . (Runtime(e) subs t) & (p e);
+[PF] = \t:<i> . \p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e);
 
-[t] = T:<i>;
-
--- [tClosure] = \t:i;
+[t] = T:<i>
