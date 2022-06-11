@@ -46,64 +46,60 @@ checkBinaryOp t e1 e2 = do
       else throwError $  Mismatch t2 t
     else throwError $  Mismatch t1 t
 
-checkQuant :: Syn.Name -> Syn.Type -> Syn.Expr -> Check Syn.Type 
-checkQuant n t e = do
-    bodyT <- inCtx (n,t) (check e)
-    if bodyT == Syn.tyBool
-      then pure Syn.tyBool
-      else throwError $ Mismatch bodyT Syn.tyBool
-
 check :: Syn.Expr -> Check Syn.Type
 check expr = case expr of
   Syn.ELit Syn.LInt{} -> pure Syn.tyInt
   Syn.ELit Syn.LBool{} -> pure Syn.tyBool
 
-  Syn.EConst n t -> pure t
-  Syn.EVar n -> lookupVar n
+  Syn.Const n t -> pure t
+  Syn.Var n -> lookupVar n
 
-  Syn.EUnOp op -> case op of
-    Syn.Neg e -> do
+  Syn.EUnOp op e -> case op of
+    Syn.Neg -> do
       t <- check e
       case t of
         Syn.TyBoolP -> pure Syn.tyBool
         _           -> throwError $ Mismatch t Syn.tyBool
-    Syn.SetCompl e -> check e
+    Syn.SetCompl -> check e
   
-  Syn.EBinOp op -> case op of
-    Syn.Add e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
-    Syn.Sub e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
-    Syn.Mul e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
-    Syn.Div e1 e2 -> checkBinaryOp Syn.tyInt e1 e2
-    Syn.Conj e1 e2 -> checkBinaryOp Syn.tyBool e1 e2
-    Syn.Disj e1 e2 -> checkBinaryOp Syn.tyBool e1 e2
-    Syn.Impl e1 e2 -> checkBinaryOp Syn.tyBool e1 e2
-    Syn.Eq e1 e2 -> do
+  Syn.EBinOp op e0 e1 -> case op of
+    Syn.Add -> checkBinaryOp Syn.tyInt e0 e1
+    Syn.Sub -> checkBinaryOp Syn.tyInt e0 e1
+    Syn.Mul -> checkBinaryOp Syn.tyInt e0 e1
+    Syn.Div -> checkBinaryOp Syn.tyInt e0 e1
+    Syn.Conj -> checkBinaryOp Syn.tyBool e0 e1
+    Syn.Disj -> checkBinaryOp Syn.tyBool e0 e1
+    Syn.Impl -> checkBinaryOp Syn.tyBool e0 e1
+    Syn.Eq -> do
+      t0 <- check e0
       t1 <- check e1
-      t2 <- check e2
-      case t1 of
-        (Syn.TyIntP)  | t2 == Syn.tyInt  -> pure Syn.tyInt
-        (Syn.TyBoolP) | t2 == Syn.tyBool -> pure Syn.tyBool
-        _ -> throwError $ Mismatch t1 t2
-    Syn.SetUnion e0 e1 -> checkSetEs e0 e1
-    Syn.SetInter e0 e1 -> checkSetEs e0 e1
-    Syn.SetDiff e0 e1 -> checkSetEs e0 e1
-    Syn.SetSubS e0 e1 -> checkSetEs e0 e1 >> pure Syn.tyBool
-    Syn.SetMem e0 e1 -> checkSetEs e0 e1 >> pure Syn.tyBool
+      case t0 of
+        (Syn.TyIntP)  | t1 == Syn.tyInt  -> pure Syn.tyInt
+        (Syn.TyBoolP) | t1 == Syn.tyBool -> pure Syn.tyBool
+        _ -> throwError $ Mismatch t0 t1
+    Syn.SetUnion -> checkSetEs e0 e1
+    Syn.SetInter -> checkSetEs e0 e1
+    Syn.SetDiff -> checkSetEs e0 e1
+    Syn.SetSubS -> checkSetEs e0 e1 >> pure Syn.tyBool
+    Syn.SetMem -> checkSetEs e0 e1 >> pure Syn.tyBool
 
   Syn.Pred n ns -> mapM_ check ns >> pure Syn.tyBool
 
-  Syn.UnivQ n t e -> checkQuant n t e
-  Syn.ExisQ n t e -> checkQuant n t e
+  Syn.EQuant q n t e -> do
+    bodyT <- inCtx (n,t) (check e)
+    if bodyT == Syn.tyBool
+      then pure Syn.tyBool
+      else throwError $ Mismatch bodyT Syn.tyBool
 
   Syn.Lam n t e -> do
     bodyT <- inCtx (n,t) (check e)
-    pure (Syn.TyFunc t bodyT)
+    pure (Syn.TyFun t bodyT)
 
   Syn.App e0 e1 -> do
     t0 <- check e0
     t1 <- check e1
     case t0 of
-      (Syn.TyFunc a b) | a == t1   -> pure b
+      (Syn.TyFun a b) | a == t1   -> pure b
                        | otherwise -> throwError $ Mismatch t1 a
       t -> throwError $ NotFunction e0 e1
   

@@ -21,8 +21,8 @@ type CheckResult = E.Either Ty.TypeError (String, LexicalEntry)
 
 typeCheckAccumulator :: Ty.Ctx -> Syn.Decl -> (Ty.Ctx, CheckResult)
 typeCheckAccumulator ctx decl = case decl of
-  -- this is a hack -- in the future typedefs will not be limited to consts
-  Syn.Typedef name ty -> (ctx ++ [(name,ty)], Right (name, (Syn.EConst name ty, ty)))
+  -- tech debt -- in the future typedefs will not be limited to consts
+  Syn.Typedef name ty -> (ctx ++ [(name,ty)], Right (name, (Syn.Const name ty, ty)))
   Syn.Let name expr -> case Ty.checkExpr ctx expr of
     Right ty -> (ctx ++ [(name,ty)], Right (name, (expr, ty)))
     Left err -> (ctx, Left err)

@@ -7,4 +7,8 @@ Runtime:<v,i>;
 
 [PF] = \t:<i> . \p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e);
 
-[t] = T:<i>
+[t] = T:<i>;
+
+[id] = \x:<A> . x;
+
+-- [bindt] = \t:<i>;

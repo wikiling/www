@@ -20,21 +20,15 @@ import Compiler.Lexer
 import qualified Compiler.Syntax as Syn
 import Compiler.Pretty
 
-println msg = trace (show msg) $ pure ()
-seeNext :: Int -> ParsecT String u Identity ()
-seeNext n = do
-  s <- getParserState
-  let out = take n (stateInput s)
-  println out
-
 debugParse :: String -> Parser a -> Parser a
 debugParse s p = (tryParse s) *> p <* (completeParse s)
   where
     tryParse p = parserTrace ("parsing " ++ p ++ "...")
     completeParse p = parserTrace ("ok, parsed " ++ p)
 
-whitespace :: Parser ()
 whitespace = void $ many $ oneOf " \n\t"
+titularIdentifier = (lookAhead upper) >> identifier
+lIdentifier = (lookAhead lower) >> identifier
 
 -------------------------------------------------------------------------------
 -- Types
@@ -46,13 +40,14 @@ tyatom = tylit <|> (angles parseType)
 tylit :: Parser Syn.Type
 tylit = (reservedOp "t" >> pure Syn.tyBool)
      <|> (reservedOp "n" >> pure Syn.tyInt)
-     <|> (identifier >>= \t -> pure $ Syn.TyCon t)
+     <|> (titularIdentifier >>= (pure . Syn.TyVar . Syn.TV))
+     <|> (identifier >>= (pure . Syn.TyCon))
 
 parseType :: Parser Syn.Type
 parseType = Ex.buildExpressionParser tyops tyatom
   where
     infixOp x f = Ex.Infix (reservedOp x >> pure f)
-    tyops = [ [infixOp "," Syn.TyFunc Ex.AssocRight]
+    tyops = [ [infixOp "," Syn.TyFun Ex.AssocRight]
             ]
 
 -------------------------------------------------------------------------------
@@ -71,20 +66,17 @@ parseNumber = debugParse "number" $ do
   n <- natural
   pure (Syn.ELit (Syn.LInt (fromIntegral n)))
 
-titularIdentifier = (lookAhead upper) >> identifier
-lIdentifier = (lookAhead lower) >> identifier
-
 parseVar :: Parser Syn.Expr
 parseVar = debugParse "var" $ do
   i <- lIdentifier
-  pure $ Syn.EVar i
+  pure $ Syn.Var i
 
 parseConst :: Parser Syn.Expr
 parseConst = debugParse "const" $ do
   c <- titularIdentifier
   s <- getState
   t <- parseTypeAssignment <|> (pure $ s Map.! c)
-  pure $ Syn.EConst c t
+  pure $ Syn.Const c t
 
 parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
 parseBinder = debugParse "binder" $ do
@@ -110,13 +102,13 @@ parseUnivQ :: Parser Syn.Expr
 parseUnivQ = debugParse "univq" $ do
   reservedOp "forall"
   (n,t,e) <- parseBinder
-  pure (Syn.UnivQ n t e)
+  pure $ Syn.EQuant Syn.Univ n t e
 
 parseExisQ :: Parser Syn.Expr
 parseExisQ = debugParse "exisq" $ do
   reservedOp "exists"
   (n,t,e) <- parseBinder
-  pure (Syn.ExisQ n t e)
+  pure $ Syn.EQuant Syn.Exis n t e
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
@@ -158,11 +150,11 @@ factor = (parens parseExpr') <|>
          (parseLambda)
          -- (parsePred)
 
-binOp :: String -> (Syn.Expr -> Syn.Expr -> Syn.BinOp) -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
-binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp $ fun e0 e1)) assoc
+binOp :: String -> Syn.BinOp -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
+binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp fun e0 e1)) assoc
 
-unOp :: String -> (Syn.Expr -> Syn.UnOp) -> Ex.Operator String SymTypeState Identity Syn.Expr
-unOp name fun = Ex.Prefix (reservedOp name >> (pure $ \e -> Syn.EUnOp $ fun e))
+unOp :: String -> Syn.UnOp -> Ex.Operator String SymTypeState Identity Syn.Expr
+unOp name fun = Ex.Prefix (reservedOp name >> (pure $ \e -> Syn.EUnOp fun e))
 
 opTable :: Ex.OperatorTable String SymTypeState Identity Syn.Expr
 opTable = [ [ binOp "*" Syn.Mul Ex.AssocLeft
