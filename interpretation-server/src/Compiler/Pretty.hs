@@ -37,13 +37,17 @@ instance Pretty Syn.Lit where
     Syn.LInt i  -> text (show i)
     Syn.LBool b -> text (show b)
 
+instance Pretty Syn.Binder where
+  ppr _ (Syn.Binder n t) = text n <+> text "→"
+
 instance Pretty Syn.Expr where
   ppr p e = case e of
     Syn.Var s -> text s
     Syn.Const c _ -> text c
     Syn.ELit l  -> ppr p l
+    Syn.EBinder b -> ppr p b
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
-    Syn.Lam n t e -> pBinder (char 'λ') n t e
+    Syn.Lam b e -> pBinder (char 'λ') b e
     Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
     Syn.EUnOp op e -> case op of
       Syn.Neg -> char '¬' <> (ppr p e)
@@ -61,14 +65,12 @@ instance Pretty Syn.Expr where
       Syn.SetDiff -> infixSep '∖' [e0,e1]
       Syn.SetSubS -> infixSep '⊆' [e0,e1]
       Syn.SetMem -> infixSep '∈' [e0,e1]
-    Syn.EQuant q n t e -> case q of
-      Syn.Univ -> pBinder (char '∀') n t e
-      Syn.Exis -> pBinder (char '∃') n t e
+    Syn.EQuant q b e -> case q of
+      Syn.Univ -> pBinder (char '∀') b e
+      Syn.Exis -> pBinder (char '∃') b e
     where
-      pBinder sym n t body = parensIf (p > 0) $
-        sym <> text n
-        <+> text "→"
-        <+> ppr (p + 1) body
+      pBinder sym b body = parensIf (p > 0) $
+        sym <> ppr p b <+> ppr (p + 1) body
       infixSep c = hsep . (intersperse $ (char c)) . (map $ ppr p)
 
 instance Pretty Syn.TyVar where

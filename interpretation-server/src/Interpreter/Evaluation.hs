@@ -86,26 +86,29 @@ eval ctx expr = let
 
     Syn.Pred n es -> subformulae (Syn.Pred n) es
 
-    Syn.EQuant q n t e -> pure $ VFormula $ Syn.EQuant q n t $ guardForm (Map.insert n (VFormula $ Syn.Var n) ctx) e
+    Syn.EBinder (Syn.Binder n _) -> error ("Can't evaluate a binder without a body: " ++ n)
 
-    l@(Syn.Lam _ _ _) -> pure $ VFunc l
+    Syn.EQuant q b@(Syn.Binder n t) e -> pure $ VFormula $ Syn.EQuant q b $ guardForm (Map.insert n (VFormula $ Syn.Var n) ctx) e
+
+    l@Syn.Lam{} -> pure $ VFunc l
 
     -- cbn beta reduction. let's make this cbv once the Value type is more stable
     Syn.App e0 e1 -> let
       nf e = error ("Tried to apply non fn: " ++ show e ++ " to " ++ show e1)
       betaReduce arg body = eval ctx $ Syn.substitute e1 arg body
       mkVFormPredicate c args = case eval ctx e1 of
-        Identity (VFormula (Syn.Var s)) -> VFormula $ Syn.Pred c (args ++ [Syn.Var s])
-        Identity (VFormula (Syn.Const s t)) -> VFormula $ Syn.Pred c (args ++ [Syn.Const s t])
+        Identity (VFormula a@(Syn.Var s)) -> mk a
+        Identity (VFormula a@(Syn.Const s t)) -> mk a
         e -> error ("Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ c)
+        where mk arg = VFormula $ Syn.Pred c (args ++ [arg])
       in case e0 of
         a@(Syn.App _ _) -> do
           lhs <- eval ctx a
           case lhs of
-            VFunc (Syn.Lam n _ body) -> betaReduce n body
+            VFunc (Syn.Lam (Syn.Binder n _) body) -> betaReduce n body
             VFormula (Syn.Pred n args) -> pure $ mkVFormPredicate n args
             e -> nf e
-        Syn.Lam n _ body -> betaReduce n body
+        Syn.Lam (Syn.Binder n _) body -> betaReduce n body
         Syn.Const c _ -> pure $ mkVFormPredicate c []
         e -> nf e
 

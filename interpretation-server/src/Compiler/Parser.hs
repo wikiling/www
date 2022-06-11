@@ -78,20 +78,25 @@ parseConst = debugParse "const" $ do
   t <- parseTypeAssignment <|> (pure $ s Map.! c)
   pure $ Syn.Const c t
 
-parseBinder :: Parser (Syn.Name, Syn.Type, Syn.Expr)
+parseEBinder :: Parser Syn.Expr
+parseEBinder = debugParse "ebinder" $ do
+  b <- parseBinder
+  pure $ Syn.EBinder b
+
+parseBinder :: Parser Syn.Binder
 parseBinder = debugParse "binder" $ do
-  x <- identifier
+  reservedOp "\\"
+  n <- identifier
   t <- parseTypeAssignment
-  modifyState (Map.insert x t)
-  reservedOp "."
-  e <- parseExpr'
-  pure (x,t,e)
+  modifyState (Map.insert n t)
+  pure $ Syn.Binder n t
 
 parseLambda :: Parser Syn.Expr
 parseLambda = debugParse "lambda" $ do
-  reservedOp "\\"
-  (n,t,e) <- parseBinder
-  pure (Syn.Lam n t e)
+  b <- parseBinder
+  reservedOp "."
+  e <- parseExpr'
+  pure (Syn.Lam b e)
 
 parseApp :: Parser Syn.Expr
 parseApp = do
@@ -101,14 +106,18 @@ parseApp = do
 parseUnivQ :: Parser Syn.Expr
 parseUnivQ = debugParse "univq" $ do
   reservedOp "forall"
-  (n,t,e) <- parseBinder
-  pure $ Syn.EQuant Syn.Univ n t e
+  b <- parseBinder
+  reservedOp "."
+  e <- parseExpr'
+  pure $ Syn.EQuant Syn.Univ b e
 
 parseExisQ :: Parser Syn.Expr
 parseExisQ = debugParse "exisq" $ do
   reservedOp "exists"
-  (n,t,e) <- parseBinder
-  pure $ Syn.EQuant Syn.Exis n t e
+  b <- parseBinder
+  reservedOp "."
+  e <- parseExpr'
+  pure $ Syn.EQuant Syn.Exis b e
 
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
@@ -144,10 +153,11 @@ factor = (parens parseExpr') <|>
          (parseBool)         <|>
          (parseNumber)       <|>
          (try parseConst)    <|>
-         (parseUnivQ)        <|>
-         (parseExisQ)        <|>
+         (try parseUnivQ)        <|>
+         (try parseExisQ)        <|>
          (parseVar)          <|>
-         (parseLambda)
+         (try parseLambda)       <|>
+         parseEBinder
          -- (parsePred)
 
 binOp :: String -> Syn.BinOp -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr

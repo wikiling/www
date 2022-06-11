@@ -167,9 +167,9 @@ infer expr = case expr of
       t <- lookupEnv x
       return (t, [])
 
-  Syn.Lam x _ e -> do
+  Syn.Lam (Syn.Binder n t) e -> do
     tv <- fresh
-    (t, c) <- inEnv (x, Syn.Forall [] tv) (infer e)
+    (t, c) <- inEnv (n, Syn.Forall [] tv) (infer e)
     return (tv `Syn.TyFun` t, c)
 
   Syn.App e0 e1 -> do
@@ -194,7 +194,7 @@ infer expr = case expr of
 
     return (tv, c1 ++ c2 ++ [(u1, u2), (t1, t2)])
   
-  Syn.EQuant q n t e -> do
+  Syn.EQuant q (Syn.Binder n t) e -> do
     tv <- fresh
     (t, c) <- inEnv (n, Syn.Forall [] tv) (infer e)
     return (Syn.tyBool, c)

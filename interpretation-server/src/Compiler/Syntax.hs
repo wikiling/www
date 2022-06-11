@@ -3,6 +3,7 @@
 module Compiler.Syntax (
   Name,
   Lit(..),
+  Binder(..),
   Expr(..),
   UnOp(..),
   BinOp(..),
@@ -30,16 +31,19 @@ data Lit
   | LBool Bool
   deriving (Show, Eq, Ord)
 
+data Binder = Binder Name Type deriving (Eq,Ord)
+
 data Expr
   = ELit Lit
   | Var Name
   | Const Name Type
-  | Lam Name Type Expr
+  | Lam Binder Expr
   | App Expr Expr
+  | EBinder Binder
   | EBinOp BinOp Expr Expr
   | EUnOp UnOp Expr
   | Pred Name [Expr]
-  | EQuant Quant Name Type Expr
+  | EQuant Quant Binder Expr
   | ESet SetExpr
   deriving (Eq, Ord)
 
@@ -101,8 +105,8 @@ rename n n' e = case e of
   Pred name args  -> Pred (if n == name then n' else name) (map rn args)
   EUnOp op e'     -> EUnOp op (rn e')
   EBinOp op e0 e1 -> EBinOp op (rn e0) (rn e1)
-  Lam arg ty e'   -> Lam arg ty (rn e')
-  EQuant q n t e' -> EQuant q n t (rn e')
+  Lam b e'   -> Lam b (rn e')
+  EQuant q b e' -> EQuant q b (rn e')
   App e0 e1       -> App (rn e0) (rn e1)
   _               -> e
   where
@@ -115,8 +119,8 @@ substitute' a match e = case e of
   Pred name args      -> Pred name (map sub args)
   EUnOp op e'         -> EUnOp op (sub e')
   EBinOp op e0 e1     -> EBinOp op (sub e0) (sub e1)
-  Lam arg ty body     -> Lam arg ty (substitute' a (\n -> match n && n /= arg) body)
-  EQuant q n t e'     -> EQuant q n t (substitute' a (\n' -> match n' && n' /= n) e')
+  Lam b@(Binder n _) body     -> Lam b (substitute' a (\n' -> match n' && n' /= n) body)
+  EQuant q b@(Binder n _) e'  -> EQuant q b (substitute' a (\n' -> match n' && n' /= n) e')
   App e0 e1           -> App (sub e0) (sub e1)
   _ -> e
   where

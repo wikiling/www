@@ -54,6 +54,8 @@ check expr = case expr of
   Syn.Const n t -> pure t
   Syn.Var n -> lookupVar n
 
+  Syn.EBinder _ -> pure $ Syn.TyCon "<binder>"
+
   Syn.EUnOp op e -> case op of
     Syn.Neg -> do
       t <- check e
@@ -85,13 +87,13 @@ check expr = case expr of
 
   Syn.Pred n ns -> mapM_ check ns >> pure Syn.tyBool
 
-  Syn.EQuant q n t e -> do
+  Syn.EQuant q (Syn.Binder n t) e -> do
     bodyT <- inCtx (n,t) (check e)
     if bodyT == Syn.tyBool
       then pure Syn.tyBool
       else throwError $ Mismatch bodyT Syn.tyBool
 
-  Syn.Lam n t e -> do
+  Syn.Lam (Syn.Binder n t) e -> do
     bodyT <- inCtx (n,t) (check e)
     pure (Syn.TyFun t bodyT)
 

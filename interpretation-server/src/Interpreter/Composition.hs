@@ -83,13 +83,11 @@ functionApp cnl b1 b2 = case b1 of
 
 compose :: ConstituencyTree -> CompositionTree
 compose (Node cnl@(CNodeLabel label _) c1 c2) = case (c1,c2) of
-  (Leaf, Leaf) -> case label of  -- terminal
-    "" -> pure $ (semNode Stdlib.idFn Stdlib.idTy (Sem.runEval Stdlib.idFn) cnl) Leaf Leaf
-    _ -> do
-      lex <- checkLexicon label
-      case lex of
-        Nothing -> pure $ leafConstNode cnl
-        Just (expr, ty) -> pure $ (semNode expr ty (Sem.runEval expr) cnl) Leaf Leaf
+  (Leaf, Leaf) -> do             -- terminal
+    lex <- checkLexicon label
+    case lex of
+      Nothing -> pure $ leafConstNode cnl
+      Just (expr, ty) -> pure $ (semNode expr ty (Sem.runEval expr) cnl) Leaf Leaf
   (_, Leaf) -> preTerm cnl c1    -- one child
   (Leaf, _) -> preTerm cnl c2
   _ -> do                        -- two children
