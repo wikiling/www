@@ -9,6 +9,4 @@ Runtime:<v,i>;
 
 [t] = T:<i>;
 
-[id] = \x:<A> . x;
-
--- [bindt] = \t:<i>;
+[id] = \x:<A> . x

@@ -19,7 +19,6 @@ import Control.Monad.Reader
 
 import Compiler.Pretty
 import qualified Compiler.Syntax as Syn
-import qualified Compiler.Parser as Parse
 import qualified Compiler.Inference as Inf
 import qualified Compiler.TypeEnv as TyEnv
 import qualified Interpreter.Fragment as Frag
@@ -87,9 +86,7 @@ compose (Node cnl@(CNodeLabel label _) c1 c2) = case (c1,c2) of
   (Leaf, Leaf) -> case label of  -- terminal
     "" -> pure $ (semNode Stdlib.idFn Stdlib.idTy (Sem.runEval Stdlib.idFn) cnl) Leaf Leaf
     _ -> do
-      traceM $ "checking ... " ++ label
       lex <- checkLexicon label
-      traceM $ "found ... " ++ show lex
       case lex of
         Nothing -> pure $ leafConstNode cnl
         Just (expr, ty) -> pure $ (semNode expr ty (Sem.runEval expr) cnl) Leaf Leaf
