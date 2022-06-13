@@ -64,7 +64,7 @@ mapAccumTree f s t = go s t
       (sr, r') = go sl r
       in (s', (T.Node x' l' r'))
 
--- | Compose an expression tree from a constituency tree, pulling lexical
+-- | Construct an expression tree from a constituency tree, pulling lexical
 --   entries from the fragment.
 mkExprTree :: Frag.Fragment -> ConstituencyTree -> ExprTree
 mkExprTree frag cTree = runReader (mk cTree) frag
@@ -90,6 +90,20 @@ mkExprTree frag cTree = runReader (mk cTree) frag
         Nothing -> Nothing
 
       pure $ T.Node (eLabel, cl) T.Leaf terminalNode
+
+-- | Type an expression tree
+typeExprTree :: ExprTree -> TypedExprTree
+typeExprTree e = snd $ mapAccumTree ty TyEnv.empty e
+  where
+    ty :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, ExprLabel)
+    ty env l = case l of
+      ECLabel{} -> (env, l)
+      (EExprLabel e _ cl) -> case Inf.inferExpr env e of
+        Left err -> (env, l) -- fixme! don't swallow errors
+        Right gTy@(S.Forall as ty) -> (env', EExprLabel e ty cl) where
+          env' = case e of
+            (S.EBinder (S.Binder n t)) -> TyEnv.extend env (n, gTy)
+            _ -> env
 
 pattern FnNode tDom tRan e <- T.Node (Just e _, _) (S.TyFun tDom tRan), _) _ _
 pattern ArgNode t e <- T.Node (Just e t, _) _ _
@@ -125,28 +139,13 @@ composeExprTree (T.Node (_, cl) c0 c1) = case c0 of
     saturate e t = T.Node (Just e t, cl) c0 c1
     fallthru = T.Node (Nothing, cl) c0 c1
 
--- | Type an expression tree
-typeExprTree :: ExprTree -> TypedExprTree
-typeExprTree e = snd $ mapAccumTree infer TyEnv.empty e
-  where
-    infer :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, ExprLabel)
-    infer env l = case l of
-      ECLabel{} -> (env, l)
-      (EExprLabel e _ cl) -> case Inf.inferExpr env e of
-        Left err -> (env, l) -- fixme! don't swallow errors
-        Right gTy@(S.Forall as ty) -> (env', EExprLabel e ty cl) where
-          env' = case e of
-            (S.EBinder (S.Binder n t)) -> TyEnv.extend env (n, gTy)
-            _ -> env
-
 -- | Evaluate an expression tree.
 evalExprTree :: TypedExprTree -> SemanticTree
-evalExprTree e = fmap compose e
+evalExprTree e = fmap eval e
   where
-    compose :: ExprLabel -> SemanticLabel
-    compose eLabel = case eLabel of
+    eval :: ExprLabel -> SemanticLabel
+    eval eLabel = case eLabel of
       EExprLabel expr ty cl -> SLabel expr ty (Sem.runEval expr) cl
       ECLabel cl -> SCLabel cl
-
 
 compose f c = (evalExprTree . composeExprTree . typeExprTree) (mkExprTree f c)
