@@ -32,14 +32,20 @@ type Pos = String
 data ConstituencyLabel = CLabel String Pos deriving (Show, Generic)
 type ConstituencyTree = T.Tree ConstituencyLabel
 
--- | Intermediate composition (an AST)
-type FragmentCtx = Reader Frag.Fragment
-data ExprLabel = EExprLabel S.Expr S.Type ConstituencyLabel | ECLabel ConstituencyLabel
-type ExprTree = T.Tree ExprLabel
+-- | Initial composition: instantiate lexical entries
+type ExprTree = T.Tree (Maybe S.Expr, ConstituencyLabel)
+
+-- | Intermediate composition: assign types
+data TypedExprLabel = TELabel S.Expr S.Type
+type TypedExprTree = T.Tree (Maybe TypedExprLabel, ConstituencyLabel)
+
+-- | Intermediate composition: apply composition operations
 
 -- | Evaluated composition
-data SemanticLabel = SLabel S.Expr S.Type Sem.Value ConstituencyLabel | SCLabel ConstituencyLabel
-type SemanticTree = T.Tree SemanticLabel
+data SemanticLabel = SLabel S.Expr S.Type Sem.Value
+type SemanticTree = T.Tree (Maybe SemanticLabel, ConstituencyLabel)
+
+type FragmentCtx = Reader Frag.Fragment
 
 instance Show SemanticLabel where
   show (SLabel expr ty v _) = show expr ++ " " ++ show ty ++ " " ++ show v
@@ -47,69 +53,6 @@ instance Show SemanticLabel where
 
 checkLexicon :: S.Name -> FragmentCtx (Maybe Frag.LexicalEntry)
 checkLexicon name = asks (Map.lookup name)
-
-pattern FnNode tDom tRan e <- T.Node (EExprLabel e (S.TyFun tDom tRan) _) _ _
-pattern ArgNode t e <- T.Node (EExprLabel e t _) _ _
-pattern BindNode b <- T.Node (EExprLabel (S.EBinder b) _ _) _ _
-
--- | Compose an AST from a constituency tree, pulling lexical
---   entries from the grammar and combining nodes via our composition operations.
-composeExprTree :: Frag.Fragment -> ConstituencyTree -> ExprTree
-composeExprTree frag cTree = runReader (compose cTree) frag
-  where
-    compose :: ConstituencyTree -> FragmentCtx ExprTree
-    compose (T.Node cl@(CLabel label _) c0 c1) = case (c0,c1) of
-      (T.Leaf, T.Leaf) -> do
-        lex <- checkLexicon label
-        case lex of
-          Nothing -> pure $ T.Node (ECLabel cl) T.Leaf T.Leaf
-          Just (expr, ty) -> pure $ T.Node (EExprLabel expr ty cl) T.Leaf T.Leaf
-      (_, T.Leaf) -> composePreTerm cl c0
-      (T.Leaf, _) -> composePreTerm cl c1
-      _ -> do
-        e0 <- compose c0
-        e1 <- compose c1
-        pure $ composeBinary cl e0 e1
-
-    composePreTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
-    composePreTerm cl@(CLabel pre _) terminal = do
-      terminalNode <- compose terminal
-      case terminalNode of
-        T.Node (ECLabel (CLabel label _)) _ _ -> do
-          lex <- checkLexicon pre
-          case lex of
-            Just (expr, ty) -> pure $ T.Node (EExprLabel (S.rename pre label expr) ty cl) T.Leaf terminalNode
-            Nothing        -> pure $ T.Node (ECLabel cl) T.Leaf terminalNode
-        _ -> pure $ T.Node (ECLabel cl) T.Leaf terminalNode
-
-    composeBinary :: ConstituencyLabel -> ExprTree -> ExprTree -> ExprTree
-    composeBinary cl c0 c1 = case c0 of
-      BindNode b -> bindNode b c1
-      FnNode t1Dom t1Ran e0 -> case c1 of
-        BindNode b -> bindNode b c0
-        ArgNode t2 e1 | Inf.unifiable t1Dom t2 -> appNode e0 e1
-        _ -> fallthru
-      ArgNode t1 e0 -> case c1 of
-        BindNode b -> bindNode b c0
-        FnNode t2Dom t2Ran e1 | Inf.unifiable t2Dom t1 -> appNode e1 e0
-        _ -> fallthru
-      _ -> fallthru
-      where
-        bindNode :: S.Binder -> ExprTree -> ExprTree
-        bindNode b@(S.Binder _ t0) (T.Node l _ _) = case l of
-          EExprLabel e t1 _ -> T.Node (EExprLabel (S.Lam b e) (S.TyFun t0 t1) cl) c0 c1
-          _ -> fallthru
-
-        appNode :: S.Expr -> S.Expr -> ExprTree
-        appNode e0 e1 = let
-          e = (S.App e0 e1)
-          t = case Inf.inferExpr TyEnv.empty e of
-            Right (S.Forall _ ty) -> ty
-            Left e -> S.TyCon $ show e -- fixme
-          in
-            T.Node (EExprLabel e t cl) c0 c1
-
-        fallthru = T.Node (ECLabel cl) c0 c1
 
 mapAccumTree :: (c -> a -> (c, b)) -> c -> T.Tree a -> (c, T.Tree b)
 mapAccumTree f s t = go s t
@@ -121,10 +64,69 @@ mapAccumTree f s t = go s t
       (sr, r') = go sl r
       in (s', (T.Node x' l' r'))
 
--- | Type an expression tree. The tree's expression nodes already
---   have types, but here we resolve any type variables to their most
---   general type.
-typeExprTree :: ExprTree -> ExprTree
+-- | Compose an expression tree from a constituency tree, pulling lexical
+--   entries from the fragment.
+mkExprTree :: Frag.Fragment -> ConstituencyTree -> ExprTree
+mkExprTree frag cTree = runReader (mk cTree) frag
+  where
+    mk :: ConstituencyTree -> FragmentCtx ExprTree
+    mk (T.Node cl@(CLabel cLabel _) c0 c1) = case (c0,c1) of
+      (T.Leaf, T.Leaf) -> do
+        eLabel <- checkLexicon cLabel
+        pure $ T.Node (eLabel, cl) T.Leaf T.Leaf
+      (_, T.Leaf) -> preTerm cl c0
+      (T.Leaf, _) -> preTerm cl c1
+      _ -> T.Node (Nothing, cl) c0 c1
+
+    preTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
+    preTerm cl@(CLabel cLabelPre _) terminal = do
+      terminalNode <- compose terminal
+      lex <- checkLexicon cLabelPre
+
+      let eLabel = case lex of
+        Just expr -> case terminalNode of
+          T.Node (ECLabel (CLabel cLabelTerm _)) _ _ -> Just S.rename cLabelPre cLabelTerm expr
+          _ -> Nothing
+        Nothing -> Nothing
+
+      pure $ T.Node (eLabel, cl) T.Leaf terminalNode
+
+pattern FnNode tDom tRan e <- T.Node (Just e _, _) (S.TyFun tDom tRan), _) _ _
+pattern ArgNode t e <- T.Node (Just e t, _) _ _
+pattern BindNode b <- T.Node (Just (S.EBinder b)) _, _) _ _
+
+-- | Build expressions upward via our composition operations.
+composeExprTree :: TypedExprTree -> TypedExprTree
+composeExprTree (T.Node (_, cl) c0 c1) = case c0 of
+  BindNode b -> bindNode b c1
+  FnNode t1Dom t1Ran e0 -> case c1 of
+    BindNode b -> bindNode b c0
+    ArgNode t2 e1 | Inf.unifiable t1Dom t2 -> appNode e0 e1
+    _ -> fallthru
+  ArgNode t1 e0 -> case c1 of
+    BindNode b -> bindNode b c0
+    FnNode t2Dom t2Ran e1 | Inf.unifiable t2Dom t1 -> appNode e1 e0
+    _ -> fallthru
+  _ -> fallthru
+  where
+    bindNode :: S.Binder -> TypedExprTree -> TypedExprTree
+    bindNode b@(S.Binder _ t0) (T.Node l _ _) = case l of
+      EExprLabel e t1 _ -> saturate (S.Lam b e) (S.TyFun t0 t1)
+      _ -> fallthru
+
+    appNode :: S.Expr -> S.Expr -> TypedExprTree
+    appNode e0 e1 = saturate e t
+      where
+        e = (S.App e0 e1)
+        t = case Inf.inferExpr TyEnv.empty e of
+          Right (S.Forall _ ty) -> ty
+          Left e -> S.TyCon $ show e -- fixme
+
+    saturate e t = T.Node (Just e t, cl) c0 c1
+    fallthru = T.Node (Nothing, cl) c0 c1
+
+-- | Type an expression tree
+typeExprTree :: ExprTree -> TypedExprTree
 typeExprTree e = snd $ mapAccumTree infer TyEnv.empty e
   where
     infer :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, ExprLabel)
@@ -138,8 +140,8 @@ typeExprTree e = snd $ mapAccumTree infer TyEnv.empty e
             _ -> env
 
 -- | Evaluate an expression tree.
-composeSemanticTree :: ExprTree -> SemanticTree
-composeSemanticTree e = fmap compose e
+evalExprTree :: TypedExprTree -> SemanticTree
+evalExprTree e = fmap compose e
   where
     compose :: ExprLabel -> SemanticLabel
     compose eLabel = case eLabel of
@@ -147,4 +149,4 @@ composeSemanticTree e = fmap compose e
       ECLabel cl -> SCLabel cl
 
 
-compose f c = (composeSemanticTree . typeExprTree) (composeExprTree f c)
+compose f c = (evalExprTree . composeExprTree . typeExprTree) (mkExprTree f c)

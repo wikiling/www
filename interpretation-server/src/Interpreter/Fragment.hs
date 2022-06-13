@@ -9,16 +9,7 @@ import qualified Compiler.TypeEnv as TyEnv
 import qualified Compiler.Syntax as S
 import qualified Compiler.Parser as Parse
 
-type LexicalEntry = (S.Expr, S.Type)
-type Fragment = Map.Map String LexicalEntry
-
-data LoadError = LParError Parse.ParseError
-               | LTyError [Inf.TypeError]
-instance Show LoadError where
-  show (LParError e) = show e
-  show (LTyError e) = show e
-
-type CheckResult = E.Either Inf.TypeError (String, LexicalEntry)
+type Fragment = Map.Map String S.Expr
 
 {-
 typeCheckAccumulator :: TyEnv.Env -> S.Decl -> (TyEnv.Env, CheckResult)
@@ -44,9 +35,9 @@ loadDecls decls = do
 toTup (S.Let n e) = (n,e)
 toTup (S.Typedef n t) = (n, S.Const n t)
 
-loadFragment :: FilePath -> IO (E.Either LoadError Fragment)
+loadFragment :: FilePath -> IO (E.Either Parse.ParseError Fragment)
 loadFragment fp = do
   fragIO <- Parse.parseFrag fp
   case fragIO of
-    Left parErr -> pure $ Left (LParError parErr)
+    Left parErr -> pure $ Left parErr
     Right decls -> pure $ Right (Map.fromList $ map toTup decls)
