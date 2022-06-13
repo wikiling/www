@@ -1,8 +1,8 @@
 module Interpreter.CompositionSpec where
-
+import Data.Foldable (toList)
 import Control.Monad (void)
 -- import Test.Hspec
-import Interpreter.Composition
+import Interpreter.Compose
 import Interpreter.Fragment
 import Compiler.Syntax
 import Compiler.Parser
@@ -10,8 +10,9 @@ import Compiler.Inference
 import Compiler.Pretty
 import qualified Compiler.TypeEnv as TE
 
+
 node :: String -> String -> ConstituencyTree -> ConstituencyTree -> ConstituencyTree
-node s pos c1 c2 = Node (CNodeLabel s pos) c1 c2
+node s pos c1 c2 = Node (CLabel s pos) c1 c2
 leaf n pos = node n pos Leaf Leaf
 
 isLet decl = case decl of
@@ -34,7 +35,8 @@ main = do
   let s = node "S" "-1" (leaf "bindt" "0") aspP
 
   -- let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); [NP] = NP:<e>; Duration:<v,i>; [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Duration e) subs t) & (p e); [t] = T:<i>"
-  let fragE = parseFragS "[bindt] = \\t:<i>; \n [V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); \n [NP] = NP:<e>; \n Runtime:<v,i>; \n [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); \n [t] = T:<i>; \n [id] = \\x:<A> . x"
+  -- let fragE = parseFragS "[bindt] = \\t:<i>; \n [V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); \n [NP] = NP:<e>; \n Runtime:<v,i>; \n [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); \n [t] = T:<i>; \n [id] = \\x:<A> . x"
+  let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); [NP] = NP:<e>; Runtime:<v,i>; [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); [t] = t; [id] = \\x:<A> . x; [bindt] = \\t:<i>"
   
   case fragE of
     Left e -> print e
@@ -43,15 +45,4 @@ main = do
       ppInferDecls decls
       case loadDecls decls of
         Left e -> print e
-        Right frag -> printTree $ runComposition frag s
-      
-{-
-       ┌Just Noun e "Brutus"┐
-       │                    └Just Brutus e "Brutus"
-Nothing┤
-       │       ┌Just λy:e -> (λx:e -> (λe:v -> Stab(e, y, x))) e -> e -> v -> t "stab"┐
-       │       │                                                                      └Just stab e "stab"
-       └Nothing┤
-               └Just Noun e "Caesar"┐
-                                    └Just Caesar e "Caesar"
--}
+        Right frag -> print $ show (head $ toList $ compose frag s)

@@ -115,6 +115,9 @@ instance Show TE.Env where
 instance Show Syn.Expr where
   show = show . ppr 0
 
+instance Show Syn.Binder where
+  show (Syn.Binder n t) = show n ++ ": " ++ show t
+
 instance Show Syn.Type where
   show = show . ppr 0
 

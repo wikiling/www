@@ -15,12 +15,14 @@ data Value
   | VBool Bool
   | VFormula Syn.Expr
   | VFunc Syn.Expr
+  | VClosure Syn.Binder
 
 instance Show Value where
   show (VInt x) = show x
   show (VFormula exp) = show exp
   show (VBool x) = show x
   show (VFunc exp) = show exp
+  show (VClosure b) = show b
 
 type Evaluation = Identity Value
 type EvalCtx = Map.Map Syn.Name Value
@@ -72,27 +74,19 @@ eval ctx expr = let
       Syn.Mul -> arithFormula (*) e0 e1
       Syn.Sub -> arithFormula (-) e0 e1
       Syn.Div -> arithFormula (div) e0 e1
-
-      Syn.Eq -> subformulae2 Syn.Eq e0 e1
-      Syn.Conj -> subformulae2 Syn.Conj e0 e1
-      Syn.Disj -> subformulae2 Syn.Disj e0 e1
-      Syn.Impl -> subformulae2 Syn.Impl e0 e1
-
-      Syn.SetUnion -> subformulae2 Syn.SetUnion e0 e1
-      Syn.SetInter -> subformulae2 Syn.SetInter e0 e1
-      Syn.SetDiff -> subformulae2 Syn.SetDiff e0 e1
-      Syn.SetSubS -> subformulae2 Syn.SetSubS e0 e1
-      Syn.SetMem -> subformulae2 Syn.SetMem e0 e1
+      _ -> subformulae2 op e0 e1
 
     Syn.Pred n es -> subformulae (Syn.Pred n) es
 
-    Syn.EBinder (Syn.Binder n _) -> error ("Can't evaluate a binder without a body: " ++ n)
+    Syn.EBinder b -> pure $ VClosure b
 
     Syn.EQuant q b@(Syn.Binder n t) e -> pure $ VFormula $ Syn.EQuant q b $ guardForm (Map.insert n (VFormula $ Syn.Var n) ctx) e
 
     l@Syn.Lam{} -> pure $ VFunc l
 
-    -- cbn beta reduction. let's make this cbv once the Value type is more stable
+    -- | Cbn beta reduction. let's make this cbv once the Value type is more stable.
+    --   We also construct Syn.Pred expressions out of applications of Syn.Const
+    --   to expressions.
     Syn.App e0 e1 -> let
       nf e = error ("Tried to apply non fn: " ++ show e ++ " to " ++ show e1)
       betaReduce arg body = eval ctx $ Syn.substitute e1 arg body

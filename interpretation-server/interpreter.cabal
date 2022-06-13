@@ -32,6 +32,7 @@ library
       Compiler.Types
       FOL.AristotelianInfEngine
       FOL.KB
+      Interpreter.Compose
       Interpreter.Composition
       Interpreter.Evaluation
       Interpreter.Fragment

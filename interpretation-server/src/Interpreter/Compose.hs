@@ -1,6 +1,17 @@
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE DeriveGeneric #-}
 
-module Interpreter.Compose () where
+module Interpreter.Compose (
+  T.Tree(..),
+  ConstituencyTree,
+  ConstituencyLabel(..),
+  ExprTree,
+  ExprLabel(..),
+  SemanticTree,
+  SemanticLabel(..),
+  compose,
+  T.printTree
+  ) where
 
 import GHC.Generics
 import qualified Data.Map as Map
@@ -29,6 +40,10 @@ type ExprTree = T.Tree ExprLabel
 -- | Evaluated composition
 data SemanticLabel = SLabel S.Expr S.Type Sem.Value ConstituencyLabel | SCLabel ConstituencyLabel
 type SemanticTree = T.Tree SemanticLabel
+
+instance Show SemanticLabel where
+  show (SLabel expr ty v _) = show expr ++ " " ++ show ty ++ " " ++ show v
+  show (SCLabel _) = "<empty>"
 
 checkLexicon :: S.Name -> FragmentCtx (Maybe Frag.LexicalEntry)
 checkLexicon name = asks (Map.lookup name)
@@ -73,17 +88,17 @@ composeExprTree frag cTree = runReader (compose cTree) frag
       FnNode t1Dom t1Ran e0 -> case c1 of
         BindNode b -> bindNode b c0
         ArgNode t2 e1 | Inf.unifiable t1Dom t2 -> appNode e0 e1
-        _ -> noAppNode
+        _ -> fallthru
       ArgNode t1 e0 -> case c1 of
         BindNode b -> bindNode b c0
         FnNode t2Dom t2Ran e1 | Inf.unifiable t2Dom t1 -> appNode e1 e0
-        _ -> noAppNode
-      _ -> noAppNode
+        _ -> fallthru
+      _ -> fallthru
       where
         bindNode :: S.Binder -> ExprTree -> ExprTree
         bindNode b@(S.Binder _ t0) (T.Node l _ _) = case l of
           EExprLabel e t1 _ -> T.Node (EExprLabel (S.Lam b e) (S.TyFun t0 t1) cl) c0 c1
-          _ -> noAppNode
+          _ -> fallthru
 
         appNode :: S.Expr -> S.Expr -> ExprTree
         appNode e0 e1 = let
@@ -94,28 +109,33 @@ composeExprTree frag cTree = runReader (compose cTree) frag
           in
             T.Node (EExprLabel e t cl) c0 c1
 
-        noAppNode = T.Node (ECLabel cl) c0 c1
+        fallthru = T.Node (ECLabel cl) c0 c1
 
-mapAccumTree :: (c -> a -> b) -> c -> T.Tree a -> (c, T.Tree b)
-mapAccumTree f s t = go t
+mapAccumTree :: (c -> a -> (c, b)) -> c -> T.Tree a -> (c, T.Tree b)
+mapAccumTree f s t = go s t
   where
-    go T.Leaf = (s, T.Leaf)
-    go T.Node x l r = let
+    go s T.Leaf = (s, T.Leaf)
+    go s (T.Node x l r) = let
       (s', x') = f s x
       (sl, l') = go s l
       (sr, r') = go sl r
-      in (s', (T.Node x') l' r'
+      in (s', (T.Node x' l' r'))
 
--- | Type an expression tree.
+-- | Type an expression tree. The tree's expression nodes already
+--   have types, but here we resolve any type variables to their most
+--   general type.
 typeExprTree :: ExprTree -> ExprTree
 typeExprTree e = snd $ mapAccumTree infer TyEnv.empty e
   where
-    infer :: TyEnv.Env -> ExprLabel -> ExprLabel
+    infer :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, ExprLabel)
     infer env l = case l of
-      ECLabel{} -> (env,l)
-      EExprLabel e _ cl -> case Inf.inferExpr env e of
-        Left err -> l -- fixme!
-        Right ty -> inferTop (TyEnv.extend env (name, ty)) xs
+      ECLabel{} -> (env, l)
+      (EExprLabel e _ cl) -> case Inf.inferExpr env e of
+        Left err -> (env, l) -- fixme! don't swallow errors
+        Right gTy@(S.Forall as ty) -> (env', EExprLabel e ty cl) where
+          env' = case e of
+            (S.EBinder (S.Binder n t)) -> TyEnv.extend env (n, gTy)
+            _ -> env
 
 -- | Evaluate an expression tree.
 composeSemanticTree :: ExprTree -> SemanticTree
@@ -123,5 +143,8 @@ composeSemanticTree e = fmap compose e
   where
     compose :: ExprLabel -> SemanticLabel
     compose eLabel = case eLabel of
-      EExprLabel expr ty cl -> SLabel (Sem.runEval expr) ty cl
+      EExprLabel expr ty cl -> SLabel expr ty (Sem.runEval expr) cl
       ECLabel cl -> SCLabel cl
+
+
+compose f c = (composeSemanticTree . typeExprTree) (composeExprTree f c)

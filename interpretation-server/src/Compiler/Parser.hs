@@ -80,12 +80,12 @@ parseConst = debugParse "const" $ do
 
 parseEBinder :: Parser Syn.Expr
 parseEBinder = debugParse "ebinder" $ do
+  reservedOp "\\"
   b <- parseBinder
   pure $ Syn.EBinder b
 
 parseBinder :: Parser Syn.Binder
 parseBinder = debugParse "binder" $ do
-  reservedOp "\\"
   n <- identifier
   t <- parseTypeAssignment
   modifyState (Map.insert n t)
@@ -93,6 +93,7 @@ parseBinder = debugParse "binder" $ do
 
 parseLambda :: Parser Syn.Expr
 parseLambda = debugParse "lambda" $ do
+  reservedOp "\\"
   b <- parseBinder
   reservedOp "."
   e <- parseExpr'

@@ -161,6 +161,8 @@ infer expr = case expr of
   Syn.ELit (Syn.LInt _)  -> return (Syn.tyInt, [])
   Syn.ELit (Syn.LBool _) -> return (Syn.tyBool, [])
 
+  Syn.EBinder (Syn.Binder n t) -> pure (t, [])
+
   Syn.Const c t -> pure (t, [])
 
   Syn.Var x -> do
