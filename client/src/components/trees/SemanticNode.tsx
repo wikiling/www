@@ -17,42 +17,41 @@ export type SemanticNodeProps = {
 const SemanticNode = forwardRef<
   SVGGElement, SemanticNodeProps
 >(({ treeId, node, className = "" }, ref) => {
-  const { id: nodeId, value: nodeValue, constituencyLabel: nodeConstituencyLabel } = node.data;
-  const id = `${treeId}-${nodeId}`;
+  const data = node.data;
+  const id = `${treeId}-${data.id}`;
 
-  const { width: constituencyLabelWidth } = getTextDimensions(nodeConstituencyLabel);
+  const { width: syntaxLabelWidth } = getTextDimensions(data.syntaxLabel);
 
   const offset = 5;
 
-  const constituencyLabelX = node.x - constituencyLabelWidth / 2,
-        constituencyLabelY = node.y - NODE_LINE_HEIGHT + offset;
+  const syntaxLabelX = node.x - syntaxLabelWidth / 2,
+        syntaxLabelY = node.y - NODE_LINE_HEIGHT + offset;
 
-  const { width: typeWidth } = getTextDimensions(node.data.type);
+  const { width: typeWidth } = getTextDimensions(data.type);
   const typeX = node.x - typeWidth / 2,
         typeY = node.y + offset;
 
-  const { width: valueWidth } = getTextDimensions(nodeValue);
+  const { width: valueWidth } = getTextDimensions(data.value);
   const valueX = node.x - valueWidth / 2,
         valueY = node.y + NODE_LINE_HEIGHT + offset;
 
   return (
     <g ref={ref} className={`node ${className}`} data-id={id}>
-      {nodeValue === nodeConstituencyLabel
-        ? <text x={valueX} y={node.y}>
-            {nodeValue}
-          </text>
-        : <>
-            <text x={constituencyLabelX} y={constituencyLabelY}>
-              {nodeConstituencyLabel}
-            </text>
-            <text x={typeX} y={typeY} fontWeight="500">
-              {node.data.type}
-            </text>
-            <text x={valueX} y={valueY} fontWeight="500">
-              {nodeValue}
-            </text>
-          </>
+      <text x={syntaxLabelX} y={syntaxLabelY}>
+        {data.syntaxLabel}
+      </text>
+      <text x={typeX} y={typeY} fill={data.typeError ? "red" : "black"} fontWeight="500">
+        {data.type ?? (data.typeError ? `type error: ${data.typeError}` : '')}
+      </text>
+      <text x={valueX} y={valueY} fill={data.typeError ? "red" : "black"} fontWeight="500">
+        {data.value ?? (data.valuationError ? `evaluation error: ${data.valuationError}` : '')}
+      </text>
+      {(data.typeError || data.valuationError) &&
+        <text x={valueX} y={valueY} fontWeight="500">
+          {data.expr}
+        </text>
       }
+
     </g>
   );
 });

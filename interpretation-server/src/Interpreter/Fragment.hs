@@ -1,4 +1,4 @@
-module Interpreter.Fragment where
+module Interpreter.Fragment (Fragment, loadFragment, mkFragment) where
 
 import System.IO
 import qualified Data.Either as E
@@ -31,13 +31,17 @@ loadDecls decls = do
     else Left (LTyError errs)
 -}
 
-  -- tech debt -- in the future typedefs will not be limited to consts
-toTup (S.Let n e) = (n,e)
-toTup (S.Typedef n t) = (n, S.Const n t)
+mkFragment :: [S.Decl] -> Fragment
+mkFragment = Map.fromList . (map toTup)
+  where
+    toTup d = case d of
+      S.Let n e -> (n,e)
+      -- fixme: in the future typedefs will not be limited to consts
+      S.Typedef n t -> (n, S.Const n t)
 
 loadFragment :: FilePath -> IO (E.Either Parse.ParseError Fragment)
 loadFragment fp = do
   fragIO <- Parse.parseFrag fp
   case fragIO of
     Left parErr -> pure $ Left parErr
-    Right decls -> pure $ Right (Map.fromList $ map toTup decls)
+    Right decls -> pure $ Right $ mkFragment decls

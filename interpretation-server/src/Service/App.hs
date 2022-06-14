@@ -38,7 +38,7 @@ import Service.Settings (SiteConfig (..))
 import Service.Serializers
 
 import qualified Interpreter.Fragment as Frag
-import qualified Interpreter.Composition as Comp
+import qualified Interpreter.Compose as Comp
 
 type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] Comp.ConstituencyTree :> Post '[JSON] FragmentHandlerResp
 
@@ -75,7 +75,7 @@ fragmentHandler fragmentId syntaxTree = do
 
   case fragIO of
     Left err -> throwError err400
-    Right frag -> pure $ FragmentHandlerResp { semanticTree = Comp.runComposition frag syntaxTree }
+    Right frag -> pure $ FragmentHandlerResp { semanticTree = Comp.compose frag syntaxTree }
 
 fragmentApi :: Proxy FragmentAPI
 fragmentApi = Proxy

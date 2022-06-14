@@ -3,9 +3,7 @@ import "./YScrollable.scss";
 
 const YScrollable: React.FC = ({ children }) => (
   <div className="y-scrollable">
-
-      {children}
-
+    {children}
   </div>
 );
 

@@ -11,7 +11,7 @@ import qualified Data.ByteString.Lazy as BS
 import Data.Vector ((!))
 
 import qualified Interpreter.Fragment as F
-import qualified Interpreter.Composition as C
+import qualified Interpreter.Compose as C
 import Compiler.Pretty
 
 parseConstituencyNode :: Object -> Parser C.ConstituencyTree
@@ -20,7 +20,7 @@ parseConstituencyNode obj = do
   pos <- obj .: "id"
   cs <- obj .:? "children"
   (c1, c2) <- parseConstituencyChildren cs
-  pure $ C.Node (C.CNodeLabel label pos) c1 c2
+  pure $ C.Node (C.CLabel label pos) c1 c2
 
 parseConstituencyChildren :: Maybe Array -> Parser (C.ConstituencyTree, C.ConstituencyTree)
 parseConstituencyChildren Nothing = pure $ (C.Leaf, C.Leaf)
@@ -39,22 +39,35 @@ instance FromJSON C.ConstituencyTree where
   parseJSON = withObject "SyntaxTree" parseConstituencyNode
 
 instance ToJSON C.SemanticTree where
-  toJSON (C.Node s c1 c2) = object $ (serializeSemNodeLabel s) <> [ "children" .= (map toJSON (filter isNode [c1,c2])) ]
+  toJSON (C.Node s c1 c2) = object $ (serializeSemLabel s) <> [ "children" .= (map toJSON (filter isNode [c1,c2])) ]
     where
       isNode :: C.SemanticTree -> Bool
       isNode s = case s of
         C.Leaf -> False
         _ -> True
-      serializeSemNodeLabel :: C.SemanticNodeLabel -> [Pair]
-      serializeSemNodeLabel s = case s of
-        C.EmptySemNode cnl -> [ "expr" .= Null, "type" .= Null, "value" .= Null ]
-                              <> serializeConstituencyNodeLabel cnl
-        C.EvaluatedSemNode expr ty v cnl -> [ "expr" .= show expr, "type" .= show ty, "value" .= show v ]
-                                            <> serializeConstituencyNodeLabel cnl
-      serializeConstituencyNodeLabel :: C.ConstituencyNodeLabel -> [Pair]
-      serializeConstituencyNodeLabel (C.CNodeLabel l pos) = ["constituencyLabel" .= l, "id" .= pos ]
+      
+      serializeSemLabel :: C.SemanticLabel -> [Pair]
+      serializeSemLabel (sl, el, cl) = (serializeEvaluationLabel sl)
+                                    <> (serializeTypeCheckedExprLabel el)
+                                    <> (serializeConstituencyLabel cl)
 
-instance ToJSON C.ConstituencyNodeLabel where
+      serializeEvaluationLabel :: Maybe C.EvaluatedExpr -> [Pair]
+      serializeEvaluationLabel sl = case sl of
+        Nothing -> [ "value" .= Null, "error" .= Null ]
+        Just (Right v) -> [ "value" .= show v, "valuationError" .= Null ]
+        Just (Left err) -> [ "value" .= Null, "valuationError" .= show err ]
+                            
+      serializeTypeCheckedExprLabel :: Maybe C.TypeCheckedExpr -> [Pair]
+      serializeTypeCheckedExprLabel el = case el of
+        Nothing -> [ "expr" .= Null, "type" .= Null ]
+        Just te -> case te of
+          C.TypedExpr e t -> [ "expr" .= show e, "type" .= show t, "typeError" .= Null ]
+          C.UntypedExpr e err -> [ "expr" .= show e, "type" .= Null, "typeError" .= show err ]
+
+      serializeConstituencyLabel :: C.ConstituencyLabel -> [Pair]
+      serializeConstituencyLabel (C.CLabel l pos) = ["syntaxLabel" .= l, "id" .= pos ]
+
+instance ToJSON C.ConstituencyLabel where
   toEncoding = genericToEncoding defaultOptions
 
 instance ToJSON C.ConstituencyTree where

@@ -23,8 +23,10 @@ export type SemanticTree = {
   id: TreeID
   expr: string
   type: string
+  typeError: string
   value: string
-  constituencyLabel: string
+  valuationError: string
+  syntaxLabel: string
   children?: [SemanticTree]
 }
 

@@ -142,19 +142,19 @@ letters = [1..] >>= flip replicateM ['a'..'z']
 
 fresh :: Infer Syn.Type
 fresh = do
-    s <- get
-    put s{count = count s + 1}
-    return $ Syn.TyVar $ Syn.TV (letters !! count s)
+  s <- get
+  put s{count = count s + 1}
+  return $ Syn.TyVar $ Syn.TV (letters !! count s)
 
 instantiate ::  Syn.TyScheme -> Infer Syn.Type
 instantiate (Syn.Forall as t) = do
-    as' <- mapM (const fresh) as
-    let s = Subst $ Map.fromList $ zip as as'
-    return $ apply s t
+  as' <- mapM (const fresh) as
+  let s = Subst $ Map.fromList $ zip as as'
+  return $ apply s t
 
 generalize :: Env -> Syn.Type -> Syn.TyScheme
 generalize env t  = Syn.Forall as t
-    where as = Set.toList $ ftv t `Set.difference` ftv env
+  where as = Set.toList $ ftv t `Set.difference` ftv env
 
 infer :: Syn.Expr -> Infer (Syn.Type, [Constraint])
 infer expr = case expr of
@@ -166,8 +166,8 @@ infer expr = case expr of
   Syn.Const c t -> pure (t, [])
 
   Syn.Var x -> do
-      t <- lookupEnv x
-      return (t, [])
+    t <- lookupEnv x
+    return (t, [])
 
   Syn.Lam (Syn.Binder n t) e -> do
     tv <- fresh

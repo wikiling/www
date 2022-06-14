@@ -7,8 +7,11 @@ module Interpreter.Compose (
   ConstituencyLabel(..),
   ExprTree,
   ExprLabel(..),
+  TypeCheckedExpr(..),
+  TypeCheckedExprLabel,
   SemanticTree,
   SemanticLabel(..),
+  EvaluatedExpr(..),
   compose,
   T.printTree
   ) where
@@ -33,36 +36,38 @@ data ConstituencyLabel = CLabel String Pos deriving (Show, Generic)
 type ConstituencyTree = T.Tree ConstituencyLabel
 
 -- | Initial composition: instantiate lexical entries
-type ExprTree = T.Tree (Maybe S.Expr, ConstituencyLabel)
+type ExprLabel = (Maybe S.Expr, ConstituencyLabel)
+type ExprTree = T.Tree ExprLabel
 
--- | Intermediate composition: assign types
-data TypedExprLabel = TELabel S.Expr S.Type
-type TypedExprTree = T.Tree (Maybe TypedExprLabel, ConstituencyLabel)
-
--- | Intermediate composition: apply composition operations
+-- | Intermediate composition: assign types, do transformations.
+data TypeCheckedExpr = TypedExpr S.Expr S.Type | UntypedExpr S.Expr Inf.TypeError
+type TypeCheckedExprLabel = (Maybe TypeCheckedExpr, ConstituencyLabel)
+type TypeCheckedExprTree = T.Tree TypeCheckedExprLabel
 
 -- | Evaluated composition
-data SemanticLabel = SLabel S.Expr S.Type Sem.Value
-type SemanticTree = T.Tree (Maybe SemanticLabel, ConstituencyLabel)
+type EvaluatedExpr = Either Sem.EvalError Sem.Value
+type SemanticLabel = (Maybe EvaluatedExpr, Maybe TypeCheckedExpr, ConstituencyLabel)
+type SemanticTree = T.Tree SemanticLabel
 
 type FragmentCtx = Reader Frag.Fragment
 
-instance Show SemanticLabel where
-  show (SLabel expr ty v _) = show expr ++ " " ++ show ty ++ " " ++ show v
-  show (SCLabel _) = "<empty>"
+instance Show TypeCheckedExpr where
+  show (TypedExpr e ty) = show e ++ ": " ++ show ty
+  show (UntypedExpr e err) = show e ++ ": " ++ show err
 
-checkLexicon :: S.Name -> FragmentCtx (Maybe Frag.LexicalEntry)
+checkLexicon :: S.Name -> FragmentCtx (Maybe S.Expr)
 checkLexicon name = asks (Map.lookup name)
 
+-- | Preorder
 mapAccumTree :: (c -> a -> (c, b)) -> c -> T.Tree a -> (c, T.Tree b)
 mapAccumTree f s t = go s t
   where
     go s T.Leaf = (s, T.Leaf)
     go s (T.Node x l r) = let
-      (s', x') = f s x
-      (sl, l') = go s l
-      (sr, r') = go sl r
-      in (s', (T.Node x' l' r'))
+      (s', l') = go s l
+      (s'', r') = go s' r
+      (s''', x') = f s'' x
+      in (s''', (T.Node x' l' r'))
 
 -- | Construct an expression tree from a constituency tree, pulling lexical
 --   entries from the fragment.
@@ -76,76 +81,98 @@ mkExprTree frag cTree = runReader (mk cTree) frag
         pure $ T.Node (eLabel, cl) T.Leaf T.Leaf
       (_, T.Leaf) -> preTerm cl c0
       (T.Leaf, _) -> preTerm cl c1
-      _ -> T.Node (Nothing, cl) c0 c1
+      _ -> do
+        e0 <- mk c0
+        e1 <- mk c1
+        pure $ T.Node (Nothing, cl) e0 e1
 
+    -- | Given a preterminal φ and terminal ψ, if ψ has a lexical entry then
+    --   assign it to φ, otherwise if φ has a lexical entry, instantiate it with ψ.
+    --   In the latter case, if φ is of the form `[C] = \x . C x`, where C is a
+    --   syntactic constant, substitute ψ for C in φ.
     preTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
     preTerm cl@(CLabel cLabelPre _) terminal = do
-      terminalNode <- compose terminal
+      termNode <- mk terminal
       lex <- checkLexicon cLabelPre
 
-      let eLabel = case lex of
-        Just expr -> case terminalNode of
-          T.Node (ECLabel (CLabel cLabelTerm _)) _ _ -> Just S.rename cLabelPre cLabelTerm expr
-          _ -> Nothing
-        Nothing -> Nothing
+      let mkTermNode label = pure $ T.Node (label, cl) T.Leaf termNode
 
-      pure $ T.Node (eLabel, cl) T.Leaf terminalNode
+      case lex of
+        Just preExpr -> case termNode of
+          T.Node (Just termExpr, _) _ _ -> mkTermNode $ Just termExpr
+          T.Node (Nothing, (CLabel cLabelTerm _)) _ _-> mkTermNode $ Just $ S.rename cLabelPre cLabelTerm preExpr
+        _ -> mkTermNode Nothing
 
--- | Type an expression tree
-typeExprTree :: ExprTree -> TypedExprTree
-typeExprTree e = snd $ mapAccumTree ty TyEnv.empty e
-  where
-    ty :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, ExprLabel)
-    ty env l = case l of
-      ECLabel{} -> (env, l)
-      (EExprLabel e _ cl) -> case Inf.inferExpr env e of
-        Left err -> (env, l) -- fixme! don't swallow errors
-        Right gTy@(S.Forall as ty) -> (env', EExprLabel e ty cl) where
-          env' = case e of
+-- | Type an expression tree, accumulating binders in preorder.
+typeCheckExprTree :: ExprTree -> TypeCheckedExprTree
+typeCheckExprTree eTree = snd $ mapAccumTree ty TyEnv.empty eTree
+  where 
+    ty :: TyEnv.Env -> ExprLabel -> (TyEnv.Env, TypeCheckedExprLabel)
+    ty env l@(eLabel, cLabel) = case eLabel of
+      Nothing -> (env, (Nothing, cLabel))
+      Just expr -> case Inf.inferExpr env expr of
+        Left err -> (env, (Just $ UntypedExpr expr err, cLabel))
+        Right gTy@(S.Forall as ty) -> (env', (Just $ (TypedExpr expr ty), cLabel)) where
+          env' = case expr of
             (S.EBinder (S.Binder n t)) -> TyEnv.extend env (n, gTy)
             _ -> env
 
-pattern FnNode tDom tRan e <- T.Node (Just e _, _) (S.TyFun tDom tRan), _) _ _
-pattern ArgNode t e <- T.Node (Just e t, _) _ _
-pattern BindNode b <- T.Node (Just (S.EBinder b)) _, _) _ _
+pattern LegalFnNode tDom tRan e <- T.Node (Just (TypedExpr e (S.TyFun tDom tRan)), cl) _ _
+pattern LegalArgNode t e <- T.Node (Just (TypedExpr e t), cl) _ _
+pattern LegalBindNode b <- T.Node (Just (TypedExpr (S.EBinder b) t), cl) _ _
 
--- | Build expressions upward via our composition operations.
-composeExprTree :: TypedExprTree -> TypedExprTree
-composeExprTree (T.Node (_, cl) c0 c1) = case c0 of
-  BindNode b -> bindNode b c1
-  FnNode t1Dom t1Ran e0 -> case c1 of
-    BindNode b -> bindNode b c0
-    ArgNode t2 e1 | Inf.unifiable t1Dom t2 -> appNode e0 e1
+tryCompositionOps :: ConstituencyLabel -> TypeCheckedExprTree -> TypeCheckedExprTree -> TypeCheckedExprTree
+tryCompositionOps cl c0 c1 = case c0 of
+  LegalBindNode b -> mkBindNode b c1
+  LegalFnNode t1Dom t1Ran e0 -> case c1 of
+    LegalBindNode b -> mkBindNode b c0
+    LegalArgNode t2 e1 | Inf.unifiable t1Dom t2 -> mkAppNode e0 e1
     _ -> fallthru
-  ArgNode t1 e0 -> case c1 of
-    BindNode b -> bindNode b c0
-    FnNode t2Dom t2Ran e1 | Inf.unifiable t2Dom t1 -> appNode e1 e0
+  LegalArgNode t1 e0 -> case c1 of
+    LegalBindNode b -> mkBindNode b c0
+    LegalFnNode t2Dom t2Ran e1 | Inf.unifiable t2Dom t1 -> mkAppNode e1 e0
     _ -> fallthru
   _ -> fallthru
   where
-    bindNode :: S.Binder -> TypedExprTree -> TypedExprTree
-    bindNode b@(S.Binder _ t0) (T.Node l _ _) = case l of
-      EExprLabel e t1 _ -> saturate (S.Lam b e) (S.TyFun t0 t1)
+    mkBindNode :: S.Binder -> TypeCheckedExprTree -> TypeCheckedExprTree
+    mkBindNode b@(S.Binder _ t0) (T.Node (tELabel, _) _ _) = case tELabel of
+      Just (TypedExpr e t1) -> compose $ TypedExpr (S.Lam b e) (S.TyFun t0 t1)
       _ -> fallthru
 
-    appNode :: S.Expr -> S.Expr -> TypedExprTree
-    appNode e0 e1 = saturate e t
-      where
-        e = (S.App e0 e1)
-        t = case Inf.inferExpr TyEnv.empty e of
-          Right (S.Forall _ ty) -> ty
-          Left e -> S.TyCon $ show e -- fixme
+    mkAppNode :: S.Expr -> S.Expr -> TypeCheckedExprTree
+    mkAppNode e0 e1 = let e = (S.App e0 e1)
+      in
+        case Inf.inferExpr TyEnv.empty e of
+          Right (S.Forall _ ty) -> compose $ TypedExpr e ty
+          Left err -> compose $ UntypedExpr e err
 
-    saturate e t = T.Node (Just e t, cl) c0 c1
+    compose label = T.Node (Just label, cl) c0 c1
     fallthru = T.Node (Nothing, cl) c0 c1
 
--- | Evaluate an expression tree.
-evalExprTree :: TypedExprTree -> SemanticTree
-evalExprTree e = fmap eval e
-  where
-    eval :: ExprLabel -> SemanticLabel
-    eval eLabel = case eLabel of
-      EExprLabel expr ty cl -> SLabel expr ty (Sem.runEval expr) cl
-      ECLabel cl -> SCLabel cl
+-- | Construct non-terminal expressions via our composition operations.
+composeExprTree :: TypeCheckedExprTree -> TypeCheckedExprTree
+composeExprTree n@(T.Node (_,cnl) c1 c2) = case (c1,c2) of
+  (T.Node{}, T.Node{}) -> let
+    s1 = composeExprTree c1
+    s2 = composeExprTree c2
+    in tryCompositionOps cnl s1 s2
+  _ -> n
 
-compose f c = (evalExprTree . composeExprTree . typeExprTree) (mkExprTree f c)
+-- | Evaluate an expression tree, accumulating binders in preorder,
+evalExprTree :: TypeCheckedExprTree -> SemanticTree
+evalExprTree eTree = snd $ mapAccumTree eval Sem.empyCtx eTree
+  where
+    eval :: Sem.EvalCtx -> TypeCheckedExprLabel -> (Sem.EvalCtx, SemanticLabel)
+    eval ctx (teLabel, cLabel) = case teLabel of
+      Just te -> case te of
+        UntypedExpr{} -> (ctx, (Nothing, teLabel, cLabel))
+        TypedExpr expr ty -> case (Sem.runEvalIn ctx expr) of
+          Right v -> (ctx', (Just $ Right v, teLabel, cLabel)) where
+            ctx' = case v of
+              Sem.VBoundVar (S.Var n) -> Sem.extendCtx n v ctx
+              _ -> ctx
+          Left err -> (ctx, (Just $ Left err, teLabel, cLabel))
+      Nothing -> (ctx, (Nothing, Nothing, cLabel))
+
+compose :: Frag.Fragment -> ConstituencyTree -> SemanticTree
+compose f c = (evalExprTree . composeExprTree . typeCheckExprTree) (mkExprTree f c)
