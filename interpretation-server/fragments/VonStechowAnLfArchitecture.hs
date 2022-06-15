@@ -1,4 +1,3 @@
-
 Runtime:<v,i>;
 
 [id] = \x:<A> . x;
@@ -7,5 +6,5 @@ Runtime:<v,i>;
 [NP] = NP:<e>;
 [PF] = \t:<i> . \p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e);
 
-[z] = z;
-[bindt] = \z:<i>
+[bindt] = \t:<i>;
+[z] = t

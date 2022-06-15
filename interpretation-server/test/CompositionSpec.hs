@@ -19,15 +19,15 @@ main :: IO ()
 main = do
   let v' = (node "V'" "1" (node "V" "10" (leaf "stab" "100") Leaf) (node "NP" "11" (leaf "Caesar" "110") Leaf))
   let vp = (node "VP" "-1" (node "NP" "0" (leaf "Brutus" "00") Leaf) v')
-  let asp = (node "Asp" "110" (leaf "PF" "1100") (leaf "t" "1101"))
+  let asp = (node "Asp" "110" (leaf "PF" "1100") (leaf "z" "1101"))
   let asp' = node "AspP'" "11" asp vp
   let aspP = (node "AspP" "1" (leaf "id" "10") asp')
   let s = node "S" "-1" (leaf "bindt" "0") aspP
 
   -- let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); [NP] = NP:<e>; Duration:<v,i>; [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Duration e) subs t) & (p e); [t] = T:<i>"
   -- let fragE = parseFragS "[bindt] = \\t:<i>; \n [V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); \n [NP] = NP:<e>; \n Runtime:<v,i>; \n [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); \n [t] = T:<i>; \n [id] = \\x:<A> . x"
-  let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); [NP] = NP:<e>; Runtime:<v,i>; [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); [t] = t; [id] = \\x:<A> . x; [bindt] = \\t:<i>"
+  let fragE = parseFragS "[V] = \\y:<e> . \\x:<e> . \\e:<v> . V:<v,<e,<e,t>>>(e)(y)(x); [NP] = NP:<e>; Runtime:<v,i>; [PF] = \\t:<i> . \\p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e); [z] = z; [id] = \\x:<A> . x; [bindt] = \\z:<i>"
   
   case fragE of
     Left e -> print e
-    Right decls -> print $ head $ toList $ compose (mkFragment decls) s
+    Right decls -> print $ head $ toList $ compose (mkFragment decls) asp

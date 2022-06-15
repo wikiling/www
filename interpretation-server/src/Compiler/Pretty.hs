@@ -8,7 +8,6 @@ module Compiler.Pretty (
 import qualified Compiler.Syntax as Syn
 import qualified Compiler.Types as Ty
 import qualified Compiler.TypeEnv as TE
-import qualified Compiler.Inference as Inf
 
 import Prelude hiding ((<>))
 import qualified Data.Map as Map
@@ -45,10 +44,10 @@ instance Pretty Syn.Expr where
     Syn.Var s -> text s
     Syn.Const c _ -> text c
     Syn.ELit l  -> ppr p l
-    Syn.EBinder b -> ppr p b
+    Syn.EBinder b -> (char 'λ') <> ppr 0 b
     Syn.App a b -> parensIf (p > 0) ((ppr (p + 1) a) <+> (ppr p b))
-    Syn.Lam b e -> pBinder (char 'λ') b e
-    Syn.Pred n ts -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) ts)
+    Syn.Lam b e -> pClosure (char 'λ') b e
+    Syn.Pred n t es -> text n <> ((parens . hsep . commaSep . (map $ ppr p)) es)
     Syn.EUnOp op e -> case op of
       Syn.Neg -> char '¬' <> (ppr p e)
       Syn.SetCompl -> (ppr p e) <> char '∁'
@@ -66,10 +65,10 @@ instance Pretty Syn.Expr where
       Syn.SetSubS -> infixSep '⊆' [e0,e1]
       Syn.SetMem -> infixSep '∈' [e0,e1]
     Syn.EQuant q b e -> case q of
-      Syn.Univ -> pBinder (char '∀') b e
-      Syn.Exis -> pBinder (char '∃') b e
+      Syn.Univ -> pClosure (char '∀') b e
+      Syn.Exis -> pClosure (char '∃') b e
     where
-      pBinder sym b body = parensIf (p > 0) $
+      pClosure sym b body = parensIf (p > 0) $
         sym <> ppr p b <+> ppr (p + 1) body
       infixSep c = hsep . (intersperse $ (char c)) . (map $ ppr p)
 
@@ -100,15 +99,6 @@ instance Pretty TE.Env where
     pp1 (n,tyScheme) = text n <+> colon <+> ppr p tyScheme
     in vcat $ (map pp1 ts)
 
-instance Show Inf.TypeError where
-  show (Inf.UnificationFail a b) =
-    concat ["Cannot unify types: \n\t", pptype a, "\nwith \n\t", pptype b]
-  show (Inf.InfiniteType (Syn.TV a) b) =
-    concat ["Cannot construct the infinite type: ", a, " = ", pptype b]
-  show (Inf.Ambigious cs) =
-    concat ["Cannot not match expected type: '" ++ pptype a ++ "' with actual type: '" ++ pptype b ++ "'\n" | (a,b) <- cs]
-  show (Inf.UnboundVariable a) = "Not in scope: " ++ a
-
 instance Show TE.Env where
   show = show . ppr 0
 
@@ -116,9 +106,12 @@ instance Show Syn.Expr where
   show = show . ppr 0
 
 instance Show Syn.Binder where
-  show (Syn.Binder n t) = show n ++ ": " ++ show t
+  show = show . ppr 0
 
 instance Show Syn.Type where
+  show = show . ppr 0
+
+instance Show Syn.TyScheme where
   show = show . ppr 0
 
 instance Show Syn.Decl where

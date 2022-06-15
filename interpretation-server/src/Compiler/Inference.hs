@@ -15,15 +15,19 @@ module Compiler.Inference (
 
 import Compiler.TypeEnv
 import qualified Compiler.Syntax as Syn
+import Compiler.Pretty
 
 import Control.Monad.Except
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
 
+import Data.Either (partitionEithers)
 import Data.List (nub)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import Debug.Trace (traceM)
 
 -------------------------------------------------------------------------------
 -- Classes
@@ -92,31 +96,18 @@ data TypeError
   | Ambigious [Constraint]
   | UnificationMismatch [Syn.Type] [Syn.Type]
 
+instance Show TypeError where
+  show (UnificationFail a b) =
+    concat ["cannot unify types: \n\t", pptype a, "\nwith \n\t", pptype b]
+  show (InfiniteType (Syn.TV a) b) =
+    concat ["cannot construct the infinite type: ", a, " = ", pptype b]
+  show (Ambigious cs) =
+    concat ["cannot match expected type: '" ++ pptype a ++ "' with actual type: '" ++ pptype b ++ "'\n" | (a,b) <- cs]
+  show (UnboundVariable a) = "not in scope: " ++ a
+
 -------------------------------------------------------------------------------
 -- Inference
 -------------------------------------------------------------------------------
-
--- | Run the inference monad
-runInfer :: Env -> Infer (Syn.Type, [Constraint]) -> Either TypeError (Syn.Type, [Constraint])
-runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
-
--- | Solve for the toplevel type of an expression in a given environment
-inferExpr :: Env -> Syn.Expr -> Either TypeError Syn.TyScheme
-inferExpr env ex = case runInfer env (infer ex) of
-  Left err -> Left err
-  Right (ty, cs) -> case runSolve cs of
-    Left err -> Left err
-    Right subst -> Right $ closeOver $ apply subst ty
-
--- | Return the internal constraints used in solving for the type of an expression
-constraintsExpr :: Env -> Syn.Expr -> Either TypeError ([Constraint], Subst, Syn.Type, Syn.TyScheme)
-constraintsExpr env ex = case runInfer env (infer ex) of
-  Left err -> Left err
-  Right (ty, cs) -> case runSolve cs of
-    Left err -> Left err
-    Right subst -> Right (cs, subst, ty, sc)
-      where
-        sc = closeOver $ apply subst ty
 
 -- | Canonicalize and return the polymorphic toplevel type.
 closeOver :: Syn.Type -> Syn.TyScheme
@@ -169,10 +160,17 @@ infer expr = case expr of
     t <- lookupEnv x
     return (t, [])
 
-  Syn.Lam (Syn.Binder n t) e -> do
+  Syn.Lam (Syn.Binder n _) e -> do
     tv <- fresh
     (t, c) <- inEnv (n, Syn.Forall [] tv) (infer e)
     return (tv `Syn.TyFun` t, c)
+
+  Syn.Pred n t es -> do
+    env <- ask
+    case inferMany env es of
+      Left err -> throwError err
+      Right infs -> return (t, [])
+      -- Right infs -> return (t, concat $ snd $ unzip infs)
 
   Syn.App e0 e1 -> do
     (t1, c1) <- infer e0
@@ -223,12 +221,6 @@ infer expr = case expr of
     (t3, c3) <- infer fl
     return (t2, c1 ++ c2 ++ c3 ++ [(t1, Syn.tyBool), (t2, t3)])
   -}
-
-inferTop :: Env -> [(String, Syn.Expr)] -> Either TypeError Env
-inferTop env [] = Right env
-inferTop env ((name, ex):xs) = case inferExpr env ex of
-  Left err -> Left err
-  Right ty -> inferTop (extend env (name, ty)) xs
 
 normalize :: Syn.TyScheme -> Syn.TyScheme
 normalize (Syn.Forall _ body) = Syn.Forall (map snd ord) (normtype body)
@@ -300,3 +292,48 @@ bind a t | t == Syn.TyVar a  = return emptySubst
 
 occursCheck ::  Substitutable a => Syn.TyVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
+
+-------------------------------------------------------------------------------
+-- Entrypoints
+-------------------------------------------------------------------------------
+
+-- | Run the inference monad
+runInfer :: Env -> Infer (Syn.Type, [Constraint]) -> Either TypeError (Syn.Type, [Constraint])
+runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
+
+type TCList = [Either TypeError (Syn.Type, [Constraint])]
+
+inferMany :: Env -> [Syn.Expr] -> Either TypeError [(Syn.Type, [Constraint])]
+inferMany env exprs = case partitionEithers $ foldl go [] exprs of
+  ((err : _), _) -> Left err
+  (_, tcs)       -> Right tcs
+  where
+    go :: TCList -> Syn.Expr -> TCList
+    go tcs expr = runInfer env (infer expr) : tcs
+
+-- | Solve for the toplevel type of an expression in a given environment
+inferExpr :: Env -> Syn.Expr -> Either TypeError Syn.TyScheme
+inferExpr env ex = do
+  traceM ("inferring " ++ show ex ++  " with ... " ++ "[" ++ show env ++ "]")
+  case runInfer env (infer ex) of
+    Left err -> Left err
+    Right (ty, cs) -> case runSolve cs of
+      Left err -> Left err
+      Right subst -> Right $ closeOver $ apply subst ty
+
+-- | Infer declaration types, accumulating a type env.
+inferTop :: Env -> [(String, Syn.Expr)] -> Either TypeError Env
+inferTop env [] = Right env
+inferTop env ((name, ex):xs) = case inferExpr env ex of
+  Left err -> Left err
+  Right ty -> inferTop (extend env (name, ty)) xs
+
+-- | Return the internal constraints used in solving for the type of an expression
+constraintsExpr :: Env -> Syn.Expr -> Either TypeError ([Constraint], Subst, Syn.Type, Syn.TyScheme)
+constraintsExpr env ex = case runInfer env (infer ex) of
+  Left err -> Left err
+  Right (ty, cs) -> case runSolve cs of
+    Left err -> Left err
+    Right subst -> Right (cs, subst, ty, sc)
+      where
+        sc = closeOver $ apply subst ty

@@ -15,6 +15,7 @@ module Compiler.Syntax (
   SetExpr,
   rename,
   substitute,
+  resolvePredicates,
   tyInt,
   tyBool,
   pattern TyIntP,
@@ -42,7 +43,7 @@ data Expr
   | EBinder Binder
   | EBinOp BinOp Expr Expr
   | EUnOp UnOp Expr
-  | Pred Name [Expr]
+  | Pred Name Type [Expr]
   | EQuant Quant Binder Expr
   | ESet SetExpr
   deriving (Eq, Ord)
@@ -102,7 +103,7 @@ rename :: Name -> Name -> Expr -> Expr
 rename n n' e = case e of
   Var v     | n == v -> Var n'
   Const c t | n == c -> Const n' t
-  Pred name args  -> Pred (if n == name then n' else name) (map rn args)
+  Pred name t args  -> Pred (if n == name then n' else name) t (map rn args)
   EUnOp op e'     -> EUnOp op (rn e')
   EBinOp op e0 e1 -> EBinOp op (rn e0) (rn e1)
   Lam b e'   -> Lam b (rn e')
@@ -116,7 +117,7 @@ rename n n' e = case e of
 substitute' :: Expr -> (Name -> Bool) -> Expr -> Expr
 substitute' a match e = case e of
   Var n | match n     -> a
-  Pred name args      -> Pred name (map sub args)
+  Pred name t args      -> Pred name t (map sub args)
   EUnOp op e'         -> EUnOp op (sub e')
   EBinOp op e0 e1     -> EBinOp op (sub e0) (sub e1)
   Lam b@(Binder n _) body     -> Lam b (substitute' a (\n' -> match n' && n' /= n) body)
@@ -128,3 +129,29 @@ substitute' a match e = case e of
 
 substitute :: Expr -> Name -> Expr -> Expr
 substitute a n e = substitute' a (\n' -> n == n') e
+
+-- | Construct Syn.Pred expressions out of applications of Syn.Const
+--   to arbitrary expressions. To revisit: why can't this be parsed initially?
+--
+--   (a) Predicates are typed as functions (what else are they?) but
+--   (b) they are not evaluated (i.e not beta reduced) like functions.
+--   (c) They can be passed around as variables before application.
+--   
+--   At least one complication is that initial resolution won't apply
+--   to predicates that fall under (c), so even if predicates are parsed
+--   as such initially, this will have to be done after each beta reduction.
+--   Using only this function isolates the logic.
+resolvePredicates :: Expr -> Expr
+resolvePredicates = go
+  where
+    go expr = case expr of
+      App e0 e1 -> let r1 = go e1 in case e0 of
+        Const c t -> Pred c t [r1]
+        _ -> let r0 = go e0 in case r0 of
+          Pred n t args -> Pred n t (args ++ [r1])
+          _ -> App r0 r1
+      Lam b e -> Lam b (go e)
+      EQuant q b e -> EQuant q b (go e)
+      EBinOp op e0 e1 -> EBinOp op (go e0) (go e1)
+      EUnOp op e -> EUnOp op (go e)
+      _ -> expr

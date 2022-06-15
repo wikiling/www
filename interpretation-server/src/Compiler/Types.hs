@@ -85,7 +85,7 @@ check expr = case expr of
     Syn.SetSubS -> checkSetEs e0 e1 >> pure Syn.tyBool
     Syn.SetMem -> checkSetEs e0 e1 >> pure Syn.tyBool
 
-  Syn.Pred n ns -> mapM_ check ns >> pure Syn.tyBool
+  Syn.Pred n t ns -> mapM_ check ns >> pure t
 
   Syn.EQuant q (Syn.Binder n t) e -> do
     bodyT <- inCtx (n,t) (check e)

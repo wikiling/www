@@ -43,11 +43,11 @@ const SemanticNode = forwardRef<
       <text x={typeX} y={typeY} fill={data.typeError ? "red" : "black"} fontWeight="500">
         {data.type ?? (data.typeError ? `type error: ${data.typeError}` : '')}
       </text>
-      <text x={valueX} y={valueY} fill={data.typeError ? "red" : "black"} fontWeight="500">
+      <text x={valueX} y={valueY} fill={data.valuationError ? "red" : "black"} fontWeight="500">
         {data.value ?? (data.valuationError ? `evaluation error: ${data.valuationError}` : '')}
       </text>
       {(data.typeError || data.valuationError) &&
-        <text x={valueX} y={valueY} fontWeight="500">
+        <text x={valueX} y={valueY + NODE_LINE_HEIGHT} fontWeight="500" fill="green">
           {data.expr}
         </text>
       }

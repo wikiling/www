@@ -18,53 +18,40 @@ data Value
   | VFormula Syn.Expr
   | VFunc Syn.Expr
   -- supports AST operations on frontend via composition
-  | VBoundVar Syn.Expr
+  | VBinder Syn.Binder
 
 instance Show Value where
   show (VInt x) = show x
   show (VFormula exp) = show exp
   show (VBool x) = show x
   show (VFunc exp) = show exp
-  show (VBoundVar b) = show b
+  show (VBinder b) = "λ" ++ show b
 
 data EvalError
   = UnboundVariable Syn.Expr
   | NotAFn Syn.Expr Syn.Expr
   | PredArgMismatch Syn.Name Syn.Expr
+  | NotAFormula Value
 
 instance Show EvalError where
   show (UnboundVariable e) = "Unbound variable: " ++ show e
   show (NotAFn e0 e1) = "Tried to apply non fn: " ++ show e0 ++ " to " ++ show e1
   show (PredArgMismatch n e) = "Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ n
+  show (NotAFormula v) = "Expecting a formula. Got: " ++ show v
 
 type Evaluation = ExceptT EvalError Identity
 type EvalCtx = Map.Map Syn.Name Value
 
--- | Construct Syn.Pred expressions out of applications of Syn.Const
---   to expressions.
-resolvePredicates :: Syn.Expr -> Syn.Expr
-resolvePredicates = resolve
-  where
-    resolve e = case e of
-      Syn.App e0 e1 -> let r1 = resolve e1 in case e0 of
-        Syn.Const c _ -> Syn.Pred c [r1]
-        _ -> let r0 = resolve e0 in case r0 of
-          Syn.Pred n args -> Syn.Pred n (args ++ [r1])
-          _ -> r0
-      _ -> e
-
 eval :: EvalCtx -> Syn.Expr -> Evaluation Value
 eval ctx expr = let
 
-  guardBool e = case runEvalIn ctx e of
-    Left err -> throwError err
-    Right (VBool b) -> pure b
-  guardInt e = case runEvalIn ctx e of
-    Left err -> throwError err
-    Right (VInt i) -> pure $ fromIntegral i
-  guardForm ctx' e = case runEvalIn ctx' e of
-    Left err -> throwError err
-    Right (VFormula e') -> pure e'
+  guardBool e = eval ctx e >>= \v -> case v of
+    VBool b -> pure b
+  guardInt e = eval ctx e >>= \v -> case v of
+    VInt i -> pure $ fromIntegral i
+  guardForm ctx' e = eval ctx' e >>= \v -> case v of
+    VFormula e' -> pure e'
+    v -> throwError $ NotAFormula v
 
   subformula :: Syn.UnOp -> Syn.Expr -> Evaluation Value
   subformula f e = guardForm ctx e >>= pure . VFormula . (Syn.EUnOp f)
@@ -87,7 +74,7 @@ eval ctx expr = let
     l@(Syn.ELit (Syn.LInt _)) -> pure $ VFormula l
     l@(Syn.ELit (Syn.LBool _)) -> pure $ VFormula l
 
-    -- if we've hit a variable then it has (a) escaped
+    -- if we've hit a variable then it has (a) passed through
     -- type checking and beta reduction, in which case it
     -- must be bound by a quantifier, or (b) been passed
     -- in via ctx during composition
@@ -112,9 +99,9 @@ eval ctx expr = let
       Syn.Div -> arithFormula (div) e0 e1
       _ -> subformulae2 op e0 e1
 
-    Syn.Pred n es -> subformulae (Syn.Pred n) es
+    Syn.Pred n t es -> subformulae (Syn.Pred n t) es
 
-    Syn.EBinder (Syn.Binder n _) -> pure $ VBoundVar $ Syn.Var n
+    Syn.EBinder b -> pure $ VBinder b
 
     Syn.EQuant q b@(Syn.Binder n t) e -> do
       e' <- guardForm (Map.insert n (VFormula $ Syn.Var n) ctx) e
@@ -133,16 +120,16 @@ eval ctx expr = let
       e -> nf
       where
         nf = throwError $ NotAFn e0 e1
-        betaReduce arg body = eval ctx $ Syn.substitute e1 arg body
+        betaReduce arg body = eval ctx $ Syn.resolvePredicates $ Syn.substitute e1 arg body
 
 extendCtx :: Syn.Name -> Value -> EvalCtx -> EvalCtx
 extendCtx = Map.insert
 
-empyCtx = Map.empty
+emptyCtx = Map.empty
 
 runEvalIn :: EvalCtx -> Syn.Expr -> Either EvalError Value
 runEvalIn ctx e = runIdentity $ runExceptT $ eval ctx e
 
 runEval :: Syn.Expr -> Either EvalError Value
-runEval = runEvalIn empyCtx
+runEval = runEvalIn emptyCtx
 

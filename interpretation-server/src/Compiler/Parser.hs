@@ -21,10 +21,12 @@ import qualified Compiler.Syntax as Syn
 import Compiler.Pretty
 
 debugParse :: String -> Parser a -> Parser a
-debugParse s p = (tryParse s) *> p <* (completeParse s)
-  where
-    tryParse p = parserTrace ("parsing " ++ p ++ "...")
-    completeParse p = parserTrace ("ok, parsed " ++ p)
+debugParse s p = if False
+  then (tryParse s) *> p <* (completeParse s)
+  else p
+    where
+      tryParse p = parserTrace ("parsing " ++ p ++ "...")
+      completeParse p = parserTrace ("ok, parsed " ++ p)
 
 whitespace = void $ many $ oneOf " \n\t"
 titularIdentifier = (lookAhead upper) >> identifier
@@ -123,8 +125,9 @@ parseExisQ = debugParse "exisq" $ do
 parsePred :: Parser Syn.Expr
 parsePred = debugParse "pred" $ do
   n <- titularIdentifier
+  t <- parseTypeAssignment
   args <- parens ((spaces *> parseExpr' <* spaces) `sepBy` char ',')
-  pure $ Syn.Pred n args
+  pure $ Syn.Pred n t args
 
 parseSet :: Parser Syn.Expr
 parseSet = brackets ((spaces *> parseExpr' <* spaces) `sepBy` char ',') >>= (pure . Syn.mkSet)
@@ -189,7 +192,7 @@ parseTerm :: Parser Syn.Expr
 parseTerm = Ex.buildExpressionParser opTable factor
 
 parseExpr' :: Parser Syn.Expr
-parseExpr' = debugParse "app" parseApp
+parseExpr' = debugParse "app" parseApp -- >>= pure . Syn.resolvePredicates
 
 parseFrag' :: Parser [Syn.Decl]
 parseFrag' = whitespace >> parseDecl' `sepBy` (spaces >> char ';' >> spaces)
