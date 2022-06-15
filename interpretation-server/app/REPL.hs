@@ -2,8 +2,9 @@ module REPL (main) where
 
 import Compiler.Syntax
 import Compiler.Parser
-import Compiler.Types
+import Compiler.Inference
 import Compiler.Pretty
+import qualified Compiler.TypeEnv as TyEnv
 
 import Interpreter.Evaluation
 
@@ -17,7 +18,7 @@ process line = do
     Left err -> print err
     Right ex -> do
       print ex
-      let chk = checkExpr [] ex
+      let chk = inferExpr TyEnv.empty ex
       case chk of
         Left tyerr -> print tyerr
         Right ty    -> do
@@ -31,7 +32,7 @@ processDecl line = do
     Left err -> print err
     Right d@(Let name ex) -> do
       print d
-      let chk = checkExpr [] ex
+      let chk = inferExpr TyEnv.empty ex
       case chk of
         Left tyerr -> print tyerr
         Right ty    -> do

@@ -1,8 +1,8 @@
 {-# LANGUAGE PatternSynonyms #-}
 
 module Compiler.Syntax (
-  Name, Lit(..), Binder(..), Expr(..), SetExpr,
-  Quant(..), UnOp(..), BinOp(..),
+  Name, Lit(..), Binder(..), Expr(..),
+  SetExpr, Quant(..), UnOp(..), BinOp(..), Comparison(..),
   Type(..), TyVar(..), TyScheme(..),
   Decl(..),
   rename, substitute, resolvePredicates,
@@ -31,6 +31,7 @@ data Expr
   | EBinder Binder
   | EBinOp BinOp Expr Expr
   | EUnOp UnOp Expr
+  | EComparison Comparison Expr Expr
   | Pred Name Type [Expr]
   | EQuant Quant Binder Expr
   | ESet SetExpr
@@ -43,14 +44,21 @@ mkSet exprs = ESet $ Set.fromList exprs
 
 data Quant = Univ | Exis | Iota deriving (Eq,Ord)
 
+data Comparison
+  = Eq
+  | LT
+  | GT
+  | SetSubS
+  | SetMem
+  deriving (Eq,Ord)
+
 data UnOp
   = Neg
   | SetCompl
   deriving (Eq, Ord)
 
 data BinOp
-  = Eq
-  | Conj
+  = Conj
   | Disj
   | Impl
   | Add
@@ -60,9 +68,6 @@ data BinOp
   | SetUnion
   | SetInter
   | SetDiff
-  | SetSubS
-  | SetPropSubS
-  | SetMem
   deriving (Eq, Ord)
 
 newtype TyVar = TV String
@@ -94,6 +99,7 @@ rename n n' e = case e of
   Pred name t args  -> Pred (if n == name then n' else name) t (map rn args)
   EUnOp op e'     -> EUnOp op (rn e')
   EBinOp op e0 e1 -> EBinOp op (rn e0) (rn e1)
+  EComparison c e0 e1 -> EComparison c (rn e0) (rn e1)
   Lam b e'   -> Lam b (rn e')
   EQuant q b e' -> EQuant q b (rn e')
   App e0 e1       -> App (rn e0) (rn e1)
@@ -108,6 +114,7 @@ substitute' a match e = case e of
   Pred name t args      -> Pred name t (map sub args)
   EUnOp op e'         -> EUnOp op (sub e')
   EBinOp op e0 e1     -> EBinOp op (sub e0) (sub e1)
+  EComparison c e0 e1 -> EComparison c (sub e0) (sub e1)
   Lam b@(Binder n _) body     -> Lam b (substitute' a (\n' -> match n' && n' /= n) body)
   EQuant q b@(Binder n _) e'  -> EQuant q b (substitute' a (\n' -> match n' && n' /= n) e')
   App e0 e1           -> App (sub e0) (sub e1)

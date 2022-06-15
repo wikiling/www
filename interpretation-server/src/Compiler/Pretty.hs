@@ -5,14 +5,14 @@ module Compiler.Pretty (
   pptype
 ) where
 
-import qualified Compiler.Syntax as Syn
-import qualified Compiler.Types as Ty
-import qualified Compiler.TypeEnv as TE
-
 import Prelude hiding ((<>))
 import qualified Data.Map as Map
 import Data.List (intersperse)
 import Text.PrettyPrint
+
+import Utils
+import qualified Compiler.Syntax as Syn
+import qualified Compiler.TypeEnv as TE
 
 angles :: Doc -> Doc
 angles p = char '<' <> p <> char '>'
@@ -23,10 +23,13 @@ class Pretty p where
   pp :: p -> Doc
   pp = ppr 0
 
-parensIf ::  Bool -> Doc -> Doc
-parensIf b = case b of
-  True  -> parens
+fnIf :: (Doc -> Doc) -> Bool -> Doc -> Doc
+fnIf fn b = case b of
+  True  -> fn
   False -> id
+
+parensIf = fnIf parens
+anglesIf = fnIf angles
 
 commaSep = punctuate $ char ','
 commaSep1 = intersperse $ char ','
@@ -62,8 +65,12 @@ instance Pretty Syn.Expr where
       Syn.SetUnion -> infixSep '∪' [e0,e1]
       Syn.SetInter -> infixSep '∩' [e0,e1]
       Syn.SetDiff -> infixSep '∖' [e0,e1]
+    Syn.EComparison c e0 e1 -> case c of
+      Syn.Eq -> infixSep '=' [e0,e1]
       Syn.SetSubS -> infixSep '⊆' [e0,e1]
       Syn.SetMem -> infixSep '∈' [e0,e1]
+      Syn.LT -> infixSep '<' [e0,e1]
+      Syn.GT -> infixSep '>' [e0,e1]
     Syn.EQuant q b e -> case q of
       Syn.Univ -> pClosure (char '∀') b e
       Syn.Exis -> pClosure (char '∃') b e
@@ -73,15 +80,12 @@ instance Pretty Syn.Expr where
       infixSep c = hsep . (intersperse $ (char c)) . (map $ ppr p)
 
 instance Pretty Syn.TyVar where
-  ppr _ (Syn.TV t) = text t
+  ppr _ (Syn.TV t) = text $ titleCase t
 
 instance Pretty Syn.Type where
-  ppr _ (Syn.TyCon t) = text t
-  ppr p (Syn.TyVar t) = ppr p t
-  ppr p (Syn.TyFun a b) = angles ((ppr p a) <> text "," <> ppr p b)
-    where
-      isFunc Syn.TyFun{} = True
-      isFunc _ = False
+  ppr p (Syn.TyCon t) = anglesIf (p == 0) $ text t
+  ppr p (Syn.TyVar t) = anglesIf (p == 0) $ ppr p t
+  ppr p (Syn.TyFun a b) = angles $ (ppr (p + 1) a) <> text "," <> ppr (p + 1) b
 
 instance Pretty Syn.Decl where
   ppr p (Syn.Let n e) = (text n) <+> (text "=") <+> ppr p e
@@ -116,14 +120,6 @@ instance Show Syn.TyScheme where
 
 instance Show Syn.Decl where
   show = show . ppr 0
-
-instance Show Ty.TypeError where
-  show (Ty.Mismatch a b) =
-    "Expecting " ++ (pptype b) ++ " but got " ++ (pptype a)
-  show (Ty.NotFunction e0 e1) =
-    "Tried to apply non-function type: " ++ (ppexpr e0) ++ " to " ++ ppexpr e1
-  show (Ty.NotInScope a) =
-    "Variable " ++ a ++ " is not in scope"
 
 ppexpr :: Syn.Expr -> String
 ppexpr = render . ppr 0

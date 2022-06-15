@@ -57,11 +57,11 @@ eval ctx expr = let
   subformulae :: ([Syn.Expr] -> Syn.Expr) -> [Syn.Expr] -> Evaluation Value
   subformulae f es = mapM (guardForm ctx) es >>= pure . VFormula . f 
 
-  subformulae2 :: Syn.BinOp -> Syn.Expr -> Syn.Expr -> Evaluation Value
+  subformulae2 :: (Syn.Expr -> Syn.Expr -> Syn.Expr) -> Syn.Expr -> Syn.Expr -> Evaluation Value
   subformulae2 op e0 e1 = do
     f0 <- (guardForm ctx e0)
     f1 <- (guardForm ctx e1)
-    pure $ VFormula $ Syn.EBinOp op f0 f1
+    pure $ VFormula $ op f0 f1
   
   bind :: Syn.Binder -> EvalCtx
   bind (Syn.Binder n _) = Map.insert n (VFormula $ Syn.Var n) ctx
@@ -116,7 +116,9 @@ eval ctx expr = let
       Syn.Mul -> arithmeticFormula (*) e0 e1
       Syn.Sub -> arithmeticFormula (-) e0 e1
       Syn.Div -> arithmeticFormula (div) e0 e1
-      _ -> subformulae2 op e0 e1
+      _ -> subformulae2 (Syn.EBinOp op) e0 e1
+
+    Syn.EComparison c e0 e1 -> subformulae2 (Syn.EComparison c) e0 e1
 
     Syn.Pred n t es -> subformulae (Syn.Pred n t) es
 
@@ -130,20 +132,20 @@ eval ctx expr = let
       e' <- simplify b e
       pure $ VFunc (Syn.Lam b e')
 
-    -- | Cbn beta reduction. let's make this cbv once the Value type is more stable.
-    --   We may "fallthru" in case
-    --   (a) a constant is applied to an expr, or
-    --   (b) a variable bound to a function is applied during simplification, without beta reduction.
+    -- | Cbn beta reduction. We may "fallthru" in case
+    --    (a) a constant is applied to an expr, or
+    --    (b) a variable is applied to an expr.
+    --   (a) is an instance of a predicate, while (b) happens during simplification.
     a@(Syn.App e0 e1) -> case e0 of
       a0@(Syn.App _ _) -> do
         lhs <- eval ctx a0
         case lhs of
           VFunc (Syn.Lam (Syn.Binder n _) body) -> betaReduce n body
-          _ -> fallthru a0
+          _ -> fallthru
       Syn.Lam (Syn.Binder n _) body -> betaReduce n body
-      _ -> fallthru a
+      _ -> fallthru
       where
-        fallthru e = pure $ VFormula e
+        fallthru = pure $ VFormula $ Syn.resolvePredicates a
         betaReduce arg body = eval ctx $ Syn.resolvePredicates $ Syn.substitute e1 arg body
 
 extendCtx :: Syn.Name -> Value -> EvalCtx -> EvalCtx

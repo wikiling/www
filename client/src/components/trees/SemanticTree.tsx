@@ -26,7 +26,7 @@ const SemanticTree: React.FC<TreeProps> = ({ id, tree  }) => {
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   const resize = () => {
-    const newCoordinatedRootNode = computeLayout({ tree, getLabel: (node) => node.data.expr, nodeHeight: SEM_NODE_HEIGHT });
+    const newCoordinatedRootNode = computeLayout({ tree, getLabel: (node) => node.data.value, nodeHeight: SEM_NODE_HEIGHT });
     const groupTranslateX = rootRef.current ? (
       rootRef.current.getBoundingClientRect().width / 2
     ) : 0;

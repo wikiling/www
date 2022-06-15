@@ -7,4 +7,10 @@ Runtime:<v,i>;
 [PF] = \t:<i> . \p:<v,t> . exists e:<v> . ((Runtime e) subs t) & (p e);
 
 [bindt] = \t:<i>;
-[z] = t
+[t] = t;
+
+C:<i,t>;
+[PAST] = \c:<i,t> . \t:<i> . \i:<i,t> . exists t':<i> . (t' < t) & (c t') & (i t');
+
+[bindt'] = \t':<i>;
+[t'] = t'

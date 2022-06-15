@@ -167,6 +167,9 @@ factor = (parens parseExpr') <|>
 binOp :: String -> Syn.BinOp -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
 binOp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EBinOp fun e0 e1)) assoc
 
+comp :: String -> Syn.Comparison -> Ex.Assoc -> Ex.Operator String SymTypeState Identity Syn.Expr
+comp name fun assoc = Ex.Infix (reservedOp name >> (pure $ \e0 -> \e1 -> Syn.EComparison fun e0 e1)) assoc
+
 unOp :: String -> Syn.UnOp -> Ex.Operator String SymTypeState Identity Syn.Expr
 unOp name fun = Ex.Prefix (reservedOp name >> (pure $ \e -> Syn.EUnOp fun e))
 
@@ -175,23 +178,25 @@ opTable = [ [ binOp "*" Syn.Mul Ex.AssocLeft
             , binOp "/" Syn.Div Ex.AssocLeft ]
           , [ binOp "+" Syn.Add Ex.AssocLeft
             , binOp "-" Syn.Sub Ex.AssocLeft ]
-          , [binOp "==" Syn.Eq Ex.AssocNone]
+          , [ comp "==" Syn.Eq Ex.AssocNone
+            , comp "<" Syn.LT Ex.AssocNone
+            , comp ">" Syn.GT Ex.AssocNone 
+            , comp "subs" Syn.SetSubS Ex.AssocNone
+            , comp "elem" Syn.SetMem Ex.AssocRight ]
           , [unOp "~" Syn.Neg]
           , [ binOp "&" Syn.Conj Ex.AssocLeft
             , binOp "|" Syn.Disj Ex.AssocLeft ]
           , [binOp "=>" Syn.Impl Ex.AssocRight]
           , [unOp "compl" Syn.SetCompl]
-          , [ binOp "subs" Syn.SetSubS Ex.AssocRight
-            , binOp "union" Syn.SetUnion Ex.AssocRight
+          , [ binOp "union" Syn.SetUnion Ex.AssocRight
             , binOp "inter" Syn.SetInter Ex.AssocRight
-            , binOp "diff" Syn.SetDiff Ex.AssocRight
-            , binOp "elem" Syn.SetMem Ex.AssocRight ]
+            , binOp "diff" Syn.SetDiff Ex.AssocRight ]
           ]
 
 parseTerm :: Parser Syn.Expr
 parseTerm = Ex.buildExpressionParser opTable factor
 
-parseExpr' :: Parser Syn.Expr
+parseExpr' :: Parser Syn.Expr          -- fixme
 parseExpr' = debugParse "app" parseApp -- >>= pure . Syn.resolvePredicates
 
 parseFrag' :: Parser [Syn.Decl]

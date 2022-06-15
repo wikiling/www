@@ -165,6 +165,7 @@ infer expr = case expr of
     (t, c) <- inEnv (n, Syn.Forall [] tv) (infer e)
     return (tv `Syn.TyFun` t, c)
 
+  -- fixme
   Syn.Pred n t es -> do
     env <- ask
     case inferMany env es of
@@ -178,15 +179,22 @@ infer expr = case expr of
     tv <- fresh
     return (tv, c1 ++ c2 ++ [(t1, t2 `Syn.TyFun` tv)])
 
+  Syn.EComparison c e0 e1 -> do
+    (t0, c0) <- infer e0
+    (t1, c1) <- infer e1
+    tv <- fresh
+    let c2 = (tv, Syn.tyBool)
+  
+    return (tv, c2 : c0 ++ c1)
+
   Syn.EBinOp op e0 e1 -> do
     (t1, c1) <- infer e0
     (t2, c2) <- infer e1
     tv <- fresh
     let u1 = t1 `Syn.TyFun` (t2 `Syn.TyFun` tv)
         u2 = case op of
-          Syn.Eq  -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyBool)
           Syn.Conj -> Syn.tyBool `Syn.TyFun` (Syn.tyBool `Syn.TyFun` Syn.tyBool)
-          Syn.SetSubS -> t1 `Syn.TyFun` (t2 `Syn.TyFun` Syn.tyBool)
+          Syn.Disj -> Syn.tyBool `Syn.TyFun` (Syn.tyBool `Syn.TyFun` Syn.tyBool)
           -- otherwise arithmetic ops
           _ -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyInt)
 

@@ -17,13 +17,13 @@ module Interpreter.Compose (
   ) where
 
 import GHC.Generics
-import Data.Char (toUpper)
 import qualified Data.Map as Map
 import qualified Data.Tree.Binary.Preorder as T
 import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
 
+import Utils
 import Compiler.Pretty
 import qualified Compiler.Syntax as S
 import qualified Compiler.Inference as Inf
@@ -73,8 +73,6 @@ mapAccumTree f s t = go s t
       (s''', x') = f s'' x
       in (s''', (T.Node x' l' r'))
 
-titleCase (c:cs) = toUpper c : cs
-
 -- | Construct an expression tree from a constituency tree, pulling lexical
 --   entries from the fragment.
 mkExprTree :: Frag.Fragment -> ConstituencyTree -> ExprTree
@@ -95,7 +93,7 @@ mkExprTree frag cTree = runReader (mk cTree) frag
     -- | Given a preterminal φ and terminal ψ, if ψ has a lexical entry then
     --   assign it to φ, otherwise if φ has a lexical entry, instantiate it with ψ.
     --   In the latter case, if φ is of the form `[C] = \x . C x`, where C is a
-    --   syntactic constant, substitute ψ for C in φ.
+    --   syntactic constant, rename C to ψ in φ.
     preTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
     preTerm cl@(CLabel cLabelPre _) terminal = do
       termNode <- mk terminal
