@@ -17,7 +17,8 @@ leaf n pos = node n pos Leaf Leaf
 
 main :: IO ()
 main = do
-  let v' = (node "V'" "1" (node "V" "10" (leaf "stab" "100") Leaf) (node "NP" "11" (leaf "Caesar" "110") Leaf))
+  let v = (node "V" "10" (leaf "stab" "100") Leaf)
+  let v' = (node "V'" "1" v (node "NP" "11" (leaf "Caesar" "110") Leaf))
   let vp = (node "VP" "-1" (node "NP" "0" (leaf "Brutus" "00") Leaf) v')
   let asp = (node "Asp" "110" (leaf "PF" "1100") (leaf "z" "1101"))
   let asp' = node "AspP'" "11" asp vp
@@ -30,4 +31,4 @@ main = do
   
   case fragE of
     Left e -> print e
-    Right decls -> print $ head $ toList $ compose (mkFragment decls) asp
+    Right decls -> print $ head $ toList $ compose (mkFragment decls) v

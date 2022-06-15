@@ -184,13 +184,11 @@ infer expr = case expr of
     tv <- fresh
     let u1 = t1 `Syn.TyFun` (t2 `Syn.TyFun` tv)
         u2 = case op of
-          Syn.Add -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyInt)
-          Syn.Mul -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyInt)
-          Syn.Sub -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyInt)
           Syn.Eq  -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyBool)
-
           Syn.Conj -> Syn.tyBool `Syn.TyFun` (Syn.tyBool `Syn.TyFun` Syn.tyBool)
           Syn.SetSubS -> t1 `Syn.TyFun` (t2 `Syn.TyFun` Syn.tyBool)
+          -- otherwise arithmetic ops
+          _ -> Syn.tyInt `Syn.TyFun` (Syn.tyInt `Syn.TyFun` Syn.tyInt)
 
     return (tv, c1 ++ c2 ++ [(u1, u2), (t1, t2)])
   

@@ -30,13 +30,11 @@ instance Show Value where
 data EvalError
   = UnboundVariable Syn.Expr
   | NotAFn Syn.Expr Syn.Expr
-  | PredArgMismatch Syn.Name Syn.Expr
   | NotAFormula Value
 
 instance Show EvalError where
   show (UnboundVariable e) = "Unbound variable: " ++ show e
   show (NotAFn e0 e1) = "Tried to apply non fn: " ++ show e0 ++ " to " ++ show e1
-  show (PredArgMismatch n e) = "Argument to predicate must evaluate to a symbol. Found: " ++ show e ++ " for predicate: " ++ n
   show (NotAFormula v) = "Expecting a formula. Got: " ++ show v
 
 type Evaluation = ExceptT EvalError Identity
@@ -64,8 +62,25 @@ eval ctx expr = let
     f0 <- (guardForm ctx e0)
     f1 <- (guardForm ctx e1)
     pure $ VFormula $ Syn.EBinOp op f0 f1
+  
+  bind :: Syn.Binder -> EvalCtx
+  bind (Syn.Binder n _) = Map.insert n (VFormula $ Syn.Var n) ctx
 
-  arithFormula op e0 e1 = do
+  simplify :: Syn.Binder -> Syn.Expr -> Evaluation Syn.Expr
+  simplify b e = do
+    traceM ("simplifying.." ++ show e)
+    v <- eval (bind b) e
+    traceM ("finished simplifying..")
+    case v of
+      VFormula e' -> do
+        traceM ("\t to vform: " ++ show e')
+        pure $ e'
+      VFunc e' -> do
+        traceM ("\t to vfun: " ++ show e')
+        pure $ e'
+      _ -> pure $ expr
+
+  arithmeticFormula op e0 e1 = do
     i0 <- guardInt e0
     i1 <- guardInt e1
     pure $ (VFormula . Syn.ELit . Syn.LInt) (op i0 i1)
@@ -74,13 +89,17 @@ eval ctx expr = let
     l@(Syn.ELit (Syn.LInt _)) -> pure $ VFormula l
     l@(Syn.ELit (Syn.LBool _)) -> pure $ VFormula l
 
-    -- if we've hit a variable then it has (a) passed through
-    -- type checking and beta reduction, in which case it
-    -- must be bound by a quantifier, or (b) been passed
-    -- in via ctx during composition
-    Syn.Var n -> case Map.lookup n ctx of
-      Nothing -> throwError $ UnboundVariable expr
-      Just v -> pure v
+    -- f we've hit a variable then it has passed through
+    -- type checking and beta reduction. If it's in context
+    -- then one of the following is true: it has been
+    -- (a) bound by a quantifier
+    -- (b) bound during simplification of a lambda body
+    -- (c) supplied by the caller (i.e. composition)
+    Syn.Var n -> do
+      traceM ("looking for: " ++ n)
+      case Map.lookup n ctx of
+        Nothing -> throwError $ UnboundVariable expr
+        Just v -> pure v
 
     c@(Syn.Const _ _) -> pure $ VFormula c
 
@@ -93,33 +112,38 @@ eval ctx expr = let
     Syn.EUnOp q e -> subformula q e
 
     Syn.EBinOp op e0 e1 -> case op of
-      Syn.Add -> arithFormula (+) e0 e1
-      Syn.Mul -> arithFormula (*) e0 e1
-      Syn.Sub -> arithFormula (-) e0 e1
-      Syn.Div -> arithFormula (div) e0 e1
+      Syn.Add -> arithmeticFormula (+) e0 e1
+      Syn.Mul -> arithmeticFormula (*) e0 e1
+      Syn.Sub -> arithmeticFormula (-) e0 e1
+      Syn.Div -> arithmeticFormula (div) e0 e1
       _ -> subformulae2 op e0 e1
 
     Syn.Pred n t es -> subformulae (Syn.Pred n t) es
 
     Syn.EBinder b -> pure $ VBinder b
 
-    Syn.EQuant q b@(Syn.Binder n t) e -> do
-      e' <- guardForm (Map.insert n (VFormula $ Syn.Var n) ctx) e
+    Syn.EQuant q b e -> do
+      e' <- guardForm (bind b) e
       pure $ VFormula $ Syn.EQuant q b e'
 
-    l@Syn.Lam{} -> pure $ VFunc l
+    Syn.Lam b e -> do
+      e' <- simplify b e
+      pure $ VFunc (Syn.Lam b e')
 
     -- | Cbn beta reduction. let's make this cbv once the Value type is more stable.
-    Syn.App e0 e1 -> case e0 of
-      a@(Syn.App _ _) -> do
-        lhs <- eval ctx a
+    --   We may "fallthru" in case
+    --   (a) a constant is applied to an expr, or
+    --   (b) a variable bound to a function is applied during simplification, without beta reduction.
+    a@(Syn.App e0 e1) -> case e0 of
+      a0@(Syn.App _ _) -> do
+        lhs <- eval ctx a0
         case lhs of
           VFunc (Syn.Lam (Syn.Binder n _) body) -> betaReduce n body
-          e -> nf
+          _ -> fallthru a0
       Syn.Lam (Syn.Binder n _) body -> betaReduce n body
-      e -> nf
+      _ -> fallthru a
       where
-        nf = throwError $ NotAFn e0 e1
+        fallthru e = pure $ VFormula e
         betaReduce arg body = eval ctx $ Syn.resolvePredicates $ Syn.substitute e1 arg body
 
 extendCtx :: Syn.Name -> Value -> EvalCtx -> EvalCtx

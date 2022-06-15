@@ -1,25 +1,13 @@
 {-# LANGUAGE PatternSynonyms #-}
 
 module Compiler.Syntax (
-  Name,
-  Lit(..),
-  Binder(..),
-  Expr(..),
-  UnOp(..),
-  BinOp(..),
-  Type(..),
-  TyVar(..),
-  TyScheme(..),
+  Name, Lit(..), Binder(..), Expr(..), SetExpr,
+  Quant(..), UnOp(..), BinOp(..),
+  Type(..), TyVar(..), TyScheme(..),
   Decl(..),
-  Quant(..),
-  SetExpr,
-  rename,
-  substitute,
-  resolvePredicates,
-  tyInt,
-  tyBool,
-  pattern TyIntP,
-  pattern TyBoolP,
+  rename, substitute, resolvePredicates,
+  tyInt, tyBool,
+  pattern TyIntP, pattern TyBoolP,
   mkSet
 ) where
 
@@ -139,8 +127,8 @@ substitute a n e = substitute' a (\n' -> n == n') e
 --   
 --   At least one complication is that initial resolution won't apply
 --   to predicates that fall under (c), so even if predicates are parsed
---   as such initially, this will have to be done after each beta reduction.
---   Using only this function isolates the logic.
+--   as such initially, this resolution step will have to be done after
+--   each beta reduction. Using only this function isolates the logic.
 resolvePredicates :: Expr -> Expr
 resolvePredicates = go
   where
