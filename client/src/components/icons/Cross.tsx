@@ -2,11 +2,12 @@ import React, { SVGProps } from 'react';
 
 type Props = SVGProps<SVGSVGElement>
 
-const Cross: React.FC<Props> = ({ height = 15, width = 15, ...props}) => (
+const Cross: React.FC<Props> = ({ height = 15, width = 15, ...props }) => (
   <svg
     width={width}
     height={height}
     viewBox="0 0 265.1 326.15"
+    {...props}
   >
 
   <g

@@ -10,7 +10,6 @@ type ButtonProps = React.HTMLAttributes<HTMLDivElement> & {
   mode?: Mode
   active?: boolean
   isLoading?: boolean
-  clear?: boolean
   onClick: (e: React.MouseEvent<HTMLDivElement>) => any
 }
 

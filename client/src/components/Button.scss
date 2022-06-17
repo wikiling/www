@@ -7,10 +7,13 @@ $border-color: grey;
   font-variant: small-caps;
   cursor: pointer;
 
-  &--trans {
-    border: 1px solid $border-color;
+  &--trans, &--clear {
     padding: 3px 5px;
     height: 23px;
+  }
+
+  &--trans {
+    border: 1px solid $border-color;
   }
 
   &--clear {

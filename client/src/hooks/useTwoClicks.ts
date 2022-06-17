@@ -1,5 +1,3 @@
-import { useCallback, useState } from 'react';
-
 type ClickEventHandler<CType> = (e: React.MouseEvent<CType>) => void
 
 type Props<ElType> = {
@@ -14,6 +12,7 @@ const useTwoClicks = <ElType extends HTMLElement>({
   onDoubleClick = () => {}
 }: Props<ElType>) => {
   let clickCount = 0;
+
   const handleClick: React.MouseEventHandler<ElType> = (e) => {
     clickCount += 1;
 
@@ -24,6 +23,7 @@ const useTwoClicks = <ElType extends HTMLElement>({
       clickCount = 0;
     }, latency);
   };
+
   return handleClick;
 };
 

@@ -1,4 +1,6 @@
 .interpretation {
+  padding-left: 10px;
+
   .interpretation-header {
     display: flex;
     flex-direction: row;
@@ -16,18 +18,11 @@
   }
 
   .interpretation-body {
-    .constituency-parse, .logical-form {
-      padding-top: 10px;
-    }
-
+    padding-top: 10px;
   }
 
   .interpretation-form {
-    padding-left: 10px;
-  }
-
-  .interpretation-menu {
-    padding-right: 20px;
+    padding-right: 10px;
   }
 
   &:hover {
@@ -39,6 +34,15 @@
   }
 
   &.interpretation--temporary {
+    .interpretation-form {
+      display: flex;
+      flex-direction: row;
+
+      .fieldset {
+        flex: 1;
+      }
+    }
+
     .interpretation-toolbar {
       display: flex;
       flex-direction: row;

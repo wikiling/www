@@ -6,6 +6,7 @@ import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 import { v4 as uuid } from 'uuid';
 import { toPascalCase } from 'utils/string';
+import { orderBy } from 'lodash';
 
 type ExampleMap = {[key: ID]: Example}
 type TemporaryExampleMap = {[key: UUID]: TemporaryExample}
@@ -128,7 +129,8 @@ export class FragmentStore {
   }
 
   exampleInterpretations = (exampleId: ID) => {
-    return this.interpretations.filter(({ example_id }) => example_id === exampleId);
+    const interpretations = this.interpretations.filter(({ example_id }) => example_id === exampleId);
+    return orderBy(interpretations, ["id"], ["desc"]);
   }
 
   exampleTemporaryInterpretations (exampleId: ID) {

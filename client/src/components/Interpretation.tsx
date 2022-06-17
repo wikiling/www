@@ -9,6 +9,7 @@ import InterpretationForm from "./InterpretationForm";
 import Menu from "./Menu";
 import Button from "./Button";
 import { observer } from "mobx-react-lite";
+import Bracketing from "./trees/Bracketing";
 
 type InterpretationProps = {
   interpretation: InterpretationT
@@ -44,18 +45,22 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
         </Menu>
       </div>
       <div className="interpretation-body">
-        {isExpanded && ccp && (
-          fs.semanticTreeMap[ccp.id]
-            ? <LogicalForm
-                key={ccp.id}
-                semanticTree={fs.semanticTreeMap[ccp.id]}
-                constituencyParse={ccp}
-              />
-            : <ConstituencyParse
-                key={ccp.id}
-                constituencyParse={ccp}
-              />
-        )}
+        {ccp && <>
+          <Bracketing tree={ccp.coordinated_syntax_tree}/>
+
+          {isExpanded && (
+            fs.semanticTreeMap[ccp.id]
+              ? <LogicalForm
+                  key={ccp.id}
+                  semanticTree={fs.semanticTreeMap[ccp.id]}
+                  constituencyParse={ccp}
+                />
+              : <ConstituencyParse
+                  key={ccp.id}
+                  constituencyParse={ccp}
+                />
+          )}
+        </>}
       </div>
     </div>
   );

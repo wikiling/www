@@ -1,5 +1,5 @@
 import "./Example.scss";
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ExampleEditValues } from 'types';
 import Button from "./Button";
 import { UseFormSetFocus } from "react-hook-form";
@@ -29,10 +29,8 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const {isLoading, loadWhile} = useLoadWhile();
   const [isInEdit, setIsInEdit] = useState<boolean>(false);
-  // this should be done with a ref instead?
-  const [formCtx, setFormCtx] = useState<ExampleFormContext | null>(null);
+  const formCtxRef = useRef<ExampleFormContext | null>(null);
 
-  const handleFormInit = (formCtx: ExampleFormContext) => setFormCtx(formCtx);
   const handleFormSubmit = (values: ExampleEditValues) => loadWhile(
     () => fs.dispatchUpdateExample(example.id, values)
   );
@@ -41,13 +39,16 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
     () => fs.dispatchDeleteExample(example.id)
   );
 
-  const handleSave = () => formCtx?.handleSubmit(handleFormSubmit)();
+  const handleSave = () => {
+    console.log(formCtxRef.current);
+    formCtxRef.current?.handleSubmit(handleFormSubmit)()
+  };
 
   const handleNewInterpretation = () => fs.createTemporaryInterpretation(example.id);
 
   const handleFormClick = () => {
-    // setIsInEdit(!isInEdit);
-    setIsExpanded(!isExpanded);
+    !isExpanded && setIsInEdit(!isInEdit);
+    !isInEdit && setIsExpanded(!isExpanded);
   };
 
   console.log(temporaryInterpretations);
@@ -60,7 +61,7 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
           onClick={handleFormClick}
           example={example}
           onSubmit={handleFormSubmit}
-          onInit={handleFormInit}/>
+          ctxRef={formCtxRef}/>
 
         <Menu isLoading={isLoading}>
           <Button mode="menu" onClick={handleNewInterpretation}>add an interpretation</Button>

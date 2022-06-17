@@ -1,0 +1,10 @@
+.bracketing {
+  font-size: 18px;
+
+  &-bracket-leaf, &-bracket-parent {
+    padding-right: 5px;
+  }
+  &-bracket-parent {
+    font-variant: small-caps;
+  }
+}

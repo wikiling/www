@@ -14,7 +14,7 @@ class CRUDInterpretation(CRUDBase[Interpretation, InterpretationCreate, Interpre
     ) -> List[Interpretation]:
         return db.query(Interpretation).filter(
             Interpretation.example_id == example_id
-        ).all()
+        ).order_by(Interpretation.id.desc()).all()
 
 
 interpretation = CRUDInterpretation(Interpretation)

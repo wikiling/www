@@ -18,7 +18,7 @@ const useYupValidationResolver = <SchemaT extends yup.AnyObjectSchema>(validatio
         errors: {}
       };
     } catch (errors: any) {
-    
+
       return {
         values: {},
         errors: errors.inner.reduce(

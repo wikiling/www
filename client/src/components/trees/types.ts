@@ -11,7 +11,7 @@ export type BaseNodeData = {
   label: string
 }
 
-export type CoordinatedTree = HierarchyNode<any>
+export type CoordinatedTree = HierarchyNode<BaseNodeData>
 
 export type EditableSyntaxNodeValues = BaseNodeData
 

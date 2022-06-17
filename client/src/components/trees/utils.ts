@@ -11,7 +11,7 @@ type ComputeLayoutProps<TreeData extends IdentifiableNodeDatum> = {
   nodeWidth?: number
 }
 
-export const computeLayout = <TreeData extends IdentifiableNodeDatum>({
+const computeLayout = <TreeData extends IdentifiableNodeDatum>({
   tree,
   getLabel,
   nodeHeight,
@@ -25,19 +25,25 @@ export const computeLayout = <TreeData extends IdentifiableNodeDatum>({
     .separation((a, b) => {
       const halfWidthA = getTextDimensions(getLabel(a)).width / 2;
       const halfWidthB = getTextDimensions(getLabel(b)).width / 2;
+
       const diff = NODE_WIDTH + NODE_SEP_X - (halfWidthA + halfWidthB);
 
       return diff < 0 ? 1 + (-1 * diff / NODE_WIDTH) : 1;
     });
 
   return createTreeLayout(tree);
-}
+};
 
-export const translateTree = (root: CoordinatedTreeNode, dx: number, dy: number) => {
+const translateTree = (root: CoordinatedTreeNode, dx: number, dy: number) => {
   const translateCoordinates = (subject: SubjectPosition) => {
     subject.x += dx;
     subject.y += dy;
   };
 
   root.descendants().forEach(translateCoordinates);
+};
+
+export {
+  computeLayout,
+  translateTree
 }

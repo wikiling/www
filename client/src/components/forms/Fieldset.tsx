@@ -1,19 +1,18 @@
 import "./Fieldset.scss"
-import { FieldErrors } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import Field from "./Field";
 
-type FieldsetProps = {
-  errors?: FieldErrors
-}
+type FieldsetProps = {}
 
-const Fieldset: React.FC<FieldsetProps> = ({ children, errors }) => {
+const Fieldset: React.FC<FieldsetProps> = ({ children }) => {
+  const { formState: { errors } } = useFormContext();
+
   const errorValues = errors ? Object.values(errors) : [];
 
   return (
     <fieldset className="fieldset">
       <div className="fieldset-fields">
         {children}
-        <Field type="submit"/>
       </div>
       {errors &&
         <div className="fieldset-errors">
