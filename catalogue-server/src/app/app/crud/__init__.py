@@ -1,5 +1,6 @@
 from .crud_fragment import fragment
 from .crud_example import example
+from .crud_interpretation import interpretation
 from .crud_constituency_parse import constituency_parse
 from .crud_user import user
 from .crud_author import author

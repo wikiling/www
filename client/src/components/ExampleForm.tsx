@@ -11,8 +11,6 @@ import useTwoClicks from "hooks/useTwoClicks";
 
 export type ExampleFormContext = UseFormReturn<ExampleBase>
 
-const noop = () => {};
-
 type ExampleFormProps = {
   example: TemporaryExample | Example
   onSubmit: (values: ExampleBase) => void

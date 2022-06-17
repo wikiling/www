@@ -20,7 +20,6 @@ class ExampleUpdate(ExampleBase):
 class Example(ExampleBase):
     id: int
     fragment_id: int
-    constituency_parses: List[ConstituencyParse] = []
 
     class Config:
         orm_mode = True

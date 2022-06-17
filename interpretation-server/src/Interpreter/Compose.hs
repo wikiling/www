@@ -95,18 +95,18 @@ mkExprTree frag cTree = runReader (mk cTree) frag
     --   In the latter case, if φ is of the form `[C] = \x . C x`, where C is a
     --   syntactic constant, rename C to ψ in φ.
     preTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
-    preTerm cl@(CLabel cLabelPre _) terminal = do
-      termNode <- mk terminal
-      lex <- checkLexicon cLabelPre
+    preTerm cl@(CLabel cLabelPre _) term@(T.Node (CLabel cLabelTerm _) _ _) = do
+      termNode <- mk term
 
-      let mkTermNode label = pure $ T.Node (label, cl) T.Leaf termNode
+      let mkPreTermNode label = pure $ T.Node (label, cl) T.Leaf termNode
 
-      case lex of
-        Just preExpr -> case termNode of
-          T.Node (Just termExpr, _) _ _ -> mkTermNode $ Just termExpr
-          T.Node (Nothing, (CLabel cLabelTerm _)) _ _->
-            mkTermNode $ Just $ S.rename cLabelPre (titleCase cLabelTerm) preExpr
-        _ -> mkTermNode Nothing
+      case termNode of
+        T.Node (Just termExpr, (CLabel cLabelTerm _)) _ _ -> mkPreTermNode $ Just termExpr
+        _ -> do
+          eLabelPre <- checkLexicon cLabelPre
+          case eLabelPre of
+            Just preExpr -> mkPreTermNode $ Just $ S.rename cLabelPre (titleCase cLabelTerm) preExpr
+            Nothing      -> mkPreTermNode Nothing
 
 -- | Type an expression tree, passing down binder assignments.
 typeCheckExprTree :: ExprTree -> (TypeCheckedExprTree, TyEnv.Env)

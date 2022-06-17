@@ -28,6 +28,7 @@ class JSONSerializableNLTKTree(nltk.ParentedTree):
             obj["children"] = [{"label": child,  "id": "%s0" % self.id}
                                for child in self]
         elif len(self) > 0:
+            print(self)
             obj["children"] = [child.json() for child in self]
 
         return obj

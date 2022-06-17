@@ -7,7 +7,7 @@ class ConstituencyParseBase(BaseModel):
 
 
 class ConstituencyParseCreate(BaseModel):
-    example_id: int
+    interpretation_id: int
 
 
 class ConstituencyParseUpdate(ConstituencyParseBase):
@@ -16,7 +16,7 @@ class ConstituencyParseUpdate(ConstituencyParseBase):
 
 class ConstituencyParse(ConstituencyParseBase):
     id: int
-    example_id: int
+    interpretation_id: int
     syntax_tree: Any
 
     class Config:

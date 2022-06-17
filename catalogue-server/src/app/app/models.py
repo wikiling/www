@@ -26,8 +26,9 @@ class Author(Base):
 class ConstituencyParse(Base):
     id = Column(Integer, primary_key=True)
     parse_string = Column(String)
-    example_id = Column(Integer, ForeignKey("example.id"), nullable=False)
-    example = relationship("Example", back_populates="constituency_parses")
+
+    interpretation_id = Column(Integer, ForeignKey("interpretation.id"), nullable=False)
+    interpretation = relationship("Interpretation", back_populates="constituency_parse")
 
     @property
     def syntax_tree(self):
@@ -35,22 +36,24 @@ class ConstituencyParse(Base):
 
     def generate_parse_string(self, source: Optional[str]):
         self.parse_string = parse_sentence_constituency(
-            source or self.example.content
+            source or self.interpretation.example.content
         )
 
 
 class DependencyParse(Base):
     id = Column(Integer, primary_key=True)
     parse_string = Column(String)
-    example_id = Column(Integer, ForeignKey("example.id"), nullable=False)
-    example = relationship("Example", back_populates="dependency_parses")
+
+    interpretation_id = Column(Integer, ForeignKey("interpretation.id"), nullable=False)
+    interpretation = relationship("Interpretation", back_populates="dependency_parse")
 
 
 class CCGParse(Base):
     id = Column(Integer, primary_key=True)
     parse_string = Column(String)
-    example_id = Column(Integer, ForeignKey("example.id"), nullable=False)
-    example = relationship("Example", back_populates="ccg_parses")
+
+    interpretation_id = Column(Integer, ForeignKey("interpretation.id"), nullable=False)
+    interpretation = relationship("Interpretation", back_populates="ccg_parse")
 
 
 class Example(Base):
@@ -61,10 +64,21 @@ class Example(Base):
     description = Column(String)
     label = Column(String)
 
-    constituency_parses = relationship(
-        "ConstituencyParse", cascade="all, delete-orphan")
-    dependency_parses = relationship("DependencyParse", cascade="all, delete-orphan")
-    ccg_parses = relationship("CCGParse", cascade="all, delete-orphan")
+    interpretations = relationship("Interpretation", cascade="all, delete-orphan")
+
+
+class Interpretation(Base):
+    id = Column(Integer, primary_key=True)
+    content = Column(String)
+    paraphrase = Column(String)
+    example_id = Column(Integer, ForeignKey("example.id"), nullable=False)
+    example = relationship("Example", back_populates="interpretations")
+
+    constituency_parse = relationship(
+        "ConstituencyParse", cascade="all, delete-orphan", uselist=False)
+    dependency_parse = relationship(
+        "DependencyParse", cascade="all, delete-orphan", uselist=False)
+    ccg_parse = relationship("CCGParse", cascade="all, delete-orphan", uselist=False)
 
 
 class Fragment(Base):

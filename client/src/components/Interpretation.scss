@@ -1,0 +1,47 @@
+.interpretation {
+  .interpretation-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    &:hover {
+      background: #f7f7f7;
+    }
+  }
+
+  .interpretation-row {
+    &:not(:first-child) {
+      padding-top: 10px;
+    }
+  }
+
+  .interpretation-body {
+    .constituency-parse, .logical-form {
+      padding-top: 10px;
+    }
+
+  }
+
+  .interpretation-form {
+    padding-left: 10px;
+  }
+
+  .interpretation-menu {
+    padding-right: 20px;
+  }
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  .field input:hover{
+    cursor: unset;
+  }
+
+  &.interpretation--temporary {
+    .interpretation-toolbar {
+      display: flex;
+      flex-direction: row;
+    }
+  }
+}

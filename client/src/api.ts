@@ -1,6 +1,9 @@
 import axios from 'axios'
 import { toPascalCase } from 'utils/string';
-import { Fragment, SyntaxTree, SemanticTree, Slug, Example, ID, ConstituencyParse, ExampleEditValues, ConstituencyParseEditValues, ExampleCreateValues } from './types'
+import {
+  Fragment, SyntaxTree, SemanticTree, Slug, Example, ID,
+  ConstituencyParse, ExampleEditValues, ConstituencyParseEditValues,
+  ExampleCreateValues, Interpretation, InterpretationEditValues, InterpretationCreateValues } from './types'
 
 const catalogueClient = axios.create({
   baseURL: 'http://localhost:8001/api/v1/',
@@ -26,6 +29,22 @@ const languageServerClient = axios.create({
 const fetchFragment = (slug: Slug): Promise<Fragment> => catalogueClient
   .get(`fragments/${slug}`)
   .then(({ data }) => data);
+
+const fetchInterpretations = (example_id: ID): Promise<Interpretation[]> => catalogueClient
+  .get('interpretations/', {params: { example_id }})
+  .then(({ data }) => data);
+
+const updateInterpretation = (interpretationId: ID, values: InterpretationEditValues): Promise<Interpretation> => catalogueClient
+  .patch(`interpretations/${interpretationId}/`, values)
+  .then(({ data }) => data);
+
+const createInterpretation = (values: InterpretationCreateValues): Promise<Interpretation> => catalogueClient
+  .post('interpretations/', values)
+  .then(({ data }) => data);
+
+const deleteInterpretation = (interpretationId: ID): Promise<string | number> => catalogueClient
+  .delete(`interpretations/${interpretationId}`)
+  .then(({ status }) => status);
 
 const fetchExamples = (fragment_id: ID): Promise<Example[]> => catalogueClient
   .get('examples/', {params: { fragment_id }})
@@ -75,6 +94,10 @@ export {
   updateExample,
   createExample,
   deleteExample,
+  fetchInterpretations,
+  updateInterpretation,
+  createInterpretation,
+  deleteInterpretation,
   fetchConstituencyParses,
   createConstituencyParse,
   deleteConstituencyParse,

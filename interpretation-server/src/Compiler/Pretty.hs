@@ -80,7 +80,7 @@ instance Pretty Syn.Expr where
       infixSep c = hsep . (intersperse $ (char c)) . (map $ ppr p)
 
 instance Pretty Syn.TyVar where
-  ppr _ (Syn.TV t) = text $ titleCase t
+  ppr _ (Syn.TV t) = text t
 
 instance Pretty Syn.Type where
   ppr p (Syn.TyCon t) = anglesIf (p == 0) $ text t

@@ -1,4 +1,5 @@
 from .example import Example, ExampleCreate, ExampleUpdate
+from .interpretation import Interpretation, InterpretationCreate, InterpretationUpdate
 from .constituency_parse import ConstituencyParse, ConstituencyParseCreate, ConstituencyParseUpdate
 from .fragment import Fragment, FragmentCreate, FragmentUpdate
 from .msg import Msg

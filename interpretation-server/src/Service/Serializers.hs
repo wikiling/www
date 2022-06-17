@@ -53,13 +53,13 @@ instance ToJSON C.SemanticTree where
 
       serializeEvaluationLabel :: Maybe C.EvaluatedExpr -> [Pair]
       serializeEvaluationLabel sl = case sl of
-        Nothing -> [ "value" .= Null, "error" .= Null ]
+        Nothing -> [ "value" .= Null, "valuationError" .= Null ]
         Just (Right v) -> [ "value" .= show v, "valuationError" .= Null ]
         Just (Left err) -> [ "value" .= Null, "valuationError" .= show err ]
                             
       serializeTypeCheckedExprLabel :: Maybe C.TypeCheckedExpr -> [Pair]
       serializeTypeCheckedExprLabel el = case el of
-        Nothing -> [ "expr" .= Null, "type" .= Null ]
+        Nothing -> [ "expr" .= Null, "type" .= Null, "typeError" .= Null  ]
         Just te -> case te of
           C.TypedExpr e t -> [ "expr" .= show e, "type" .= show t, "typeError" .= Null ]
           C.UntypedExpr e err -> [ "expr" .= show e, "type" .= Null, "typeError" .= show err ]

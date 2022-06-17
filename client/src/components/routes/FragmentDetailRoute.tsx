@@ -7,16 +7,13 @@ import { observer } from "mobx-react-lite";
 import { FragmentDetailRouteParams } from "types";
 
 import Header from "components/layout/Header";
-import Example, { ExampleRef } from "components/Example";
+import Example from "components/Example";
 import PlusIcon from "components/icons/PlusIcon";
 import Button from "components/Button";
 import TemporaryExample from "components/TemporaryExample";
 import Page from "components/layout/Page";
 import Route from "./Route";
-import { toPascalCase } from "utils/string";
-import { useKey } from "react-use";
-import { updateFragmentGrammar } from "api";
-import { fragmentGrammarFilename, fragmentGrammarURI } from "stores/FragmentStore";
+import { fragmentGrammarURI } from "stores/FragmentStore";
 import Editor from "components/Editor";
 import YScrollable from "components/YScrollable";
 

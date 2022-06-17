@@ -48,9 +48,27 @@ export type TemporaryExample = ExampleBase & {
 export type ExampleEditValues = Pick<ExampleBase, 'label' | 'content'>
 export type ExampleCreateValues = ExampleBase
 
+export type InterpretationBase = {
+  example_id: ID
+  content: string
+  paraphrase: string
+}
+
+export type Interpretation = InterpretationBase & {
+  id: ID
+  constituency_parse?: ConstituencyParse
+}
+
+export type TemporaryInterpretation = InterpretationBase & {
+  temp_id: UUID
+}
+
+export type InterpretationEditValues = Pick<InterpretationBase, 'content'>
+export type InterpretationCreateValues = InterpretationBase
+
 export type ConstituencyParse = {
   id: ID
-  example_id: ID
+  interpretation_id: ID
   parse_string: string
   syntax_tree: SyntaxTree
 }

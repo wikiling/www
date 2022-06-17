@@ -133,7 +133,7 @@ const Tree: React.FC<TreeProps> = ({ id, tree, onNodeAdd, onNodeEdit, onNodeRemo
   const handleNodeDragProceed = (node: CoordinatedTreeNode, event: NodeDragEvent) => {
     if (!coordinatedRootNode) throw new Error("Can't drag a tree without a root!");
 
-    // this would make sense to assign on d3's drag start event,
+    // this would seem to make sense to assign on d3's drag start event,
     // but d3's drag start event doesn't guarantee a *drag end* event,
     // so it would be possible then to have an orphaned drag node.
     // simply observing the proceed event seems fine.

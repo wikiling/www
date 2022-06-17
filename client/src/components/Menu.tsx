@@ -7,9 +7,10 @@ import HamburgerIcon from './icons/HamburgerIcon';
 
 type MenuProps = {
   isLoading?: boolean
+  className?: string
 }
 
-const Menu: React.FC<MenuProps> = ({ isLoading = false, children }) => {
+const Menu: React.FC<MenuProps> = ({ isLoading = false, className, children }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);
@@ -20,7 +21,8 @@ const Menu: React.FC<MenuProps> = ({ isLoading = false, children }) => {
   return (
     <div ref={ref} className={classNames(
       "menu",
-      { "menu--open": isOpen }
+      { "menu--open": isOpen },
+      className
     )}>
       <Button isLoading={isLoading} className="menu-button" mode="clear" onClick={toggle}>
         <HamburgerIcon/>

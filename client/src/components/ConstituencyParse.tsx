@@ -12,7 +12,7 @@ import useConstituencyParseOps from "hooks/useConstituencyParseOps";
 
 type ConstituencyParseProps = {
   constituencyParse: CoordinatedConstituencyParse
-  onRemove: () => any
+  onRemove?: () => any
 }
 
 const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse, onRemove }) => {
@@ -61,7 +61,7 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
         />
       </div>
 
-      <Menu isLoading={isLoading}>
+      <Menu className="constituency-parse-menu" isLoading={isLoading}>
         <Button mode="menu" onClick={handleInterpret}>interpret</Button>
         <Button mode="menu" onClick={() => handleRemove(onRemove)}>remove</Button>
         <Button mode="menu" onClick={handleSave}>save</Button>

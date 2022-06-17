@@ -42,7 +42,7 @@ const LogicalForm: React.FC<LogicalFormProps> = ({ semanticTree, constituencyPar
         />
       </div>
 
-      <Menu isLoading={isLoading}>
+      <Menu className="logical-form-menu" isLoading={isLoading}>
         <Button mode="menu" onClick={handleInterpret}>interpret</Button>
         <Button mode="menu" onClick={() => handleRemove()}>remove</Button>
         <Button mode="menu" onClick={handleSave}>save</Button>

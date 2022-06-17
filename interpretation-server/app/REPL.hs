@@ -46,5 +46,5 @@ main = runInputT defaultSettings loop
     mInput <- getInputLine "λ> "
     case mInput of
       Nothing -> outputStrLn "Goodbye."
-      Just input | length input > 0 -> (liftIO $ process input) >> loop
+      Just input | length input > 0 -> (liftIO $ processDecl input) >> loop
                  | otherwise        -> loop
