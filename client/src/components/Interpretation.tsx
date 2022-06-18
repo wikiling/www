@@ -10,6 +10,7 @@ import Menu from "./Menu";
 import Button from "./Button";
 import { observer } from "mobx-react-lite";
 import Bracketing from "./trees/Bracketing";
+import EditableBracketing from "./trees/EditableBracketing";
 
 type InterpretationProps = {
   interpretation: InterpretationT
@@ -46,7 +47,7 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
       </div>
       <div className="interpretation-body">
         {ccp && <>
-          <Bracketing tree={ccp.coordinated_syntax_tree}/>
+          <EditableBracketing tree={ccp.coordinated_syntax_tree}/>
 
           {isExpanded && (
             fs.semanticTreeMap[ccp.id]

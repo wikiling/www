@@ -2,7 +2,7 @@ import React from "react";
 import "./Bracketing.scss";
 import { CoordinatedTree } from "./types";
 
-type BracketingProps = {
+export type BracketingProps = {
   tree: CoordinatedTree
 }
 
@@ -18,7 +18,7 @@ const Bracket: React.FC<BracketProps> = ({ children, className }) => (
 const BracketNode = (node: CoordinatedTree) => {
   const { children, data: { label } } = node;
   return <Bracket>
-    <span className="bracketing-bracket-parent">{label.toLowerCase()}</span>
+    <span className="bracketing-bracket-node">{`${label.toLowerCase()} `}</span>
     {children?.map(bracket)}
   </Bracket>
 };
@@ -28,7 +28,7 @@ const bracket = (tree: CoordinatedTree): React.ReactNode => {
 
   if (children?.length) return BracketNode(tree);
   
-  return <span className="bracketing-bracket-leaf">{label}</span>;
+  return <span className="bracketing-bracket-leaf">{`${label} `}</span>;
 };
 
 const Bracketing: React.FC<BracketingProps> = ({ tree }) => {

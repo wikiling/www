@@ -48,7 +48,7 @@ data TypeCheckedExpr = TypedExpr S.Expr S.Type | UntypedExpr S.Expr Inf.TypeErro
 type TypeCheckedExprLabel = (Maybe TypeCheckedExpr, ConstituencyLabel)
 type TypeCheckedExprTree = T.Tree TypeCheckedExprLabel
 
--- | Evaluated composition. Nodes with type checked expressions may have values.
+-- | Evaluated composition: evaluate type checked expressions.
 type EvaluatedExpr = Either Sem.EvalError Sem.Value
 type SemanticLabel = (Maybe EvaluatedExpr, Maybe TypeCheckedExpr, ConstituencyLabel)
 type SemanticTree = T.Tree SemanticLabel
@@ -61,17 +61,6 @@ instance Show TypeCheckedExpr where
 
 checkLexicon :: S.Name -> FragmentCtx (Maybe S.Expr)
 checkLexicon name = asks (Map.lookup name)
-
--- | Preorder
-mapAccumTree :: (c -> a -> (c, b)) -> c -> T.Tree a -> (c, T.Tree b)
-mapAccumTree f s t = go s t
-  where
-    go s T.Leaf = (s, T.Leaf)
-    go s (T.Node x l r) = let
-      (s', l') = go s l
-      (s'', r') = go s' r
-      (s''', x') = f s'' x
-      in (s''', (T.Node x' l' r'))
 
 -- | Construct an expression tree from a constituency tree, pulling lexical
 --   entries from the fragment.
