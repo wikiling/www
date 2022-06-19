@@ -7,8 +7,8 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import qualified Data.Map as Map
 
-import Compiler.Pretty
-import qualified Compiler.Syntax as Syn
+import Compiler.Core.Pretty
+import qualified Compiler.Core.Syntax as Syn
 
 import Debug.Trace (traceM)
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Compiler.TypeEnv (
+module Compiler.Core.TypeEnv (
   Env(..),
   empty,
   lookup,
@@ -17,7 +17,7 @@ module Compiler.TypeEnv (
 
 import Prelude hiding (lookup)
 
-import qualified Compiler.Syntax as Syn
+import qualified Compiler.Core.Syntax as Syn
 
 import Data.Monoid
 import Data.Foldable hiding (toList)

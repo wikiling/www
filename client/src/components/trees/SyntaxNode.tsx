@@ -20,9 +20,9 @@ type SyntaxNodeProps = {
 const SyntaxNode = forwardRef<
   SVGGElement, SyntaxNodeProps
 >(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, ref) => {
-  const { id: nodeId, label: nodeLabel } = node.data;
+  const { id: nodeId } = node.data;
   const id = `${treeId}-${nodeId}`;
-  const { width: labelWidth, height: labelHeight } = getTextDimensions(nodeLabel);
+  const { width: labelWidth, height: labelHeight } = getTextDimensions(node.data.id);
   const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
@@ -48,7 +48,7 @@ const SyntaxNode = forwardRef<
   return (
     <g ref={ref} onClick={onClick} className={`node ${className}`} data-id={id}>
       <text x={labelX} y={labelY} data-id={labelWidth}>
-        {nodeLabel}
+        {node.data.id}
       </text>
     </g>
   );

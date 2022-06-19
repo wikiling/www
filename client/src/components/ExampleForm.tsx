@@ -1,13 +1,11 @@
 import "./ExampleForm.scss";
-import React, { MutableRefObject, useRef, useState } from 'react';
+import React, { MutableRefObject } from 'react';
 import { Example, ExampleBase, TemporaryExample } from 'types';
-import { useForm, UseFormReturn } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 import Field from "./forms/Field";
 import useYupResolver from "hooks/useYupResolver";
 import * as yup from "yup"
 import Fieldset from "./forms/Fieldset";
-import { useEffectOnce } from "react-use";
-import useTwoClicks from "hooks/useTwoClicks";
 import Form from "./forms/Form";
 
 export type ExampleFormContext = UseFormReturn<ExampleBase>

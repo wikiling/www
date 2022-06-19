@@ -1,4 +1,4 @@
-module Compiler.Lexer where
+module Compiler.Core.Lexer where
 
 import qualified Data.Map as Map
 import Text.Parsec
@@ -6,7 +6,7 @@ import qualified Text.Parsec.Token as Tok
 import qualified Text.ParserCombinators.Parsec.Char as CTok
 import Text.Parsec.Language (haskellStyle)
 
-import qualified Compiler.Syntax as Syn
+import qualified Compiler.Core.Syntax as Syn
 
 -------------------------------------------------------------------------------
 -- State def

@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Compiler.Pretty (
+module Compiler.Core.Pretty (
   ppexpr,
   pptype
 ) where
@@ -11,8 +11,8 @@ import Data.List (intersperse)
 import Text.PrettyPrint
 
 import Utils
-import qualified Compiler.Syntax as Syn
-import qualified Compiler.TypeEnv as TE
+import qualified Compiler.Core.Syntax as Syn
+import qualified Compiler.Core.TypeEnv as TE
 
 angles :: Doc -> Doc
 angles p = char '<' <> p <> char '>'

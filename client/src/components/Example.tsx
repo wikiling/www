@@ -12,6 +12,7 @@ import ExampleForm, { ExampleFormContext } from "./ExampleForm";
 import classNames from "classnames";
 import Interpretation from "./Interpretation";
 import TemporaryInterpretation from "./TemporaryInterpretation";
+import useTwoClicks from "hooks/useTwoClicks";
 
 type ExampleProps = {
   example: ExampleT
@@ -46,10 +47,11 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
 
   const handleNewInterpretation = () => fs.createTemporaryInterpretation(example.id);
 
-  const handleFormClick = () => {
-    !isExpanded && setIsInEdit(!isInEdit);
-    !isInEdit && setIsExpanded(!isExpanded);
-  };
+  const handleFormClick = useTwoClicks<HTMLFormElement>({
+    onDoubleClick: () => {
+      setIsExpanded(!isExpanded);
+    }
+  });
 
   console.log(temporaryInterpretations);
 
@@ -57,7 +59,6 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
     <div className={classNames("example", { "example--in-edit": isInEdit })}>
       <div className="example-header example-row">
         <ExampleForm
-          focusOnDblClick
           onClick={handleFormClick}
           example={example}
           onSubmit={handleFormSubmit}

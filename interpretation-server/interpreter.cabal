@@ -23,12 +23,15 @@ source-repository head
 
 library
   exposed-modules:
-      Compiler.Inference
-      Compiler.Lexer
-      Compiler.Parser
-      Compiler.Pretty
-      Compiler.Syntax
-      Compiler.TypeEnv
+      Compiler.Core.Inference
+      Compiler.Core.Lexer
+      Compiler.Core.Parser
+      Compiler.Core.Pretty
+      Compiler.Core.Syntax
+      Compiler.Core.TypeEnv
+      Compiler.Tree.Lexer
+      Compiler.Tree.Parser
+      Compiler.Tree.Syntax
       FOL.AristotelianInfEngine
       FOL.KB
       Interpreter.Compose
@@ -62,6 +65,7 @@ library
     , http-client
     , http-types
     , lucid >=2.9.11 && <2.12
+    , megaparsec
     , monad-gen
     , monad-memo
     , mtl
@@ -106,6 +110,7 @@ executable interpreter-exe
     , http-types
     , interpreter
     , lucid >=2.9.11 && <2.12
+    , megaparsec
     , monad-gen
     , monad-memo
     , mtl
@@ -157,6 +162,7 @@ test-suite interpreter-test
     , http-types
     , interpreter
     , lucid >=2.9.11 && <2.12
+    , megaparsec
     , monad-gen
     , monad-memo
     , mtl

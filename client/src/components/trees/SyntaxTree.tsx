@@ -60,7 +60,7 @@ const Tree: React.FC<TreeProps> = ({ id, tree, onNodeAdd, onNodeEdit, onNodeRemo
   const [groupTransform, setGroupTransform] = useState<string>(groupTransformTmpl());
 
   const resize = () => {
-    const newCoordinatedRootNode = computeLayout({ tree, nodeHeight: SYN_NODE_HEIGHT, getLabel: nodeLabel });
+    const newCoordinatedRootNode = computeLayout({ tree, nodeHeight: SYN_NODE_HEIGHT, getLabel: n => n.data.id });
     const groupTranslateX = rootRef.current ? (
       rootRef.current.getBoundingClientRect().width / 2
     ) : 0;

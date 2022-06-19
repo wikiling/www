@@ -1,43 +1,27 @@
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Interpreter.Compose (
-  T.Tree(..),
-  ConstituencyTree,
-  ConstituencyLabel(..),
-  ExprTree,
-  ExprLabel(..),
-  TypeCheckedExpr(..),
-  TypeCheckedExprLabel,
-  SemanticTree,
-  SemanticLabel(..),
-  EvaluatedExpr(..),
-  compose,
-  T.printTree
+  ExprTree, ExprLabel(..),
+  TypeCheckedExpr(..), TypeCheckedExprLabel,
+  SemanticTree, SemanticLabel(..), EvaluatedExpr(..),
+  compose
   ) where
 
-import GHC.Generics
 import qualified Data.Map as Map
-import qualified Data.Tree.Binary.Preorder as T
 import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
 
 import Utils
-import Compiler.Pretty
-import qualified Compiler.Syntax as S
-import qualified Compiler.Inference as Inf
-import qualified Compiler.TypeEnv as TyEnv
+import Compiler.Core.Pretty
+import qualified Compiler.Core.Syntax as S
+import qualified Compiler.Core.Inference as Inf
+import qualified Compiler.Core.TypeEnv as TyEnv
+import Compiler.Tree.Syntax as T
 import qualified Interpreter.Fragment as Frag
 import qualified Interpreter.Evaluation as Sem
 
 import Debug.Trace (traceM)
-
--- | Tree position
-type Pos = String
--- | Label + position
-data ConstituencyLabel = CLabel String Pos deriving (Show, Generic)
-type ConstituencyTree = T.Tree ConstituencyLabel
 
 -- | Initial composition: instantiate lexical entries.
 type ExprLabel = (Maybe S.Expr, ConstituencyLabel)
@@ -68,10 +52,10 @@ mkExprTree :: Frag.Fragment -> ConstituencyTree -> ExprTree
 mkExprTree frag cTree = runReader (mk cTree) frag
   where
     mk :: ConstituencyTree -> FragmentCtx ExprTree
-    mk (T.Node cl@(CLabel cLabel _) c0 c1) = case (c0,c1) of
-      (T.Leaf, T.Leaf) -> do
-        eLabel <- checkLexicon cLabel
+    mk (T.Node cl@(T.CLabel (T.LexLabel lexLabel) _) _ _) = do
+        eLabel <- checkLexicon lexLabel
         pure $ T.Node (eLabel, cl) T.Leaf T.Leaf
+    mk (T.Node cl c0 c1) = case (c0,c1) of
       (_, T.Leaf) -> preTerm cl c0
       (T.Leaf, _) -> preTerm cl c1
       _ -> do
@@ -84,13 +68,13 @@ mkExprTree frag cTree = runReader (mk cTree) frag
     --   In the latter case, if φ is of the form `[C] = \x . C x`, where C is a
     --   syntactic constant, rename C to ψ in φ.
     preTerm :: ConstituencyLabel -> ConstituencyTree -> FragmentCtx ExprTree
-    preTerm cl@(CLabel cLabelPre _) term@(T.Node (CLabel cLabelTerm _) _ _) = do
+    preTerm cl@(T.CLabel (T.CatLabel cLabelPre ) _) term@(T.Node (T.CLabel (T.LexLabel cLabelTerm) _) _ _) = do
       termNode <- mk term
 
       let mkPreTermNode label = pure $ T.Node (label, cl) T.Leaf termNode
 
       case termNode of
-        T.Node (Just termExpr, (CLabel cLabelTerm _)) _ _ -> mkPreTermNode $ Just termExpr
+        T.Node (Just termExpr, _) _ _ -> mkPreTermNode $ Just termExpr
         _ -> do
           eLabelPre <- checkLexicon cLabelPre
           case eLabelPre of

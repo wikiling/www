@@ -63,6 +63,8 @@ dependencies:
   - binary-tree  >= 0.0.9.0 && < 0.1.1.0
   - monad-gen
 
+  - megaparsec
+
 library:
   source-dirs:
     - src

@@ -4,10 +4,10 @@ import System.IO
 import qualified Data.Either as E
 import qualified Data.Map as Map
 import qualified Data.List as L
-import qualified Compiler.Inference as Inf
-import qualified Compiler.TypeEnv as TyEnv
-import qualified Compiler.Syntax as S
-import qualified Compiler.Parser as Parse
+import qualified Compiler.Core.Inference as Inf
+import qualified Compiler.Core.TypeEnv as TyEnv
+import qualified Compiler.Core.Syntax as S
+import qualified Compiler.Core.Parser as Parse
 
 type Fragment = Map.Map String S.Expr
 

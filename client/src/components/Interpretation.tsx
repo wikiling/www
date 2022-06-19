@@ -11,6 +11,7 @@ import Button from "./Button";
 import { observer } from "mobx-react-lite";
 import Bracketing from "./trees/Bracketing";
 import EditableBracketing from "./trees/EditableBracketing";
+import useTwoClicks from "hooks/useTwoClicks";
 
 type InterpretationProps = {
   interpretation: InterpretationT
@@ -36,6 +37,13 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
 
   const handleExpand = () => setIsExpanded(!isExpanded);
 
+  const handleBracketingClick = useTwoClicks<HTMLDivElement>({
+    onDoubleClick: () => {
+      console.log('?')
+      setIsExpanded(!isExpanded);
+    }
+  });
+
   return (
     <div className="interpretation">
       <div className="interpretation-header interpretation-row">
@@ -47,7 +55,7 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
       </div>
       <div className="interpretation-body">
         {ccp && <>
-          <EditableBracketing tree={ccp.coordinated_syntax_tree}/>
+          <EditableBracketing onClick={handleBracketingClick} tree={ccp.coordinated_syntax_tree}/>
 
           {isExpanded && (
             fs.semanticTreeMap[ccp.id]

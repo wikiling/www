@@ -1,4 +1,4 @@
-Runtime:<v,i>;
+Runtime :<v,i>;
 
 [id] = \x:<A> . x;
 

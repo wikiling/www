@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module Compiler.Syntax (
+module Compiler.Core.Syntax (
   Name, Lit(..), Binder(..), Expr(..),
   SetExpr, Quant(..), UnOp(..), BinOp(..), Comparison(..),
   Type(..), TyVar(..), TyScheme(..),
@@ -35,7 +35,7 @@ data Expr
   | Pred Name Type [Expr]
   | EQuant Quant Binder Expr
   | ESet SetExpr
-  deriving (Eq, Ord)
+  deriving (Eq,Ord)
 
 type SetExpr = Set.Set Expr
 
@@ -111,7 +111,7 @@ rename n n' e = case e of
 substitute' :: Expr -> (Name -> Bool) -> Expr -> Expr
 substitute' a match e = case e of
   Var n | match n     -> a
-  Pred name t args      -> Pred name t (map sub args)
+  Pred name t args    -> Pred name t (map sub args)
   EUnOp op e'         -> EUnOp op (sub e')
   EBinOp op e0 e1     -> EBinOp op (sub e0) (sub e1)
   EComparison c e0 e1 -> EComparison c (sub e0) (sub e1)

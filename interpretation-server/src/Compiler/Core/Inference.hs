@@ -3,7 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BangPatterns #-}
 
-module Compiler.Inference (
+module Compiler.Core.Inference (
   Constraint,
   TypeError(..),
   Subst(..),
@@ -13,9 +13,9 @@ module Compiler.Inference (
   unifiable
 ) where
 
-import Compiler.TypeEnv
-import qualified Compiler.Syntax as Syn
-import Compiler.Pretty
+import Compiler.Core.TypeEnv
+import qualified Compiler.Core.Syntax as Syn
+import Compiler.Core.Pretty
 
 import Control.Monad.Except
 import Control.Monad.State

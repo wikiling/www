@@ -1,4 +1,4 @@
-module Compiler.Parser (
+module Compiler.Core.Parser (
   parseExpr,
   parseFrag,
   parseFragS,
@@ -16,9 +16,9 @@ import Text.Parsec
 import qualified Text.Parsec.Expr as Ex
 import Text.ParserCombinators.Parsec.Combinator (choice)
 
-import Compiler.Lexer
-import qualified Compiler.Syntax as Syn
-import Compiler.Pretty
+import Compiler.Core.Lexer
+import qualified Compiler.Core.Syntax as Syn
+import Compiler.Core.Pretty
 
 debugParse :: String -> Parser a -> Parser a
 debugParse s p = if False
@@ -28,7 +28,6 @@ debugParse s p = if False
       tryParse p = parserTrace ("parsing " ++ p ++ "...")
       completeParse p = parserTrace ("ok, parsed " ++ p)
 
-whitespace = void $ many $ oneOf " \n\t"
 titularIdentifier = (lookAhead upper) >> identifier
 lIdentifier = (lookAhead lower) >> identifier
 
@@ -200,7 +199,7 @@ parseExpr' :: Parser Syn.Expr          -- fixme
 parseExpr' = debugParse "app" parseApp -- >>= pure . Syn.resolvePredicates
 
 parseFrag' :: Parser [Syn.Decl]
-parseFrag' = whitespace >> parseDecl' `sepBy` (spaces >> char ';' >> spaces)
+parseFrag' = parseDecl' `sepBy` (spaces >> char ';' >> spaces)
 
 -------------------------------------------------------------------------------
 -- Entrypoints
@@ -221,7 +220,7 @@ parseExpr :: String -> ExprParse
 parseExpr input = runP (contents parseExpr') Map.empty "<stdin>" input
 
 parseFrag :: FilePath -> IO FragParse
-parseFrag fp = parseFromFile parseFrag' fp
+parseFrag fp = parseFromFile (contents parseFrag') fp
 
 parseFragS :: String -> FragParse
 parseFragS input = runP (contents parseFrag') Map.empty "<stdin>" input
