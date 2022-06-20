@@ -78,8 +78,8 @@ const updateConstituencyParse = (constituencyParseId: ID, values: ConstituencyPa
   .patch(`constituency-parses/${constituencyParseId}/`, values)
   .then(({ data }) => data);
 
-const fetchInterpretation = (fragment: Fragment, syntaxTree: SyntaxTree): Promise<SemanticTree> => interpretationClient
-  .post(`fragments/${toPascalCase(fragment.slug)}/`, syntaxTree)
+const fetchSemanticTree = (fragment: Fragment, constituencyParse: string): Promise<SemanticTree> => interpretationClient
+  .post(`fragments/${toPascalCase(fragment.slug)}/`, { constituencyParse })
   .then(({ data: { semanticTree } }) => semanticTree);
 
 const fetchFragmentGrammar = (filename: string): Promise<string> => languageServerClient
@@ -102,7 +102,7 @@ export {
   createConstituencyParse,
   deleteConstituencyParse,
   updateConstituencyParse,
-  fetchInterpretation,
+  fetchSemanticTree,
   fetchFragmentGrammar,
   updateFragmentGrammar
 }

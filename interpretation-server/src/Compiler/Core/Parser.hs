@@ -9,7 +9,6 @@ module Compiler.Core.Parser (
 import System.IO (IO, FilePath)
 import qualified Data.Map as Map
 import Debug.Trace (trace, traceM)
-import Data.List (intercalate)
 import Data.Functor.Identity
 import Control.Monad (void)
 import Text.Parsec

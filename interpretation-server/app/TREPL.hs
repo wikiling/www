@@ -5,11 +5,11 @@
 
 module TREPL (main) where
 
-import Compiler.Syntax
-import Compiler.Inference
-import Compiler.Parser
-import Compiler.Pretty
-import qualified Compiler.TypeEnv as Env
+import Compiler.Core.Syntax
+import Compiler.Core.Inference
+import Compiler.Core.Parser
+import Compiler.Core.Pretty
+import qualified Compiler.Core.TypeEnv as Env
 import Interpreter.Evaluation
 
 import Data.Monoid

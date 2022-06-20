@@ -136,6 +136,9 @@ substitute a n e = substitute' a (\n' -> n == n') e
 --   to predicates that fall under (c), so even if predicates are parsed
 --   as such initially, this resolution step will have to be done after
 --   each beta reduction. Using only this function isolates the logic.
+--
+--   6/20 predicates should be identified by the parser as typed constants,
+--   and the application step of evaluation should return a VPred value
 resolvePredicates :: Expr -> Expr
 resolvePredicates = go
   where

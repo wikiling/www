@@ -1,15 +1,15 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Compiler.Tree.Syntax (
-  T.Tree(..), TreePosition, T.fromList,
-  Label(..), ConstituencyLabel(..), ConstituencyTree(..),
-  mkBiCatNode, mkUnCatNode, mkLexNode
+  T.Tree(..), TreePosition, T.fromList, T.printTree,
+  Label(..), ConstituencyLabel(..), ConstituencyTree(..)
 ) where
 
 import GHC.Generics
 import qualified Data.Tree.Binary.Preorder as T
 
-type TreePosition = Int
+type TreePosition = String
 type Category = String
 type Lexeme = String
 
@@ -20,7 +20,3 @@ data Label
 data ConstituencyLabel = CLabel Label TreePosition deriving (Show, Generic)
 
 type ConstituencyTree = T.Tree ConstituencyLabel
-
-mkLexNode lex = T.Node (LexLabel lex) T.Leaf T.Leaf
-mkBiCatNode cat c0 c1 = T.Node (CatLabel cat) c0 c1
-mkUnCatNode cat c = T.Node (CatLabel cat) c T.Leaf

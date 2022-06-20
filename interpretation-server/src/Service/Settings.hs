@@ -8,7 +8,6 @@ module Service.Settings
 where
 
 import System.IO (FilePath)
-
 import Data.Text ( Text )
 import Data.Time.Clock ( UTCTime )
 import GHC.Generics ( Generic )

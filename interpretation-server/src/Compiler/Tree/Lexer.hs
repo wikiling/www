@@ -4,7 +4,8 @@ import           Data.Void                  (Void)
 import           Control.Monad.State
 import qualified Text.Megaparsec.Char.Lexer as Lexer
 import qualified Text.Megaparsec.Char       as CharParser
-import qualified Text.Megaparsec as Parsec
+import           Text.Megaparsec            ((<|>))
+import qualified Text.Megaparsec            as Parsec
 
 import Compiler.Tree.Syntax
 
@@ -25,8 +26,11 @@ symbol = Lexer.symbol space
 brackets :: Parser a -> Parser a
 brackets = Parsec.between (symbol "[") (symbol "]")
 
+parens :: Parser a -> Parser a
+parens = Parsec.between (symbol "(") (symbol ")")
+
 identifier :: Parser String
 identifier = lexeme $ Parsec.try p
   where
-    p = (:) <$> CharParser.letterChar <*> Parsec.many CharParser.alphaNumChar
+    p = (:) <$> CharParser.letterChar <*> Parsec.many (CharParser.alphaNumChar <|> CharParser.char '\'')
 

@@ -1,7 +1,7 @@
 
 import { makeAutoObservable, ObservableMap, remove } from 'mobx';
 import { ID, Author, Fragment, Slug, Example, CoordinatedConstituencyParse, ConstituencyParse, TreeID, ConstituencyParseNodeEditValues, TemporaryExample, ExampleEditValues, ConstituencyParseEditValues, UUID, ExampleCreateValues, CoordinatedSemanticTree, SemanticTree, Interpretation, TemporaryInterpretation, InterpretationEditValues, InterpretationCreateValues } from 'types';
-import { fetchFragment, fetchInterpretation, fetchExamples, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample, fetchFragmentGrammar, updateFragmentGrammar, fetchInterpretations, updateInterpretation, createInterpretation, deleteInterpretation } from 'api';
+import { fetchFragment, fetchSemanticTree, fetchExamples, updateExample, deleteExample, createConstituencyParse, deleteConstituencyParse, updateConstituencyParse, createExample, fetchFragmentGrammar, updateFragmentGrammar, fetchInterpretations, updateInterpretation, createInterpretation, deleteInterpretation } from 'api';
 import { hierarchy } from 'utils/hierarchy';
 import { createIdMap } from 'utils/store';
 import { v4 as uuid } from 'uuid';
@@ -314,11 +314,11 @@ export class FragmentStore {
   dispatchInterpretConstituencyParse = async (constituencyParse: CoordinatedConstituencyParse) => {
     if (!this.fragment) throw new Error("No fragment to interpret!");
 
-    const semanticTree = await fetchInterpretation(this.fragment, constituencyParse.coordinated_syntax_tree.data);
+    const semanticTree = await fetchSemanticTree(this.fragment, constituencyParse.parse_string);
 
-    this.semanticTreeMap[constituencyParse.id] = CoordinatedSemanticTreeFactory(semanticTree);
+    this.semanticTreeMap[constituencyParse.interpretation_id] = CoordinatedSemanticTreeFactory(semanticTree);
 
-    return this.semanticTreeMap[constituencyParse.id];
+    return this.semanticTreeMap[constituencyParse.interpretation_id];
   }
 }
 

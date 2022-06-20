@@ -12,6 +12,10 @@ import { observer } from "mobx-react-lite";
 import Bracketing from "./trees/Bracketing";
 import EditableBracketing from "./trees/EditableBracketing";
 import useTwoClicks from "hooks/useTwoClicks";
+import SemanticTree from "./trees/SemanticTree";
+import { toJS } from "mobx";
+import InterpretationSyntax from "./InterpretationSyntax";
+import InterpretationSemantics from "./InterpretationSemantics";
 
 type InterpretationProps = {
   interpretation: InterpretationT
@@ -21,11 +25,16 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
   const { fragmentStore: fs } = useStores();
   const { id, constituency_parse: cp, example_id, content, paraphrase } = interpretation;
   const ccp = cp ? fs.constituencyParseMap[cp.id] : undefined;
+  const semanticTree = fs.semanticTreeMap[interpretation.id];
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const { isLoading, loadWhile } = useLoadWhile();
 
   const handleFormSubmit = (values: InterpretationEditValues) => loadWhile(
     () => fs.dispatchUpdateInterpretation(id, values)
+  );
+
+  const handleInterpret = () => ccp && loadWhile(
+    () => fs.dispatchInterpretConstituencyParse(ccp)
   );
 
   const handleApproximateSyntax = () => loadWhile(
@@ -37,42 +46,21 @@ const Interpretation: React.FC<InterpretationProps> = ({ interpretation }) => {
 
   const handleExpand = () => setIsExpanded(!isExpanded);
 
-  const handleBracketingClick = useTwoClicks<HTMLDivElement>({
-    onDoubleClick: () => {
-      console.log('?')
-      setIsExpanded(!isExpanded);
-    }
-  });
-
   return (
     <div className="interpretation">
       <div className="interpretation-header interpretation-row">
         <InterpretationForm interpretation={interpretation} onSubmit={handleFormSubmit}/>
 
-        <Menu className="interpretation-menu" isLoading={isLoading}>
-          <Button mode="menu" onClick={handleExpand}>{isExpanded ? 'collapse' : 'expand'}</Button>
-        </Menu>
+        <Button mode="trans" onClick={handleInterpret}>interpret</Button>
       </div>
-      <div className="interpretation-body">
-        {ccp && <>
-          <EditableBracketing onClick={handleBracketingClick} tree={ccp.coordinated_syntax_tree}/>
 
-          {isExpanded && (
-            fs.semanticTreeMap[ccp.id]
-              ? <LogicalForm
-                  key={ccp.id}
-                  semanticTree={fs.semanticTreeMap[ccp.id]}
-                  constituencyParse={ccp}
-                />
-              : <ConstituencyParse
-                  key={ccp.id}
-                  constituencyParse={ccp}
-                />
-          )}
-        </>}
+      <div className="interpretation-body">
+        {ccp && <InterpretationSyntax constituencyParse={ccp}/>}
+        {semanticTree && <InterpretationSemantics semanticTree={semanticTree}/>}
       </div>
     </div>
   );
 };
+
 
 export default observer(Interpretation);

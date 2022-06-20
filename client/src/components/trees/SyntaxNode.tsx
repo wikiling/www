@@ -22,7 +22,7 @@ const SyntaxNode = forwardRef<
 >(({ treeId, node, onClick, onDragProceed, onDragEnd, className = "" }, ref) => {
   const { id: nodeId } = node.data;
   const id = `${treeId}-${nodeId}`;
-  const { width: labelWidth, height: labelHeight } = getTextDimensions(node.data.id);
+  const { width: labelWidth, height: labelHeight } = getTextDimensions(node.data.label);
   const labelX = node.x - labelWidth / 2, labelY = node.y + labelHeight / 2;
   const [latestDragEvent, setLatestDragEvent] = useState<NodeDragEvent | null>(null);
 
@@ -48,7 +48,7 @@ const SyntaxNode = forwardRef<
   return (
     <g ref={ref} onClick={onClick} className={`node ${className}`} data-id={id}>
       <text x={labelX} y={labelY} data-id={labelWidth}>
-        {node.data.id}
+        {node.data.label}
       </text>
     </g>
   );

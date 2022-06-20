@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import './Tree.scss';
-import { CoordinatedSemanticTree, ID, SemanticTree as SemanticTreeT } from 'types';
+import { CoordinatedSemanticTree, ID, SemanticTree as SemanticTreeT, TreeID } from 'types';
 import SemanticEdge from './SemanticEdge';
 
 import { SEM_NODE_HEIGHT, NODE_SEP_Y, NODE_WIDTH } from './config';
@@ -12,7 +12,7 @@ import { HierarchyPointNode } from 'd3-hierarchy';
 type CoordinatedSemanticTreeNode = HierarchyPointNode<SemanticTreeT>
 
 export type TreeProps = {
-  id: ID
+  id: TreeID
   tree: CoordinatedSemanticTree,
 };
 

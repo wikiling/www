@@ -1,27 +1,31 @@
 .interpretation {
   padding-left: 10px;
 
-  .interpretation-header {
+  &-header {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
 
     &:hover {
-      background: #f7f7f7;
+      background: var(--hover-bg);
     }
   }
 
-  .interpretation-row {
+  &-row {
     &:not(:first-child) {
       padding-top: 10px;
     }
   }
 
-  .interpretation-body {
+  &-body {
     padding-top: 10px;
   }
 
-  .interpretation-form {
+  &-semantics {
+    padding-top: 10px;
+  }
+
+  &-form {
     padding-right: 10px;
   }
 
@@ -29,12 +33,12 @@
     cursor: pointer;
   }
 
-  .field input:hover{
+  .field input:hover {
     cursor: unset;
   }
 
   &.interpretation--temporary {
-    .interpretation-form {
+    &-form {
       display: flex;
       flex-direction: row;
 
@@ -43,7 +47,7 @@
       }
     }
 
-    .interpretation-toolbar {
+    &-toolbar {
       display: flex;
       flex-direction: row;
     }

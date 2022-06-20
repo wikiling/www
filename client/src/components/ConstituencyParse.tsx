@@ -18,15 +18,8 @@ type ConstituencyParseProps = {
 const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse, onRemove }) => {
   const { fragmentStore: fs } = useStores();
   const [initialEditNode, setInitialEditNode] = useState<CoordinatedTreeNode | null>(null);
-  const {
-    handleInterpret,
-    handleRemove,
-    handleSave,
-
-    treeEditCount,
-    incrTreeEditCount,
-    isLoading,
-  } = useConstituencyParseOps(constituencyParse);
+  const [treeEditCount, setTreeEditCount] = useState<number>(0);
+  const incrTreeEditCount = () => setTreeEditCount(prev => prev + 1);
 
   return (
     <div className="constituency-parse">
@@ -60,12 +53,6 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
           initialEditNode={initialEditNode}
         />
       </div>
-
-      <Menu className="constituency-parse-menu" isLoading={isLoading}>
-        <Button mode="menu" onClick={handleInterpret}>interpret</Button>
-        <Button mode="menu" onClick={() => handleRemove(onRemove)}>remove</Button>
-        <Button mode="menu" onClick={handleSave}>save</Button>
-      </Menu>
     </div>
   );
 };

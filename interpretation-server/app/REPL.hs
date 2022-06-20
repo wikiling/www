@@ -1,10 +1,10 @@
 module REPL (main) where
 
-import Compiler.Syntax
-import Compiler.Parser
-import Compiler.Inference
-import Compiler.Pretty
-import qualified Compiler.TypeEnv as TyEnv
+import Compiler.Core.Syntax
+import Compiler.Core.Parser
+import Compiler.Core.Inference
+import Compiler.Core.Pretty
+import qualified Compiler.Core.TypeEnv as TyEnv
 
 import Interpreter.Evaluation
 

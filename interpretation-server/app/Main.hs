@@ -6,10 +6,6 @@
 
 module Main where
 
-import Service.App (AppCtx (..), mkApp)
-import Service.Settings (SiteConfig (..))
-import Service.Logger (LogMessage (..))
-
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import Data.Aeson
@@ -33,7 +29,12 @@ import System.Log.FastLogger
     newStdoutLoggerSet,
     pushLogStrLn,
   )
-import Prelude ()
+
+import Service.Ctx (AppCtx(..))
+import Service.App (mkApp)
+import Service.Settings (SiteConfig(..))
+import Service.Logger (LogMsg(..))
+
 
 port :: Int
 port = 8080
@@ -60,7 +61,7 @@ main = do
   tstamp <- getCurrentTime
 
   let lgmsg =
-        LogMessage
+        LogMsg
           { message = "Interpeter starting up!",
             timestamp = tstamp,
             level = "info",

@@ -12,41 +12,15 @@ import SemanticTree from "./trees/SemanticTree";
 import useConstituencyParseOps from "hooks/useConstituencyParseOps";
 
 type LogicalFormProps = {
-  constituencyParse: CoordinatedConstituencyParse
   semanticTree: CoordinatedSemanticTree
+  onClick: React.MouseEventHandler<HTMLDivElement>
 }
 
-const LogicalForm: React.FC<LogicalFormProps> = ({ semanticTree, constituencyParse }) => {
-  const {
-    handleInterpret: onInterpret,
-    handleRemove,
-    handleSave,
-
-    treeEditCount,
-    incrTreeEditCount,
-    isLoading,
-  } = useConstituencyParseOps(constituencyParse);
-
-  const handleInterpret = async () => {
-    await onInterpret();
-    incrTreeEditCount();
-  };
+const LogicalForm: React.FC<LogicalFormProps> = ({ semanticTree, onClick }) => {
 
   return (
-    <div className="logical-form">
-      <div className="logical-form-tree">
-        <SemanticTree
-          id={constituencyParse.id}
-          key={`${constituencyParse.id}-${treeEditCount}`}
-          tree={toJS(semanticTree)}
-        />
-      </div>
-
-      <Menu className="logical-form-menu" isLoading={isLoading}>
-        <Button mode="menu" onClick={handleInterpret}>interpret</Button>
-        <Button mode="menu" onClick={() => handleRemove()}>remove</Button>
-        <Button mode="menu" onClick={handleSave}>save</Button>
-      </Menu>
+    <div className="logical-form" onClick={onClick}>
+      {semanticTree.data.value}
     </div>
   );
 };

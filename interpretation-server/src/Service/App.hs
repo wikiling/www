@@ -1,95 +1,32 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Service.App
   ( mkApp,
-    AppCtx (..),
   )
 where
 
-import System.FilePath ((</>), (<.>))
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Text as JSONText
 import Data.Proxy
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text.Lazy (toStrict)
-import Data.Text.Lazy.Builder (toLazyText)
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import GHC.Generics
-import Prelude.Compat
-import Servant (Application, Capture, Context, Handler, JSON, Post, ReqBody, ServerT, err401, err400, hoistServerWithContext, serveWithContext, throwError, (:>))
-import System.Log.FastLogger
-  ( LoggerSet,
-    ToLogStr,
-    flushLogStr,
-    pushLogStrLn,
-    toLogStr,
-  )
+import Servant
 
-import Compiler.Pretty
-import Service.Logger (LogMessage (..))
-import Service.Settings (SiteConfig (..))
-import Service.Serializers
+import Service.API.Fragments
+import Service.API.ConstituencyTrees
+import Service.Ctx
 
-import qualified Interpreter.Fragment as Frag
-import qualified Interpreter.Compose as Comp
+type API =  "fragments"          :> FragmentAPI
+       :<|> "constituency-trees" :> ConstituencyTreeAPI
 
-type FragmentAPI = "fragments" :> Capture "fragmentId" String :> ReqBody '[JSON] Comp.ConstituencyTree :> Post '[JSON] FragmentHandlerResp
+api :: Proxy API
+api = Proxy
 
-data AppCtx = AppCtx
-  { _getConfig :: SiteConfig,
-    _getLogger :: LoggerSet
-  }
-
-encodeTreeToText :: Comp.ConstituencyTree -> Text
-encodeTreeToText = toStrict . toLazyText . JSONText.encodeToTextBuilder . JSON.toJSON
-
-data FragmentHandlerResp = FragmentHandlerResp
-  { semanticTree :: !Comp.SemanticTree }
-  deriving (Show, Generic)
-
-instance JSON.ToJSON FragmentHandlerResp where
-  toEncoding = JSON.genericToEncoding JSON.defaultOptions
-
-fragmentHandler :: String -> Comp.ConstituencyTree -> AppM FragmentHandlerResp
-fragmentHandler fragmentId syntaxTree = do
-  logset <- asks _getLogger
-  tstamp <- liftIO getCurrentTime
-  config <- asks _getConfig
-
-  liftIO $ pushLogStrLn logset $ toLogStr LogMessage
-    { message = "fragment: " <> T.pack fragmentId <> " syntax tree: " <> encodeTreeToText syntaxTree,
-      timestamp = tstamp,
-      level = "info",
-      lversion = version config,
-      lenvironment = environment config
-    }
-
-  fragIO <- liftIO $ Frag.loadFragment $ (fragmentDir config) </> fragmentId <.> "hs"
-
-  case fragIO of
-    Left err -> throwError err400
-    Right frag -> pure $ FragmentHandlerResp { semanticTree = Comp.compose frag syntaxTree }
-
-fragmentApi :: Proxy FragmentAPI
-fragmentApi = Proxy
-
-type AppM = ReaderT AppCtx Handler
-
-fragmentServer :: ServerT FragmentAPI AppM
-fragmentServer = fragmentHandler
+server :: ServerT API AppM
+server = fragmentHandler :<|> constituencyTreeHandler
 
 mkApp :: Context '[] -> AppCtx -> Application
 mkApp cfg ctx =
-  serveWithContext fragmentApi cfg $
-    hoistServerWithContext
-      fragmentApi
-      (Proxy :: Proxy '[])
-      (flip runReaderT ctx)
-      fragmentServer
+  serveWithContext api cfg $
+    hoistServerWithContext api (Proxy :: Proxy '[])
+      (flip runReaderT ctx) server

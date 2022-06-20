@@ -1,7 +1,9 @@
 module Compiler.Tree.Parser (
-  parseConstituencyTree
+  parseConstituencyTree,
+  parseUnPosConstituencyTree
 ) where
 
+import Debug.Trace (trace, traceM)
 import Data.Foldable                 (toList)
 import Data.Char                     (digitToInt)
 import Data.List                     (foldl')
@@ -14,33 +16,42 @@ import Compiler.Tree.Syntax       as S
 
 type CTreeParser = L.Parser (S.Tree S.Label)
 
+mkLexNode lex = S.Node (S.LexLabel lex) S.Leaf S.Leaf
+mkBinaryCatNode cat l r = S.Node (S.CatLabel cat) l r
+mkUnaryCatNode cat l = S.Node (S.CatLabel cat) l S.Leaf
+
 lexNode :: CTreeParser
 lexNode = do
   label <- identifier
   pure $ mkLexNode label
 
-unCatNode :: CTreeParser
-unCatNode = do
-  cat <- identifier
-  c   <- P.try lexNode <|> cTree
+cTree' :: (CTreeParser -> CTreeParser) -> CTreeParser
+cTree' delimit  = P.try (delimit unaryCatNode) <|> (delimit binaryCatNode)
+  where
+    node = P.try lexNode <|> P.try (delimit lexNode) <|> cTree' delimit
 
-  pure $ mkUnCatNode cat c
+    unaryCatNode :: CTreeParser
+    unaryCatNode = do
+      cat <- identifier
+      l   <- node
+      pure $ mkUnaryCatNode cat l
 
-biCatNode :: CTreeParser
-biCatNode = do
-  cat <- identifier
-  c0  <- P.try lexNode <|> cTree
-  c1  <- P.try lexNode <|> cTree
+    binaryCatNode :: CTreeParser
+    binaryCatNode = do
+      cat <- identifier
+      l   <- node
+      r   <- node
+      pure $ mkBinaryCatNode cat l r
 
-  pure $ mkBiCatNode cat c0 c1
-
-cTree :: CTreeParser
-cTree = P.try (brackets unCatNode) <|> (brackets biCatNode)
+cTree = P.try (cTree' brackets) <|> (cTree' parens)
 
 positionCTree :: S.Tree S.Label -> S.ConstituencyTree
-positionCTree = S.fromList . fst . (foldl' position ([],-1)) . toList
+positionCTree t = go "" t
   where
-    position (ls, pos) l = let pos' = pos + 1 in (ls ++ [S.CLabel l pos'], pos')
+    go pos (S.Node label l r) = S.Node (CLabel label pos) (go (pos ++ "0") l) (go (pos ++ "1") r)
+    go _ S.Leaf = S.Leaf
+
+parseUnPosConstituencyTree s = P.runParser cTree "<input>" s
 
 parseConstituencyTree s = case P.runParser cTree "<input>" s of
   Right tree -> Right $ positionCTree tree

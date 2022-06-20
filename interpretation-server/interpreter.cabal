@@ -38,11 +38,13 @@ library
       Interpreter.Evaluation
       Interpreter.Fragment
       Lib.Std
+      Service.API.ConstituencyTrees
+      Service.API.Fragments
       Service.App
+      Service.Ctx
       Service.Logger
       Service.Serializers
       Service.Settings
-      Service.Utils
       Utils
   other-modules:
       Paths_interpreter
