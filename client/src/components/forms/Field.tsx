@@ -20,11 +20,13 @@ const Field: React.FC<FieldProps> = ({
   placeholder,
   spellCheck = false,
   matchTextWidth = false,
+  ...props
 }) => {
+  const ctx = useFormContext();
   const {
     register,
     formState: { errors },
-  } = useFormContext();
+  } = ctx;
   const error = errors[name];
   const [textWidth, setTextWidth] = useState<number>(initialValue.length > 0 ? initialValue.length : initialWidth);
 
@@ -34,7 +36,9 @@ const Field: React.FC<FieldProps> = ({
   };
 
   return (
-    <div className={classNames('field', className, { 'field--invalid': !!error })}>
+    <div
+      className={classNames('field', className, { 'field--invalid': !!error })}
+    >
       <input
         style={{
           width: matchTextWidth ? `${textWidth}ch` : undefined,
@@ -43,6 +47,7 @@ const Field: React.FC<FieldProps> = ({
         spellCheck={spellCheck}
         autoComplete="off"
         placeholder={placeholder}
+        {...props}
         {...register(name, { onChange: handleChange })}
       />
     </div>

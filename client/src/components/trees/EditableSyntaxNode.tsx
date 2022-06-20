@@ -1,4 +1,5 @@
 import Field from 'components/forms/Field';
+import Form from 'components/forms/Form';
 import { forwardRef, useEffect, useState } from 'react'
 import { useForm } from "react-hook-form";
 import { getTextDimensions } from 'utils/document';
@@ -20,16 +21,6 @@ const EditableSyntaxNode = forwardRef<
   const fieldName = 'label';
   const initialValue = node.data.label;
   const initialValueDims = getTextDimensions(initialValue);
-  const {
-    register,
-    handleSubmit,
-    setFocus
-  } = useForm<EditableSyntaxNodeValues>({
-    defaultValues: {
-      [fieldName]: initialValue,
-      id: node.data.id
-    }
-  });
 
   const [width, setWidth] = useState<number>(initialValue.length === 0 ? DEFAULT_EMPTY_WIDTH : initialValue.length); // ch
   const [height] = useState<number>(1.25 * initialValueDims.height); // px
@@ -43,12 +34,6 @@ const EditableSyntaxNode = forwardRef<
     setX(node.x - chToPx(length) / 2);
   };
 
-  const registration = register(fieldName, { onChange: handleChange });
-
-  useEffect(() => {
-    setFocus(fieldName);
-  }, [])
-
   return (
     <g ref={forwardedRef} className="node node-editable">
       <foreignObject
@@ -57,12 +42,24 @@ const EditableSyntaxNode = forwardRef<
         x={x}
         y={y}
       >
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Field
-            initialValue={initialValue}
-            {...registration}
-          />
-        </form>
+        <Form<EditableSyntaxNodeValues>
+          onSubmit={onSubmit}
+          options={{
+            defaultValues: {
+              [fieldName]: initialValue,
+              id: node.data.id
+            }
+          }}
+        >
+          {() =>
+            <Field
+              autoFocus
+              name={fieldName}
+              initialValue={initialValue}
+              onChange={handleChange}
+            />
+          }
+        </Form>
       </foreignObject>
     </g>
   );

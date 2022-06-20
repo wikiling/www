@@ -71,7 +71,6 @@ const CoordinatedConstituencyParseFactory = (constituencyParse: ConstituencyPars
 const CoordinatedSemanticTreeFactory = (semanticTree: SemanticTree): CoordinatedSemanticTree => hierarchy(semanticTree);
 
 export class FragmentStore {
-  authors: Author[] = []
   fragment: Fragment | null = null
 
   initialGrammar?: string

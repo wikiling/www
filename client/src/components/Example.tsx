@@ -1,6 +1,6 @@
 import "./Example.scss";
 import React, { useRef, useState } from 'react';
-import { ExampleEditValues } from 'types';
+import { ExampleBase, ExampleEditValues } from 'types';
 import Button from "./Button";
 import { UseFormSetFocus } from "react-hook-form";
 import { Example as ExampleT } from "types";
@@ -12,7 +12,7 @@ import ExampleForm, { ExampleFormContext } from "./ExampleForm";
 import classNames from "classnames";
 import Interpretation from "./Interpretation";
 import TemporaryInterpretation from "./TemporaryInterpretation";
-import useTwoClicks from "hooks/useTwoClicks";
+import { FormDblClickHandler } from "./forms/Form";
 
 type ExampleProps = {
   example: ExampleT
@@ -47,11 +47,9 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
 
   const handleNewInterpretation = () => fs.createTemporaryInterpretation(example.id);
 
-  const handleFormClick = useTwoClicks<HTMLFormElement>({
-    onDoubleClick: () => {
-      setIsExpanded(!isExpanded);
-    }
-  });
+  const handleFormDblClick: FormDblClickHandler<ExampleBase> = (e, ctx) => {
+    setIsExpanded(!isExpanded);
+  };
 
   console.log(temporaryInterpretations);
 
@@ -59,10 +57,10 @@ const Example: React.FC<ExampleProps> = ({ example }) => {
     <div className={classNames("example", { "example--in-edit": isInEdit })}>
       <div className="example-header example-row">
         <ExampleForm
-          onClick={handleFormClick}
+          onDblClick={handleFormDblClick}
           example={example}
           onSubmit={handleFormSubmit}
-          ctxRef={formCtxRef}/>
+          ctxCb={(ctx) => formCtxRef.current = ctx}/>
 
         <Menu isLoading={isLoading}>
           <Button mode="menu" onClick={handleNewInterpretation}>add an interpretation</Button>

@@ -3,7 +3,7 @@ type ClickEventHandler<CType> = (e: React.MouseEvent<CType>) => void
 type Props<ElType> = {
   latency?: number
   onSingleClick?: ClickEventHandler<ElType>
-  onDoubleClick: ClickEventHandler<ElType>
+  onDoubleClick?: ClickEventHandler<ElType>
 }
 
 const useTwoClicks = <ElType extends HTMLElement>({

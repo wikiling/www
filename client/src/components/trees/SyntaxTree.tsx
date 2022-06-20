@@ -171,7 +171,7 @@ const Tree: React.FC<TreeProps> = ({ id, tree, onNodeAdd, onNodeEdit, onNodeRemo
 
   const linkIsGrounded = (link: CoordinatedTreeLink) => {
     return link.target.data.id !== dragNode?.data.id;
-  }
+  };
 
   useEffect(resize, []);
   useClickAway(menuRef, closeMenu);

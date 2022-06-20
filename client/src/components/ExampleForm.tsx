@@ -6,19 +6,20 @@ import Field from "./forms/Field";
 import useYupResolver from "hooks/useYupResolver";
 import * as yup from "yup"
 import Fieldset from "./forms/Fieldset";
-import Form from "./forms/Form";
+import Form, { FormDblClickHandler } from "./forms/Form";
 
 export type ExampleFormContext = UseFormReturn<ExampleBase>
 
 type ExampleFormProps = {
   example: TemporaryExample | Example
   onSubmit: (values: ExampleBase) => void
-  ctxRef?: MutableRefObject<ExampleFormContext | null>
   focusOnDblClick?: boolean
   onClick?: React.MouseEventHandler<HTMLFormElement>
+  onDblClick?: FormDblClickHandler<ExampleBase>
+  ctxCb?: (ctx: ExampleFormContext) => void
 }
 
-const ExampleForm: React.FC<ExampleFormProps> = ({ example, onSubmit, onClick }) => {
+const ExampleForm: React.FC<ExampleFormProps> = ({ example, onSubmit, onClick, onDblClick, ctxCb }) => {
   return (
     <Form<ExampleBase>
       className="example-form"
@@ -37,9 +38,11 @@ const ExampleForm: React.FC<ExampleFormProps> = ({ example, onSubmit, onClick })
       }}
       onSubmit={onSubmit}
       onClick={onClick}
+      onDblClick={onDblClick}
     >
-      {() => (
-        <Fieldset>
+      {(ctx) => {
+        ctxCb && ctxCb(ctx);
+        return <Fieldset>
           <Field
             name="label"
             matchTextWidth
@@ -47,11 +50,12 @@ const ExampleForm: React.FC<ExampleFormProps> = ({ example, onSubmit, onClick })
             initialValue={example.label}/>
 
           <Field
+            autoFocus
             name="content"
             className="example-form-field-content"
             initialValue={example.content}/>
         </Fieldset>
-      )}
+      }}
     </Form>
   );
 };

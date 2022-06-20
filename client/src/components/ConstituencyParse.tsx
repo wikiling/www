@@ -26,8 +26,8 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
       <div className="constituency-parse-tree">
         <SyntaxTree
           id={constituencyParse.id}
-          key={`${constituencyParse.id}-${treeEditCount}`}
-          tree={toJS(constituencyParse.coordinated_syntax_tree)}
+          // key={`${constituencyParse.id}-${treeEditCount}}`}
+          tree={constituencyParse.coordinated_syntax_tree}
           nodeLabel={(node) => node.data.label}
           onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
