@@ -25,7 +25,7 @@ const useConstituencyParseOps = (constituencyParse: CoordinatedConstituencyParse
       await fs.dispatchUpdateConstituencyParse(constituencyParse.id, {
         parse_string: constituencyParse.coordinated_syntax_tree.parseString()
       });
-      setTreeEditCount(0);
+      incrTreeEditCount();
     }
   );
 

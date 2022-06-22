@@ -16,4 +16,6 @@ C:<i,t>;
 [t'] = t';
 
 March44BC: <i>;
-[ontheidesofMarch44BC] = \t:<i> . t subs March44BC
+[ontheidesofMarch44BC] = \t:<i> . t subs March44BC;
+
+[always] = \q:<i,t> . \p:<i,t> . forall t':<i> . (q t') => (p t')

@@ -18,21 +18,23 @@ type ConstituencyParseProps = {
 const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse, onRemove }) => {
   const { fragmentStore: fs } = useStores();
   const [initialEditNode, setInitialEditNode] = useState<CoordinatedTreeNode | null>(null);
-  const [treeEditCount, setTreeEditCount] = useState<number>(0);
-  const incrTreeEditCount = () => setTreeEditCount(prev => prev + 1);
+  const {
+    treeEditCount,
+    handleSave
+  } = useConstituencyParseOps(constituencyParse);
 
   return (
     <div className="constituency-parse">
       <div className="constituency-parse-tree">
         <SyntaxTree
           id={constituencyParse.id}
-          // key={`${constituencyParse.id}-${treeEditCount}}`}
-          tree={constituencyParse.coordinated_syntax_tree}
+          key={`${constituencyParse.id}-${treeEditCount}}`}
+          tree={toJS(constituencyParse.coordinated_syntax_tree)}
           nodeLabel={(node) => node.data.label}
           onNodeAdd={(nodeId: TreeID) => {
             const node = fs.addConstituencyParseNode(constituencyParse.id, nodeId);
             node && setInitialEditNode(node); // smells
-            incrTreeEditCount();
+            handleSave();
           }}
           onNodeEdit={(values: EditableSyntaxNodeValues) => {
             fs.updateConstituencyParseNode(constituencyParse.id, {
@@ -40,15 +42,15 @@ const ConstituencyParse: React.FC<ConstituencyParseProps> = ({ constituencyParse
               label: values.label
             });
             setInitialEditNode(null); // smells
-            incrTreeEditCount();
+            handleSave();
           }}
           onNodeRemove={(nodeId: TreeID) => {
             fs.removeConstituencyParseNode(constituencyParse.id, nodeId);
-            incrTreeEditCount();
+            handleSave();
           }}
           onNodeMove={(nodeId: TreeID, targetParentId: TreeID) => {
             fs.moveConstituencyParseNode(constituencyParse.id, nodeId, targetParentId);
-            incrTreeEditCount();
+            handleSave();
           }}
           initialEditNode={initialEditNode}
         />
